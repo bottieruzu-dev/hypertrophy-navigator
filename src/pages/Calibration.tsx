@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../db/db';
 import type { Exercise, SplitType } from '../db/types';
 import {
   CALIBRATION_PLAN, CALIBRATION_TOTAL, getCalibrationExercises,
@@ -9,6 +10,8 @@ import {
   CALIB, suggestNext, finalizeBaseline, targetRepsOf, type Attempt,
 } from '../engine/calibration';
 import { effectiveIncrement, formatWeight } from '../engine/units';
+import { TrainerGuide } from '../components/TrainerGuide';
+import { BodyAnatomy } from '../components/BodyAnatomy';
 
 const SPLIT_LABEL: Record<SplitType, string> = {
   upper_A: '上半身 A（背中・肩中部・二頭）',
@@ -97,6 +100,10 @@ function Wizard({
   const [suggestions, setSuggestions] = useState<number[]>([]);
   const [saving, setSaving] = useState(false);
 
+  const credits = useLiveQuery(() => db.muscleCredits.where('exerciseId').equals(exercise.id).toArray(), [exercise.id]);
+  const primaryMuscles = credits?.filter((c) => c.credit >= 0.8).map((c) => c.muscle) ?? [];
+  const secondaryMuscles = credits?.filter((c) => c.credit < 0.8).map((c) => c.muscle) ?? [];
+
   const setNo = attempts.length + 1;
   const isLast = setNo === CALIB.setsPerExercise;
 
@@ -144,6 +151,12 @@ function Wizard({
           Set {setNo} / {CALIB.setsPerExercise} ・ 目標 {exercise.repRange[0]}–{exercise.repRange[1]} reps
         </p>
       </header>
+
+      {/* 🤖 AIトレーナー4ステップ解説ガイド */}
+      <TrainerGuide exercise={exercise} />
+
+      {/* 筋肉発光ネオンアナトミーマップ */}
+      <BodyAnatomy primaryMuscles={primaryMuscles} secondaryMuscles={secondaryMuscles} />
 
       {lastSuggestion && (
         <div className={`hint ${lastSuggestion.verdict}`}>

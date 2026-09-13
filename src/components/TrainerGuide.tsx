@@ -16,27 +16,27 @@ export const TrainerGuide: React.FC<TrainerGuideProps> = ({ exercise }) => {
   };
 
   return (
-    <div className="umamusume-trainer-card" onClick={handleNextStep}>
-      {/* 上部：トレーナー立ち絵キャラ */}
-      <div className="umamusume-character-area">
+    <div className="trainer-dialog-card" onClick={handleNextStep}>
+      {/* キャラクター立ち絵領域 */}
+      <div className="trainer-character-area">
         <img
           src="/trainer.png"
           alt="AI Trainer RIO"
-          className="umamusume-trainer-img"
+          className="trainer-character-img"
           onError={(e) => {
             (e.target as HTMLElement).style.display = 'none';
           }}
         />
-        <div className="umamusume-fallback-icon">👩‍🏫</div>
+        <div className="trainer-fallback-icon">👩‍🏫</div>
       </div>
 
-      {/* 右側：ウマ娘風 横長大型話者吹き出し */}
-      <div className="umamusume-speech-box">
-        <div className="umamusume-header">
+      {/* 横長大型話者吹き出し */}
+      <div className="trainer-speech-box">
+        <div className="trainer-header">
           <span className="trainer-title">AI TRAINER RIO</span>
           <span className="step-badge">{currentStep.title} ({currentStepIndex + 1}/4)</span>
         </div>
-        <p className="umamusume-speech-text">{currentStep.text}</p>
+        <p className="trainer-speech-text">{currentStep.text}</p>
         <div className="tap-prompt">TAP TO NEXT ›</div>
       </div>
     </div>
