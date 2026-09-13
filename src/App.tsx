@@ -3,8 +3,10 @@ import { initializeApp } from './db/seed';
 import DebugSeed from './pages/DebugSeed';
 import Calibration from './pages/Calibration';
 import Workout from './pages/Workout';
+import Nutrition from './pages/Nutrition';
+import BodyTracking from './pages/BodyTracking';
 
-type Tab = 'workout' | 'calibration' | 'debug';
+type Tab = 'workout' | 'nutrition' | 'body' | 'calibration' | 'debug';
 
 export default function App() {
   const [ready, setReady] = useState(false);
@@ -23,12 +25,20 @@ export default function App() {
   return (
     <div className="app">
       {tab === 'workout' && <Workout />}
+      {tab === 'nutrition' && <Nutrition />}
+      {tab === 'body' && <BodyTracking />}
       {tab === 'calibration' && <Calibration />}
       {tab === 'debug' && <DebugSeed />}
 
       <nav className="tabbar">
         <button className={tab === 'workout' ? 'on' : ''} onClick={() => setTab('workout')}>
           本番記録
+        </button>
+        <button className={tab === 'nutrition' ? 'on' : ''} onClick={() => setTab('nutrition')}>
+          栄養
+        </button>
+        <button className={tab === 'body' ? 'on' : ''} onClick={() => setTab('body')}>
+          体組成
         </button>
         <button className={tab === 'calibration' ? 'on' : ''} onClick={() => setTab('calibration')}>
           Week 0

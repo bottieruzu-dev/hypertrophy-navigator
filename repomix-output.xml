@@ -1,0 +1,2962 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+public/
+  favicon.svg
+  icons.svg
+src/
+  assets/
+    hero.png
+    react.svg
+    vite.svg
+  components/
+    BodyAnatomy.tsx
+  db/
+    queries/
+      bodyMetrics.ts
+      calibration.ts
+      nutrition.ts
+      weeklyCredit.ts
+    seed/
+      exercises.ts
+      foods.ts
+      index.ts
+      muscleCredits.ts
+      muscles.ts
+    db.ts
+    types.ts
+  engine/
+    calibration.ts
+    generator.ts
+    progression.ts
+    units.ts
+  pages/
+    BodyTracking.tsx
+    Calibration.tsx
+    DebugSeed.tsx
+    hypertrophy-navigator.code-workspace
+    Nutrition.tsx
+    Workout.tsx
+  App.css
+  App.tsx
+  index.css
+  main.tsx
+  styles.css
+.gitignore
+.oxlintrc.json
+index.html
+package.json
+README.md
+repomix実行.bat
+tsconfig.app.json
+tsconfig.json
+tsconfig.node.json
+vite.config.ts
+ローカル起動.bat
+ローカル起動前の準備.bat
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="src/components/BodyAnatomy.tsx">
+import React from 'react';
+
+interface BodyAnatomyProps {
+  primaryMuscles: string[];
+  secondaryMuscles?: string[];
+}
+
+export const BodyAnatomy: React.FC<BodyAnatomyProps> = ({ primaryMuscles, secondaryMuscles = [] }) => {
+  const getMuscleClass = (code: string) => {
+    if (primaryMuscles.includes(code)) return 'muscle primary-glow';
+    if (secondaryMuscles.includes(code)) return 'muscle secondary-glow';
+    return 'muscle inactive';
+  };
+
+  return (
+    <div className="anatomy-container">
+      <svg viewBox="0 0 200 320" className="anatomy-svg">
+        <defs>
+          <filter id="neon-blue" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+          <filter id="neon-purple" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+
+        {/* 人体ベースシルエット（前面） */}
+        <g className="body-outline">
+          {/* 頭部 */}
+          <circle cx="100" cy="35" r="16" fill="var(--card)" stroke="var(--line)" strokeWidth="1.5"/>
+          {/* 胴体・ベース */}
+          <path d="M75,55 Q100,50 125,55 Q135,90 120,150 Q100,160 80,150 Q65,90 75,55 Z" fill="var(--card)" stroke="var(--line)" strokeWidth="1.5"/>
+          {/* 腕ベース */}
+          <path d="M70,58 L52,110 Q48,115 45,160 Q52,160 56,120 L73,75 Z" fill="var(--card)" stroke="var(--line)" strokeWidth="1"/>
+          <path d="M130,58 L148,110 Q152,115 155,160 Q148,160 144,120 L127,75 Z" fill="var(--card)" stroke="var(--line)" strokeWidth="1"/>
+          {/* 脚ベース */}
+          <path d="M80,150 L75,230 L72,290 Q85,290 88,230 L95,155 Z" fill="var(--card)" stroke="var(--line)" strokeWidth="1"/>
+          <path d="M120,150 L125,230 L128,290 Q115,290 112,230 L105,155 Z" fill="var(--card)" stroke="var(--line)" strokeWidth="1"/>
+        </g>
+
+        {/* --- 筋肉パーツレイヤー --- */}
+        {/* 三角筋前部・中部 */}
+        <path d="M68,58 Q60,65 58,80 Q70,82 73,66 Z" className={getMuscleClass('delt_front')} />
+        <path d="M132,58 Q140,65 142,80 Q130,82 127,66 Z" className={getMuscleClass('delt_front')} />
+        <path d="M62,62 Q54,75 56,88 Q64,88 66,74 Z" className={getMuscleClass('delt_lateral')} />
+        <path d="M138,62 Q146,75 144,88 Q136,88 134,74 Z" className={getMuscleClass('delt_lateral')} />
+
+        {/* 大胸筋（上部・中部・下部） */}
+        <path d="M78,60 Q100,62 100,74 Q82,75 75,67 Z" className={getMuscleClass('chest_upper')} />
+        <path d="M122,60 Q100,62 100,74 Q118,75 125,67 Z" className={getMuscleClass('chest_upper')} />
+        <path d="M76,68 Q100,75 100,88 Q80,88 74,78 Z" className={getMuscleClass('chest_mid')} />
+        <path d="M124,68 Q100,75 100,88 Q120,88 126,78 Z" className={getMuscleClass('chest_mid')} />
+
+        {/* 腹直筋 */}
+        <path d="M88,95 L98,95 L98,108 L88,108 Z M102,95 L112,95 L112,108 L102,108 Z" className={getMuscleClass('abs_rectus')} />
+        <path d="M88,111 L98,111 L98,124 L88,124 Z M102,111 L112,111 L112,124 L102,124 Z" className={getMuscleClass('abs_rectus')} />
+        <path d="M89,127 L98,127 L98,138 L89,138 Z M102,127 L111,127 L111,138 L102,138 Z" className={getMuscleClass('abs_rectus')} />
+
+        {/* 上腕二頭筋 */}
+        <path d="M63,82 Q56,100 64,112 Q70,100 68,84 Z" className={getMuscleClass('biceps_long')} />
+        <path d="M137,82 Q144,100 136,112 Q130,100 132,84 Z" className={getMuscleClass('biceps_short')} />
+
+        {/* 広背筋 */}
+        <path d="M72,90 Q65,115 78,135 Q82,110 80,92 Z" className={getMuscleClass('lat')} />
+        <path d="M128,90 Q135,115 122,135 Q118,110 120,92 Z" className={getMuscleClass('lat')} />
+
+        {/* 大腿四頭筋 */}
+        <path d="M78,160 Q68,200 76,230 Q88,230 92,165 Z" className={getMuscleClass('quads')} />
+        <path d="M122,160 Q132,200 124,230 Q112,230 108,165 Z" className={getMuscleClass('quads')} />
+      </svg>
+    </div>
+  );
+};
+</file>
+
+<file path="src/db/queries/bodyMetrics.ts">
+import { db } from '../db';
+import type { BodyMetric } from '../types';
+
+/** 今日の日付文字列 (YYYY-MM-DD) を取得 */
+export function getTodayDateString(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/** 今日の体組成データ（未入力なら null 埋めオブジェクト）を取得 */
+export async function getTodayBodyMetric(): Promise<BodyMetric> {
+  const date = getTodayDateString();
+  const existing = await db.bodyMetrics.get(date);
+  if (existing) return existing;
+
+  return {
+    date,
+    weightKg: null,
+    bodyFatPct: null,
+    ffmKg: null,
+    weightMa7: null,
+    ffmMa30: null,
+    waistCm: null,
+    shoulderCm: null,
+    chestCm: null,
+    armCm: null,
+    thighCm: null,
+    vTaperRatio: null,
+    vTaperMa7: null,
+    sleepHours: null,
+    prsScore: null,
+    isInterpolated: 0,
+  };
+}
+
+/** 直近7日間の体重平均（MA7）を計算する */
+export async function calculateWeightMa7(targetDate: string): Promise<number | null> {
+  const startDate = new Date(targetDate);
+  startDate.setDate(startDate.getDate() - 6);
+  const startStr = startDate.toISOString().slice(0, 10);
+
+  const records = await db.bodyMetrics
+    .where('date')
+    .between(startStr, targetDate, true, true)
+    .toArray();
+
+  const validWeights = records.map((r) => r.weightKg).filter((w): w is number => w !== null);
+  if (validWeights.length === 0) return null;
+
+  const sum = validWeights.reduce((acc, val) => acc + val, 0);
+  return Number((sum / validWeights.length).toFixed(2));
+}
+
+/** 体組成データを保存・更新する */
+export async function saveBodyMetric(input: {
+  weightKg?: number | null;
+  bodyFatPct?: number | null;
+  waistCm?: number | null;
+  shoulderCm?: number | null;
+}): Promise<void> {
+  const date = getTodayDateString();
+  const current = await getTodayBodyMetric();
+
+  const weightKg = input.weightKg !== undefined ? input.weightKg : current.weightKg;
+  const bodyFatPct = input.bodyFatPct !== undefined ? input.bodyFatPct : current.bodyFatPct;
+  const waistCm = input.waistCm !== undefined ? input.waistCm : current.waistCm;
+  const shoulderCm = input.shoulderCm !== undefined ? input.shoulderCm : current.shoulderCm;
+
+  // FFM（除脂肪体重）の計算（体脂肪率がある場合）
+  let ffmKg: number | null = null;
+  if (weightKg !== null && bodyFatPct !== null) {
+    ffmKg = Number((weightKg * (1 - bodyFatPct / 100)).toFixed(2));
+  }
+
+  // V-Taper比率（肩囲 ÷ ウエスト周り）の計算
+  let vTaperRatio: number | null = null;
+  if (shoulderCm !== null && waistCm !== null && waistCm > 0) {
+    vTaperRatio = Number((shoulderCm / waistCm).toFixed(3));
+  }
+
+  await db.bodyMetrics.put({
+    ...current,
+    date,
+    weightKg,
+    bodyFatPct,
+    ffmKg,
+    waistCm,
+    shoulderCm,
+    vTaperRatio,
+  });
+
+  // 7日移動平均を計算して再更新
+  const weightMa7 = await calculateWeightMa7(date);
+  await db.bodyMetrics.update(date, { weightMa7 });
+}
+</file>
+
+<file path="src/db/queries/nutrition.ts">
+import { db } from '../db';
+import type { NutritionLog } from '../types';
+
+/** 今日の日付文字列 (YYYY-MM-DD) を取得 */
+export function getTodayDateString(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/** 読み取り専用：今日の栄養ログを取得する（useLiveQuery用） */
+export async function getTodayNutrition(): Promise<NutritionLog | undefined> {
+  const date = getTodayDateString();
+  return db.nutritionLogs.get(date);
+}
+
+/** 存在しない場合のみ、初期レコードを安全に新規作成する */
+export async function ensureTodayNutrition(): Promise<void> {
+  const date = getTodayDateString();
+  const existing = await db.nutritionLogs.get(date);
+  if (existing) return;
+
+  const initialLog: NutritionLog = {
+    date,
+    estimatedTdee: 2437,
+    targetKcal: 2151,
+    targetP: 151,  // 2.6g / kg FFM
+    targetF: 48,   // カロリーの20%
+    targetC: 279,  // 残り全量
+    proteinCoef: 2.6,
+    isRefeed: 0,
+    isDietBreak: 0,
+    proteinCheckedG: 0,
+  };
+
+  await db.nutritionLogs.put(initialLog);
+}
+
+export async function addFoodProtein(g: number): Promise<void> {
+  const date = getTodayDateString();
+  const log = await db.nutritionLogs.get(date);
+  if (!log) return;
+  const nextP = Number((log.proteinCheckedG + g).toFixed(1));
+  await db.nutritionLogs.update(date, { proteinCheckedG: nextP });
+}
+
+export async function resetTodayProtein(): Promise<void> {
+  const date = getTodayDateString();
+  await db.nutritionLogs.update(date, { proteinCheckedG: 0 });
+}
+</file>
+
+<file path="src/engine/generator.ts">
+import { db } from '../db/db';
+import type { Exercise } from '../db/types';
+
+export interface ExerciseRecommendation {
+  exerciseId: number;
+  recommendedSets: number;
+  recoveryStatus: 'full' | 'moderate' | 'fatigued';
+  reason: string;
+}
+
+/** 直近7日間の特定部位の完了セット数を集計 */
+export async function get7DayVolumeByMuscle(muscleId: string): Promise<number> {
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const startStr = sevenDaysAgo.toISOString().slice(0, 10);
+
+  const recentSets = await db.sets
+    .where('date')
+    .aboveOrEqual(startStr)
+    .toArray();
+
+  if (recentSets.length === 0) return 0;
+
+  const exercises = await db.exercises.toArray();
+  const exerciseMap = new Map(exercises.map((e) => [e.id, e]));
+
+  let count = 0;
+  for (const s of recentSets) {
+    // any型でキャストして型チェックを回避しつつ安全にデータを取得
+    const ex: any = exerciseMap.get(s.exerciseId);
+    if (ex) {
+      const muscles = ex.primaryMuscles || ex.targetMuscles || [];
+      if (muscles.includes(muscleId)) {
+        count++;
+      }
+    }
+  }
+  return count;
+}
+
+/** 種目ごとの推奨セット数と疲労回復アドバイスを判定 */
+export async function getExerciseRecommendation(exercise: Exercise): Promise<ExerciseRecommendation> {
+  // 型エラーを回避し、実際のDBに存在するプロパティ名から部位を取得
+  const exAny: any = exercise;
+  const muscles = exAny.primaryMuscles || exAny.targetMuscles || [];
+  const primaryMuscle = muscles[0];
+
+  const volume7D = primaryMuscle ? await get7DayVolumeByMuscle(primaryMuscle) : 0;
+
+  if (volume7D >= 12) {
+    return {
+      exerciseId: exercise.id,
+      recommendedSets: 2,
+      recoveryStatus: 'fatigued',
+      reason: `直近7日で${volume7D}セット消化（疲労考慮のため上限2セット推奨）`,
+    };
+  } else if (volume7D >= 8) {
+    return {
+      exerciseId: exercise.id,
+      recommendedSets: 3,
+      recoveryStatus: 'moderate',
+      reason: `直近7日で${volume7D}セット消化（良好なボリューム維持：3セット推奨）`,
+    };
+  } else {
+    return {
+      exerciseId: exercise.id,
+      recommendedSets: 3,
+      recoveryStatus: 'full',
+      reason: `回復完了状態（筋肥大ターゲット刺激：3セット推奨）`,
+    };
+  }
+}
+</file>
+
+<file path="src/pages/BodyTracking.tsx">
+import { useEffect, useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../db/db';
+import { getTodayBodyMetric, saveBodyMetric } from '../db/queries/bodyMetrics';
+
+export default function BodyTracking() {
+  const todayData = useLiveQuery(() => getTodayBodyMetric(), []);
+  const historyList = useLiveQuery(() => db.bodyMetrics.orderBy('date').reverse().limit(14).toArray(), []);
+
+  const [weight, setWeight] = useState<string>('');
+  const [fat, setFat] = useState<string>('');
+  const [waist, setWaist] = useState<string>('');
+  const [shoulder, setShoulder] = useState<string>('');
+  const [savedMessage, setSavedMessage] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (todayData) {
+      setWeight(todayData.weightKg !== null ? String(todayData.weightKg) : '');
+      setFat(todayData.bodyFatPct !== null ? String(todayData.bodyFatPct) : '');
+      setWaist(todayData.waistCm !== null ? String(todayData.waistCm) : '');
+      setShoulder(todayData.shoulderCm !== null ? String(todayData.shoulderCm) : '');
+    }
+  }, [todayData]);
+
+  const handleSave = async () => {
+    await saveBodyMetric({
+      weightKg: weight !== '' ? Number(weight) : null,
+      bodyFatPct: fat !== '' ? Number(fat) : null,
+      waistCm: waist !== '' ? Number(waist) : null,
+      shoulderCm: shoulder !== '' ? Number(shoulder) : null,
+    });
+    setSavedMessage(true);
+    setTimeout(() => setSavedMessage(false), 3000);
+  };
+
+  return (
+    <div className="page">
+      <header className="hdr">
+        <h1>体組成・トレンド記録</h1>
+        <p className="sub">毎朝のコンディションを入力してください</p>
+      </header>
+
+      {savedMessage && (
+        <div className="hint converged" style={{ textAlign: 'center' }}>
+          ✓ 本日のコンディションを保存しました！
+        </div>
+      )}
+
+      <section className="card">
+        <h2>本日 ({todayData?.date}) の入力</h2>
+
+        <div className="field">
+          <label>体重 (kg)</label>
+          <input
+            type="number"
+            step="0.1"
+            className="btn"
+            style={{ textAlign: 'left', paddingLeft: '16px', background: 'var(--bg)' }}
+            placeholder="例: 71.2"
+            value={weight}
+            onChange={(e) => setWeight(e.target.value)}
+          />
+        </div>
+
+        <div className="field">
+          <label>体脂肪率 (%)</label>
+          <input
+            type="number"
+            step="0.1"
+            className="btn"
+            style={{ textAlign: 'left', paddingLeft: '16px', background: 'var(--bg)' }}
+            placeholder="例: 18.4"
+            value={fat}
+            onChange={(e) => setFat(e.target.value)}
+          />
+        </div>
+
+        <div className="field">
+          <label>ウエストサイズ (cm)</label>
+          <input
+            type="number"
+            step="0.5"
+            className="btn"
+            style={{ textAlign: 'left', paddingLeft: '16px', background: 'var(--bg)' }}
+            placeholder="例: 80.0"
+            value={waist}
+            onChange={(e) => setWaist(e.target.value)}
+          />
+        </div>
+
+        <div className="field">
+          <label>肩囲 (cm)</label>
+          <input
+            type="number"
+            step="0.5"
+            className="btn"
+            style={{ textAlign: 'left', paddingLeft: '16px', background: 'var(--bg)' }}
+            placeholder="例: 115.0"
+            value={shoulder}
+            onChange={(e) => setShoulder(e.target.value)}
+          />
+        </div>
+
+        <button className="btn primary big" onClick={handleSave}>
+          記録を保存
+        </button>
+      </section>
+
+      <section className="card">
+        <h2>分析トレンド指標</h2>
+        <table className="kv">
+          <tbody>
+            <tr>
+              <th>体重 7日移動平均 (MA7)</th>
+              <td className="mono good">
+                {todayData?.weightMa7 ? `${todayData.weightMa7} kg` : '7日間のデータ蓄積中'}
+              </td>
+            </tr>
+            <tr>
+              <th>除脂肪体重 (FFM)</th>
+              <td className="mono">
+                {todayData?.ffmKg ? `${todayData.ffmKg} kg` : '未計算'}
+              </td>
+            </tr>
+            <tr>
+              <th>V-Taper比率 (肩囲 ÷ ウエスト)</th>
+              <td className="mono good">
+                {todayData?.vTaperRatio ? `${todayData.vTaperRatio}` : '未計算'}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section className="card">
+        <h2>直近14日間の履歴</h2>
+        <div className="list">
+          {historyList?.map((h) => (
+            <div key={h.date} className="row" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
+              <span className="mono">{h.date.slice(5)}</span>
+              <span className="mono">{h.weightKg ? `${h.weightKg}kg` : '-'}</span>
+              <span className="mono sub">{h.vTaperRatio ? `V:${h.vTaperRatio}` : '-'}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+</file>
+
+<file path="src/pages/hypertrophy-navigator.code-workspace">
+{
+	"folders": [
+		{
+			"path": "../.."
+		}
+	],
+	"settings": {}
+}
+</file>
+
+<file path="src/pages/Nutrition.tsx">
+import { useEffect } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../db/db';
+import { getTodayNutrition, ensureTodayNutrition, addFoodProtein, resetTodayProtein } from '../db/queries/nutrition';
+
+export default function Nutrition() {
+  // 画面が開いた時に初期データが存在するか確認・作成する
+  useEffect(() => {
+    ensureTodayNutrition();
+  }, []);
+
+  // 読み取り専用クエリで安全に監視する
+  const nutrition = useLiveQuery(() => getTodayNutrition(), []);
+  const foods = useLiveQuery(() => db.foods.toArray(), []);
+
+  if (!nutrition) {
+    return <div className="page"><p>読み込み中…</p></div>;
+  }
+
+  const pPct = Math.min(100, Math.round((nutrition.proteinCheckedG / nutrition.targetP) * 100));
+
+  return (
+    <div className="page">
+      <header className="hdr">
+        <h1>本日の栄養管理</h1>
+        <p className="sub">{nutrition.date} ・ 減量モード (−286 kcal)</p>
+      </header>
+
+      <section className="card">
+        <h2>目標マクロ栄養素 (PFC)</h2>
+        <table className="kv">
+          <tbody>
+            <tr><th>目標カロリー</th><td>{nutrition.targetKcal} kcal</td></tr>
+            <tr><th>タンパク質 (P)</th><td>{nutrition.targetP} g ({nutrition.proteinCoef}g/kg FFM)</td></tr>
+            <tr><th>脂質 (F)</th><td>{nutrition.targetF} g</td></tr>
+            <tr><th>炭水化物 (C)</th><td>{nutrition.targetC} g</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section className="card">
+        <h2>タンパク質 (P) 摂取達成度</h2>
+        <div className="progress" style={{ height: '12px', margin: '12px 0' }}>
+          <div className="bar" style={{ width: `${pPct}%`, backgroundColor: pPct >= 100 ? 'var(--good)' : 'var(--accent)' }} />
+        </div>
+        <p className="mono" style={{ fontSize: '16px', textAlign: 'center' }}>
+          {nutrition.proteinCheckedG} / {nutrition.targetP} g ({pPct}%)
+        </p>
+        <button className="btn" style={{ marginTop: '12px', minHeight: '40px', fontSize: '13px' }} onClick={() => resetTodayProtein()}>
+          本日の記録をリセット
+        </button>
+      </section>
+
+      <section className="card">
+        <h2>クイック食材タップ記録</h2>
+        <p className="sub">食べた食材をタップするとタンパク質が加算されます</p>
+        <div className="list">
+          {foods?.map((f) => (
+            <button key={f.id} className="row" onClick={() => addFoodProtein(f.p)}>
+              <div>
+                <span className="name">{f.name}</span>
+                <span className="sub" style={{ display: 'block' }}>{f.unitLabel} ({f.kcal} kcal)</span>
+              </div>
+              <span className="mono good">+{f.p}g P</span>
+            </button>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+</file>
+
+<file path="repomix実行.bat">
+@echo off
+cd /d "%~dp0"
+npx repomix
+pause
+</file>
+
+<file path="ローカル起動.bat">
+@echo off
+cd /d "%~dp0"
+npm run dev
+pause
+</file>
+
+<file path="ローカル起動前の準備.bat">
+@echo off
+cd /d "%~dp0"
+npm run dev -- --host
+pause
+</file>
+
+<file path="public/favicon.svg">
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="46" fill="none" viewBox="0 0 48 46"><path fill="#863bff" d="M25.946 44.938c-.664.845-2.021.375-2.021-.698V33.937a2.26 2.26 0 0 0-2.262-2.262H10.287c-.92 0-1.456-1.04-.92-1.788l7.48-10.471c1.07-1.497 0-3.578-1.842-3.578H1.237c-.92 0-1.456-1.04-.92-1.788L10.013.474c.214-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.471c-1.07 1.498 0 3.579 1.842 3.579h11.377c.943 0 1.473 1.088.89 1.83L25.947 44.94z" style="fill:#863bff;fill:color(display-p3 .5252 .23 1);fill-opacity:1"/><mask id="a" width="48" height="46" x="0" y="0" maskUnits="userSpaceOnUse" style="mask-type:alpha"><path fill="#000" d="M25.842 44.938c-.664.844-2.021.375-2.021-.698V33.937a2.26 2.26 0 0 0-2.262-2.262H10.183c-.92 0-1.456-1.04-.92-1.788l7.48-10.471c1.07-1.498 0-3.579-1.842-3.579H1.133c-.92 0-1.456-1.04-.92-1.787L9.91.473c.214-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.471c-1.07 1.498 0 3.578 1.842 3.578h11.377c.943 0 1.473 1.088.89 1.832L25.843 44.94z" style="fill:#000;fill-opacity:1"/></mask><g mask="url(#a)"><g filter="url(#b)"><ellipse cx="5.508" cy="14.704" fill="#ede6ff" rx="5.508" ry="14.704" style="fill:#ede6ff;fill:color(display-p3 .9275 .9033 1);fill-opacity:1" transform="matrix(.00324 1 1 -.00324 -4.47 31.516)"/></g><g filter="url(#c)"><ellipse cx="10.399" cy="29.851" fill="#ede6ff" rx="10.399" ry="29.851" style="fill:#ede6ff;fill:color(display-p3 .9275 .9033 1);fill-opacity:1" transform="matrix(.00324 1 1 -.00324 -39.328 7.883)"/></g><g filter="url(#d)"><ellipse cx="5.508" cy="30.487" fill="#7e14ff" rx="5.508" ry="30.487" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.814 -25.913 -14.639)scale(1 -1)"/></g><g filter="url(#e)"><ellipse cx="5.508" cy="30.599" fill="#7e14ff" rx="5.508" ry="30.599" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.814 -32.644 -3.334)scale(1 -1)"/></g><g filter="url(#f)"><ellipse cx="5.508" cy="30.599" fill="#7e14ff" rx="5.508" ry="30.599" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="matrix(.00324 1 1 -.00324 -34.34 30.47)"/></g><g filter="url(#g)"><ellipse cx="14.072" cy="22.078" fill="#ede6ff" rx="14.072" ry="22.078" style="fill:#ede6ff;fill:color(display-p3 .9275 .9033 1);fill-opacity:1" transform="rotate(93.35 24.506 48.493)scale(-1 1)"/></g><g filter="url(#h)"><ellipse cx="3.47" cy="21.501" fill="#7e14ff" rx="3.47" ry="21.501" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.009 28.708 47.59)scale(-1 1)"/></g><g filter="url(#i)"><ellipse cx="3.47" cy="21.501" fill="#7e14ff" rx="3.47" ry="21.501" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.009 28.708 47.59)scale(-1 1)"/></g><g filter="url(#j)"><ellipse cx=".387" cy="8.972" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(39.51 .387 8.972)"/></g><g filter="url(#k)"><ellipse cx="47.523" cy="-6.092" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 47.523 -6.092)"/></g><g filter="url(#l)"><ellipse cx="41.412" cy="6.333" fill="#47bfff" rx="5.971" ry="9.665" style="fill:#47bfff;fill:color(display-p3 .2799 .748 1);fill-opacity:1" transform="rotate(37.892 41.412 6.333)"/></g><g filter="url(#m)"><ellipse cx="-1.879" cy="38.332" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 -1.88 38.332)"/></g><g filter="url(#n)"><ellipse cx="-1.879" cy="38.332" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 -1.88 38.332)"/></g><g filter="url(#o)"><ellipse cx="35.651" cy="29.907" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 35.651 29.907)"/></g><g filter="url(#p)"><ellipse cx="38.418" cy="32.4" fill="#47bfff" rx="5.971" ry="15.297" style="fill:#47bfff;fill:color(display-p3 .2799 .748 1);fill-opacity:1" transform="rotate(37.892 38.418 32.4)"/></g></g><defs><filter id="b" width="60.045" height="41.654" x="-19.77" y="16.149" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="7.659"/></filter><filter id="c" width="90.34" height="51.437" x="-54.613" y="-7.533" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="7.659"/></filter><filter id="d" width="79.355" height="29.4" x="-49.64" y="2.03" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="e" width="79.579" height="29.4" x="-45.045" y="20.029" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="f" width="79.579" height="29.4" x="-43.513" y="21.178" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="g" width="74.749" height="58.852" x="15.756" y="-17.901" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="7.659"/></filter><filter id="h" width="61.377" height="25.362" x="23.548" y="2.284" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="i" width="61.377" height="25.362" x="23.548" y="2.284" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="j" width="56.045" height="63.649" x="-27.636" y="-22.853" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="k" width="54.814" height="64.646" x="20.116" y="-38.415" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="l" width="33.541" height="35.313" x="24.641" y="-11.323" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="m" width="54.814" height="64.646" x="-29.286" y="6.009" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="n" width="54.814" height="64.646" x="-29.286" y="6.009" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="o" width="54.814" height="64.646" x="8.244" y="-2.416" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="p" width="39.409" height="43.623" x="18.713" y="10.588" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter></defs></svg>
+</file>
+
+<file path="public/icons.svg">
+<svg xmlns="http://www.w3.org/2000/svg">
+  <symbol id="bluesky-icon" viewBox="0 0 16 17">
+    <g clip-path="url(#bluesky-clip)"><path fill="#08060d" d="M7.75 7.735c-.693-1.348-2.58-3.86-4.334-5.097-1.68-1.187-2.32-.981-2.74-.79C.188 2.065.1 2.812.1 3.251s.241 3.602.398 4.13c.52 1.744 2.367 2.333 4.07 2.145-2.495.37-4.71 1.278-1.805 4.512 3.196 3.309 4.38-.71 4.987-2.746.608 2.036 1.307 5.91 4.93 2.746 2.72-2.746.747-4.143-1.747-4.512 1.702.189 3.55-.4 4.07-2.145.156-.528.397-3.691.397-4.13s-.088-1.186-.575-1.406c-.42-.19-1.06-.395-2.741.79-1.755 1.24-3.64 3.752-4.334 5.099"/></g>
+    <defs><clipPath id="bluesky-clip"><path fill="#fff" d="M.1.85h15.3v15.3H.1z"/></clipPath></defs>
+  </symbol>
+  <symbol id="discord-icon" viewBox="0 0 20 19">
+    <path fill="#08060d" d="M16.224 3.768a14.5 14.5 0 0 0-3.67-1.153c-.158.286-.343.67-.47.976a13.5 13.5 0 0 0-4.067 0c-.128-.306-.317-.69-.476-.976A14.4 14.4 0 0 0 3.868 3.77C1.546 7.28.916 10.703 1.231 14.077a14.7 14.7 0 0 0 4.5 2.306q.545-.748.965-1.587a9.5 9.5 0 0 1-1.518-.74q.191-.14.372-.293c2.927 1.369 6.107 1.369 8.999 0q.183.152.372.294-.723.437-1.52.74.418.838.963 1.588a14.6 14.6 0 0 0 4.504-2.308c.37-3.911-.63-7.302-2.644-10.309m-9.13 8.234c-.878 0-1.599-.82-1.599-1.82 0-.998.705-1.82 1.6-1.82.894 0 1.614.82 1.599 1.82.001 1-.705 1.82-1.6 1.82m5.91 0c-.878 0-1.599-.82-1.599-1.82 0-.998.705-1.82 1.6-1.82.893 0 1.614.82 1.599 1.82 0 1-.706 1.82-1.6 1.82"/>
+  </symbol>
+  <symbol id="documentation-icon" viewBox="0 0 21 20">
+    <path fill="none" stroke="#aa3bff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.35" d="m15.5 13.333 1.533 1.322c.645.555.967.833.967 1.178s-.322.623-.967 1.179L15.5 18.333m-3.333-5-1.534 1.322c-.644.555-.966.833-.966 1.178s.322.623.966 1.179l1.534 1.321"/>
+    <path fill="none" stroke="#aa3bff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.35" d="M17.167 10.836v-4.32c0-1.41 0-2.117-.224-2.68-.359-.906-1.118-1.621-2.08-1.96-.599-.21-1.349-.21-2.848-.21-2.623 0-3.935 0-4.983.369-1.684.591-3.013 1.842-3.641 3.428C3 6.449 3 7.684 3 10.154v2.122c0 2.558 0 3.838.706 4.726q.306.383.713.671c.76.536 1.79.64 3.581.66"/>
+    <path fill="none" stroke="#aa3bff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.35" d="M3 10a2.78 2.78 0 0 1 2.778-2.778c.555 0 1.209.097 1.748-.047.48-.129.854-.503.982-.982.145-.54.048-1.194.048-1.749a2.78 2.78 0 0 1 2.777-2.777"/>
+  </symbol>
+  <symbol id="github-icon" viewBox="0 0 19 19">
+    <path fill="#08060d" fill-rule="evenodd" d="M9.356 1.85C5.05 1.85 1.57 5.356 1.57 9.694a7.84 7.84 0 0 0 5.324 7.44c.387.079.528-.168.528-.376 0-.182-.013-.805-.013-1.454-2.165.467-2.616-.935-2.616-.935-.349-.91-.864-1.143-.864-1.143-.71-.48.051-.48.051-.48.787.051 1.2.805 1.2.805.695 1.194 1.817.857 2.268.649.064-.507.27-.857.49-1.052-1.728-.182-3.545-.857-3.545-3.87 0-.857.31-1.558.8-2.104-.078-.195-.349-1 .077-2.078 0 0 .657-.208 2.14.805a7.5 7.5 0 0 1 1.946-.26c.657 0 1.328.092 1.946.26 1.483-1.013 2.14-.805 2.14-.805.426 1.078.155 1.883.078 2.078.502.546.799 1.247.799 2.104 0 3.013-1.818 3.675-3.558 3.87.284.247.528.714.528 1.454 0 1.052-.012 1.896-.012 2.156 0 .208.142.455.528.377a7.84 7.84 0 0 0 5.324-7.441c.013-4.338-3.48-7.844-7.773-7.844" clip-rule="evenodd"/>
+  </symbol>
+  <symbol id="social-icon" viewBox="0 0 20 20">
+    <path fill="none" stroke="#aa3bff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.35" d="M12.5 6.667a4.167 4.167 0 1 0-8.334 0 4.167 4.167 0 0 0 8.334 0"/>
+    <path fill="none" stroke="#aa3bff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.35" d="M2.5 16.667a5.833 5.833 0 0 1 8.75-5.053m3.837.474.513 1.035c.07.144.257.282.414.309l.93.155c.596.1.736.536.307.965l-.723.73a.64.64 0 0 0-.152.531l.207.903c.164.715-.213.991-.84.618l-.872-.52a.63.63 0 0 0-.577 0l-.872.52c-.624.373-1.003.094-.84-.618l.207-.903a.64.64 0 0 0-.152-.532l-.723-.729c-.426-.43-.289-.864.306-.964l.93-.156a.64.64 0 0 0 .412-.31l.513-1.034c.28-.562.735-.562 1.012 0"/>
+  </symbol>
+  <symbol id="x-icon" viewBox="0 0 19 19">
+    <path fill="#08060d" fill-rule="evenodd" d="M1.893 1.98c.052.072 1.245 1.769 2.653 3.77l2.892 4.114c.183.261.333.48.333.486s-.068.089-.152.183l-.522.593-.765.867-3.597 4.087c-.375.426-.734.834-.798.905a1 1 0 0 0-.118.148c0 .01.236.017.664.017h.663l.729-.83c.4-.457.796-.906.879-.999a692 692 0 0 0 1.794-2.038c.034-.037.301-.34.594-.675l.551-.624.345-.392a7 7 0 0 1 .34-.374c.006 0 .93 1.306 2.052 2.903l2.084 2.965.045.063h2.275c1.87 0 2.273-.003 2.266-.021-.008-.02-1.098-1.572-3.894-5.547-2.013-2.862-2.28-3.246-2.273-3.266.008-.019.282-.332 2.085-2.38l2-2.274 1.567-1.782c.022-.028-.016-.03-.65-.03h-.674l-.3.342a871 871 0 0 1-1.782 2.025c-.067.075-.405.458-.75.852a100 100 0 0 1-.803.91c-.148.172-.299.344-.99 1.127-.304.343-.32.358-.345.327-.015-.019-.904-1.282-1.976-2.808L6.365 1.85H1.8zm1.782.91 8.078 11.294c.772 1.08 1.413 1.973 1.425 1.984.016.017.241.02 1.05.017l1.03-.004-2.694-3.766L7.796 5.75 5.722 2.852l-1.039-.004-1.039-.004z" clip-rule="evenodd"/>
+  </symbol>
+</svg>
+</file>
+
+<file path="src/assets/react.svg">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="iconify iconify--logos" width="35.93" height="32" preserveAspectRatio="xMidYMid meet" viewBox="0 0 256 228"><path fill="#00D8FF" d="M210.483 73.824a171.49 171.49 0 0 0-8.24-2.597c.465-1.9.893-3.777 1.273-5.621c6.238-30.281 2.16-54.676-11.769-62.708c-13.355-7.7-35.196.329-57.254 19.526a171.23 171.23 0 0 0-6.375 5.848a155.866 155.866 0 0 0-4.241-3.917C100.759 3.829 77.587-4.822 63.673 3.233C50.33 10.957 46.379 33.89 51.995 62.588a170.974 170.974 0 0 0 1.892 8.48c-3.28.932-6.445 1.924-9.474 2.98C17.309 83.498 0 98.307 0 113.668c0 15.865 18.582 31.778 46.812 41.427a145.52 145.52 0 0 0 6.921 2.165a167.467 167.467 0 0 0-2.01 9.138c-5.354 28.2-1.173 50.591 12.134 58.266c13.744 7.926 36.812-.22 59.273-19.855a145.567 145.567 0 0 0 5.342-4.923a168.064 168.064 0 0 0 6.92 6.314c21.758 18.722 43.246 26.282 56.54 18.586c13.731-7.949 18.194-32.003 12.4-61.268a145.016 145.016 0 0 0-1.535-6.842c1.62-.48 3.21-.974 4.76-1.488c29.348-9.723 48.443-25.443 48.443-41.52c0-15.417-17.868-30.326-45.517-39.844Zm-6.365 70.984c-1.4.463-2.836.91-4.3 1.345c-3.24-10.257-7.612-21.163-12.963-32.432c5.106-11 9.31-21.767 12.459-31.957c2.619.758 5.16 1.557 7.61 2.4c23.69 8.156 38.14 20.213 38.14 29.504c0 9.896-15.606 22.743-40.946 31.14Zm-10.514 20.834c2.562 12.94 2.927 24.64 1.23 33.787c-1.524 8.219-4.59 13.698-8.382 15.893c-8.067 4.67-25.32-1.4-43.927-17.412a156.726 156.726 0 0 1-6.437-5.87c7.214-7.889 14.423-17.06 21.459-27.246c12.376-1.098 24.068-2.894 34.671-5.345a134.17 134.17 0 0 1 1.386 6.193ZM87.276 214.515c-7.882 2.783-14.16 2.863-17.955.675c-8.075-4.657-11.432-22.636-6.853-46.752a156.923 156.923 0 0 1 1.869-8.499c10.486 2.32 22.093 3.988 34.498 4.994c7.084 9.967 14.501 19.128 21.976 27.15a134.668 134.668 0 0 1-4.877 4.492c-9.933 8.682-19.886 14.842-28.658 17.94ZM50.35 144.747c-12.483-4.267-22.792-9.812-29.858-15.863c-6.35-5.437-9.555-10.836-9.555-15.216c0-9.322 13.897-21.212 37.076-29.293c2.813-.98 5.757-1.905 8.812-2.773c3.204 10.42 7.406 21.315 12.477 32.332c-5.137 11.18-9.399 22.249-12.634 32.792a134.718 134.718 0 0 1-6.318-1.979Zm12.378-84.26c-4.811-24.587-1.616-43.134 6.425-47.789c8.564-4.958 27.502 2.111 47.463 19.835a144.318 144.318 0 0 1 3.841 3.545c-7.438 7.987-14.787 17.08-21.808 26.988c-12.04 1.116-23.565 2.908-34.161 5.309a160.342 160.342 0 0 1-1.76-7.887Zm110.427 27.268a347.8 347.8 0 0 0-7.785-12.803c8.168 1.033 15.994 2.404 23.343 4.08c-2.206 7.072-4.956 14.465-8.193 22.045a381.151 381.151 0 0 0-7.365-13.322Zm-45.032-43.861c5.044 5.465 10.096 11.566 15.065 18.186a322.04 322.04 0 0 0-30.257-.006c4.974-6.559 10.069-12.652 15.192-18.18ZM82.802 87.83a323.167 323.167 0 0 0-7.227 13.238c-3.184-7.553-5.909-14.98-8.134-22.152c7.304-1.634 15.093-2.97 23.209-3.984a321.524 321.524 0 0 0-7.848 12.897Zm8.081 65.352c-8.385-.936-16.291-2.203-23.593-3.793c2.26-7.3 5.045-14.885 8.298-22.6a321.187 321.187 0 0 0 7.257 13.246c2.594 4.48 5.28 8.868 8.038 13.147Zm37.542 31.03c-5.184-5.592-10.354-11.779-15.403-18.433c4.902.192 9.899.29 14.978.29c5.218 0 10.376-.117 15.453-.343c-4.985 6.774-10.018 12.97-15.028 18.486Zm52.198-57.817c3.422 7.8 6.306 15.345 8.596 22.52c-7.422 1.694-15.436 3.058-23.88 4.071a382.417 382.417 0 0 0 7.859-13.026a347.403 347.403 0 0 0 7.425-13.565Zm-16.898 8.101a358.557 358.557 0 0 1-12.281 19.815a329.4 329.4 0 0 1-23.444.823c-7.967 0-15.716-.248-23.178-.732a310.202 310.202 0 0 1-12.513-19.846h.001a307.41 307.41 0 0 1-10.923-20.627a310.278 310.278 0 0 1 10.89-20.637l-.001.001a307.318 307.318 0 0 1 12.413-19.761c7.613-.576 15.42-.876 23.31-.876H128c7.926 0 15.743.303 23.354.883a329.357 329.357 0 0 1 12.335 19.695a358.489 358.489 0 0 1 11.036 20.54a329.472 329.472 0 0 1-11 20.722Zm22.56-122.124c8.572 4.944 11.906 24.881 6.52 51.026c-.344 1.668-.73 3.367-1.15 5.09c-10.622-2.452-22.155-4.275-34.23-5.408c-7.034-10.017-14.323-19.124-21.64-27.008a160.789 160.789 0 0 1 5.888-5.4c18.9-16.447 36.564-22.941 44.612-18.3ZM128 90.808c12.625 0 22.86 10.235 22.86 22.86s-10.235 22.86-22.86 22.86s-22.86-10.235-22.86-22.86s10.235-22.86 22.86-22.86Z"></path></svg>
+</file>
+
+<file path="src/assets/vite.svg">
+<svg xmlns="http://www.w3.org/2000/svg" width="77" height="47" fill="none" aria-labelledby="vite-logo-title" viewBox="0 0 77 47"><title id="vite-logo-title">Vite</title><style>.parenthesis{fill:#000}@media (prefers-color-scheme:dark){.parenthesis{fill:#fff}}</style><path fill="#9135ff" d="M40.151 45.71c-.663.844-2.02.374-2.02-.699V34.708a2.26 2.26 0 0 0-2.262-2.262H24.493c-.92 0-1.457-1.04-.92-1.788l7.479-10.471c1.07-1.498 0-3.578-1.842-3.578H15.443c-.92 0-1.456-1.04-.92-1.788l9.696-13.576c.213-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.472c-1.07 1.497 0 3.578 1.842 3.578h11.376c.944 0 1.474 1.087.89 1.83L40.153 45.712z"/><mask id="a" width="48" height="47" x="14" y="0" maskUnits="userSpaceOnUse" style="mask-type:alpha"><path fill="#000" d="M40.047 45.71c-.663.843-2.02.374-2.02-.699V34.708a2.26 2.26 0 0 0-2.262-2.262H24.389c-.92 0-1.457-1.04-.92-1.788l7.479-10.472c1.07-1.497 0-3.578-1.842-3.578H15.34c-.92 0-1.456-1.04-.92-1.788l9.696-13.575c.213-.297.556-.474.92-.474H53.93c.92 0 1.456 1.04.92 1.788L47.37 13.03c-1.07 1.498 0 3.578 1.842 3.578h11.376c.944 0 1.474 1.088.89 1.831L40.049 45.712z"/></mask><g mask="url(#a)"><g filter="url(#b)"><ellipse cx="5.508" cy="14.704" fill="#eee6ff" rx="5.508" ry="14.704" transform="rotate(269.814 20.96 11.29)scale(-1 1)"/></g><g filter="url(#c)"><ellipse cx="10.399" cy="29.851" fill="#eee6ff" rx="10.399" ry="29.851" transform="rotate(89.814 -16.902 -8.275)scale(1 -1)"/></g><g filter="url(#d)"><ellipse cx="5.508" cy="30.487" fill="#8900ff" rx="5.508" ry="30.487" transform="rotate(89.814 -19.197 -7.127)scale(1 -1)"/></g><g filter="url(#e)"><ellipse cx="5.508" cy="30.599" fill="#8900ff" rx="5.508" ry="30.599" transform="rotate(89.814 -25.928 4.177)scale(1 -1)"/></g><g filter="url(#f)"><ellipse cx="5.508" cy="30.599" fill="#8900ff" rx="5.508" ry="30.599" transform="rotate(89.814 -25.738 5.52)scale(1 -1)"/></g><g filter="url(#g)"><ellipse cx="14.072" cy="22.078" fill="#eee6ff" rx="14.072" ry="22.078" transform="rotate(93.35 31.245 55.578)scale(-1 1)"/></g><g filter="url(#h)"><ellipse cx="3.47" cy="21.501" fill="#8900ff" rx="3.47" ry="21.501" transform="rotate(89.009 35.419 55.202)scale(-1 1)"/></g><g filter="url(#i)"><ellipse cx="3.47" cy="21.501" fill="#8900ff" rx="3.47" ry="21.501" transform="rotate(89.009 35.419 55.202)scale(-1 1)"/></g><g filter="url(#j)"><ellipse cx="14.592" cy="9.743" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(39.51 14.592 9.743)"/></g><g filter="url(#k)"><ellipse cx="61.728" cy="-5.321" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(37.892 61.728 -5.32)"/></g><g filter="url(#l)"><ellipse cx="55.618" cy="7.104" fill="#00c2ff" rx="5.971" ry="9.665" transform="rotate(37.892 55.618 7.104)"/></g><g filter="url(#m)"><ellipse cx="12.326" cy="39.103" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(37.892 12.326 39.103)"/></g><g filter="url(#n)"><ellipse cx="12.326" cy="39.103" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(37.892 12.326 39.103)"/></g><g filter="url(#o)"><ellipse cx="49.857" cy="30.678" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(37.892 49.857 30.678)"/></g><g filter="url(#p)"><ellipse cx="52.623" cy="33.171" fill="#00c2ff" rx="5.971" ry="15.297" transform="rotate(37.892 52.623 33.17)"/></g></g><path d="M6.919 0c-9.198 13.166-9.252 33.575 0 46.789h6.215c-9.25-13.214-9.196-33.623 0-46.789zm62.424 0h-6.215c9.198 13.166 9.252 33.575 0 46.789h6.215c9.25-13.214 9.196-33.623 0-46.789" class="parenthesis"/><defs><filter id="b" width="60.045" height="41.654" x="-5.564" y="16.92" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="7.659"/></filter><filter id="c" width="90.34" height="51.437" x="-40.407" y="-6.762" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="7.659"/></filter><filter id="d" width="79.355" height="29.4" x="-35.435" y="2.801" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="e" width="79.579" height="29.4" x="-30.84" y="20.8" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="f" width="79.579" height="29.4" x="-29.307" y="21.949" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="g" width="74.749" height="58.852" x="29.961" y="-17.13" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="7.659"/></filter><filter id="h" width="61.377" height="25.362" x="37.754" y="3.055" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="i" width="61.377" height="25.362" x="37.754" y="3.055" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="j" width="56.045" height="63.649" x="-13.43" y="-22.082" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="k" width="54.814" height="64.646" x="34.321" y="-37.644" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="l" width="33.541" height="35.313" x="38.847" y="-10.552" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="m" width="54.814" height="64.646" x="-15.081" y="6.78" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="n" width="54.814" height="64.646" x="-15.081" y="6.78" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="o" width="54.814" height="64.646" x="22.45" y="-1.645" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="p" width="39.409" height="43.623" x="32.919" y="11.36" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter></defs></svg>
+</file>
+
+<file path="src/db/queries/calibration.ts">
+import { db } from '../db';
+import type { SplitType, Exercise, ExerciseBaseline } from '../types';
+import { finalizeBaseline } from '../../engine/calibration';
+
+export const CALIBRATION_PLAN: Record<SplitType, number[]> = {
+  upper_A: [1, 12, 14, 6, 8, 9, 11, 25],
+  lower: [31, 32, 29, 33, 34, 27],
+  upper_B: [2, 4, 18, 21, 23, 24, 10, 26],
+};
+
+export const CALIBRATION_TOTAL = Object.values(CALIBRATION_PLAN)
+  .reduce((s, arr) => s + arr.length, 0);
+
+export async function getCalibrationExercises(split: SplitType): Promise<Exercise[]> {
+  const ids = CALIBRATION_PLAN[split];
+  const list = await db.exercises.bulkGet(ids);
+  return list.filter((e): e is Exercise => !!e && e.isAvailable === 1);
+}
+
+export async function getBaselineMap(): Promise<Map<number, ExerciseBaseline>> {
+  const all = await db.baselines.toArray();
+  return new Map(all.map((b) => [b.exerciseId, b]));
+}
+
+export async function getOrCreateCalibrationSession(split: SplitType): Promise<number> {
+  const date = new Date().toISOString().slice(0, 10);
+  const existing = await db.sessions
+    .where('date').equals(date)
+    .filter((s) => s.splitType === split && s.mesocycleWeek === 0)
+    .first();
+  if (existing?.id) return existing.id;
+
+  return db.sessions.add({
+    date,
+    startedAt: Date.now(),
+    splitType: split,
+    prsScore: null,
+    sleepHours: null,
+    mesocycleWeek: 0,
+    isDeload: 0,
+    note: 'Week 0 calibration',
+  });
+}
+
+export async function saveCalibrationResult(params: {
+  sessionId: number;
+  exercise: Exercise;
+  attempts: { setNo: number; weight: number; reps: number; rir: number }[];
+  suggestions: number[];
+  baseline: ReturnType<typeof finalizeBaseline>;
+}) {
+  const { sessionId, exercise, attempts, suggestions, baseline } = params;
+  const date = new Date().toISOString().slice(0, 10);
+
+  await db.transaction('rw', [db.sets, db.baselines, db.events, db.settings], async () => {
+    await db.sets.bulkAdd(
+      attempts.map((a, i) => ({
+        sessionId,
+        exerciseId: exercise.id,
+        date,
+        setOrder: a.setNo,
+        targetWeight: suggestions[i] ?? a.weight,
+        actualWeight: a.weight,
+        targetReps: baseline.reps,
+        actualReps: a.reps,
+        targetRir: 2,
+        actualRir: a.rir,
+        volumeLoad: Number((a.weight * a.reps).toFixed(1)),
+        est1rm: Number(
+          (a.weight * (1 + (a.reps + (a.rir >= 4 ? 5 : a.rir)) / 30)).toFixed(1)
+        ),
+        isWarmup: 0 as const,
+        mode: 'calibration' as const,
+      }))
+    );
+
+    await db.baselines.put({
+      exerciseId: exercise.id,
+      weightKg: baseline.weightKg,
+      reps: baseline.reps,
+      rir: baseline.rir,
+      est1rm: baseline.est1rm,
+      calibratedAt: baseline.calibratedAt,
+    });
+
+    await db.events.add({
+      date,
+      createdAt: Date.now(),
+      eventType: 'calibration_done',
+      triggerReason: `${exercise.name} baseline確定`,
+      payload: { ...baseline },
+      acknowledged: 0,
+    });
+  });
+
+  const done = await db.baselines.count();
+  if (done >= CALIBRATION_TOTAL) {
+    await db.settings.bulkPut([
+      { key: 'calibrationDone', value: true },
+      { key: 'programStartDate', value: date },
+      { key: 'currentMesocycleWeek', value: 1 },
+    ]);
+  }
+}
+</file>
+
+<file path="src/db/queries/weeklyCredit.ts">
+import { db } from '../db';
+import type { MuscleCode } from '../types';
+
+export interface CreditSummary {
+  towardMin: Record<string, number>;
+  towardMax: Record<string, number>;
+}
+
+export async function getRollingWeeklyCredit(
+  baseDate: Date = new Date()
+): Promise<CreditSummary> {
+  const end = toISODate(baseDate);
+  const startDate = new Date(baseDate);
+  startDate.setDate(startDate.getDate() - 6);
+  const start = toISODate(startDate);
+
+  const sets = await db.sets
+    .where('date').between(start, end, true, true)
+    .filter((s) => s.isWarmup === 0)
+    .toArray();
+
+  if (sets.length === 0) return { towardMin: {}, towardMax: {} };
+
+  const exerciseIds = [...new Set(sets.map((s) => s.exerciseId))];
+  const credits = await db.muscleCredits
+    .where('exerciseId').anyOf(exerciseIds)
+    .toArray();
+
+  const byExercise = new Map<number, { muscle: MuscleCode; credit: number }[]>();
+  for (const c of credits) {
+    const arr = byExercise.get(c.exerciseId) ?? [];
+    arr.push({ muscle: c.muscle, credit: c.credit });
+    byExercise.set(c.exerciseId, arr);
+  }
+
+  const towardMin: Record<string, number> = {};
+  const towardMax: Record<string, number> = {};
+
+  for (const s of sets) {
+    for (const { muscle, credit } of byExercise.get(s.exerciseId) ?? []) {
+      towardMax[muscle] = round1((towardMax[muscle] ?? 0) + credit);
+      if (credit >= 0.5) {
+        towardMin[muscle] = round1((towardMin[muscle] ?? 0) + credit);
+      }
+    }
+  }
+
+  return { towardMin, towardMax };
+}
+
+function toISODate(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+function round1(n: number): number {
+  return Math.round(n * 10) / 10;
+}
+</file>
+
+<file path="src/db/seed/exercises.ts">
+import type { Exercise } from '../types';
+
+export const EXERCISES: Exercise[] = [
+  { id: 1,  name: 'ダンベルラテラルレイズ',            equipment: 'dumbbell',   type: 'isolation', increment: 1.0,  restSec: 75,  silhouetteTag: 'priority',  repRange: [10, 15], isAvailable: 1, note: '最優先。1kg刻みで微増可' },
+  { id: 2,  name: 'ケーブルラテラルレイズ(DAP)',        equipment: 'cable',      type: 'isolation', increment: 2.5,  restSec: 75,  silhouetteTag: 'priority',  repRange: [10, 15], isAvailable: 1, note: '張力一定。片側ずつ' },
+  { id: 3,  name: 'マシンラテラルレイズ(デルツ)',        equipment: 'machine',    type: 'isolation', increment: 5.0,  restSec: 75,  silhouetteTag: 'priority',  repRange: [10, 15], isAvailable: 1, note: '追い込み用' },
+  { id: 4,  name: 'ショルダープレス(マシン)',           equipment: 'machine',    type: 'compound',  increment: 5.0,  restSec: 150, silhouetteTag: 'neutral',   repRange: [6, 10],  isAvailable: 1, note: '前部主働' },
+  { id: 5,  name: 'ダンベルショルダープレス',           equipment: 'dumbbell',   type: 'compound',  increment: 2.5,  restSec: 150, silhouetteTag: 'neutral',   repRange: [6, 10],  isAvailable: 1 },
+  { id: 6,  name: 'リバースフライ(マシン)',            equipment: 'machine',    type: 'isolation', increment: 5.0,  restSec: 75,  silhouetteTag: 'neutral',   repRange: [12, 15], isAvailable: 1, note: '後部' },
+  { id: 7,  name: 'ケーブルリアデルト(DAP)',           equipment: 'cable',      type: 'isolation', increment: 2.5,  restSec: 75,  silhouetteTag: 'neutral',   repRange: [12, 15], isAvailable: 1 },
+  { id: 8,  name: 'インクラインダンベルカール',         equipment: 'dumbbell',   type: 'isolation', increment: 1.0,  restSec: 75,  silhouetteTag: 'priority',  repRange: [10, 14], isAvailable: 1, note: '長頭ストレッチ位' },
+  { id: 9,  name: 'プリーチャーカール',                equipment: 'dumbbell',   type: 'isolation', increment: 1.0,  restSec: 75,  silhouetteTag: 'priority',  repRange: [10, 14], isAvailable: 1, note: '短頭収縮位' },
+  { id: 10, name: 'ケーブルカール(DAP)',              equipment: 'cable',      type: 'isolation', increment: 2.5,  restSec: 75,  silhouetteTag: 'priority',  repRange: [10, 14], isAvailable: 1, note: '張力一定' },
+  { id: 11, name: 'ハンマーカール',                    equipment: 'dumbbell',   type: 'isolation', increment: 1.0,  restSec: 75,  silhouetteTag: 'neutral',   repRange: [10, 14], isAvailable: 1, note: '上腕筋・前腕' },
+  { id: 12, name: 'ラットプルダウン',                  equipment: 'cable',      type: 'compound',  increment: 5.0,  restSec: 150, silhouetteTag: 'neutral',   repRange: [8, 12],  isAvailable: 1, note: 'V字の要' },
+  { id: 13, name: 'バーティカルトラクション',           equipment: 'machine',    type: 'compound',  increment: 5.0,  restSec: 150, silhouetteTag: 'neutral',   repRange: [8, 12],  isAvailable: 1, note: 'ラットプル代替' },
+  { id: 14, name: 'シーテッドロウ(プレートロード)',      equipment: 'plate',      type: 'compound',  increment: 1.25, restSec: 150, silhouetteTag: 'neutral',   repRange: [8, 12],  isAvailable: 1, note: '片側1.25kgプレート' },
+  { id: 15, name: 'ハイロウ(プレートロード)',          equipment: 'plate',      type: 'compound',  increment: 1.25, restSec: 150, silhouetteTag: 'neutral',   repRange: [8, 12],  isAvailable: 1, note: '上背部' },
+  { id: 16, name: 'ティーバーロウ(プレートロード)',      equipment: 'plate',      type: 'compound',  increment: 1.25, restSec: 150, silhouetteTag: 'neutral',   repRange: [8, 12],  isAvailable: 1, note: '僧帽中部' },
+  { id: 17, name: 'ストレートアームプルダウン',         equipment: 'cable',      type: 'isolation', increment: 2.5,  restSec: 75,  silhouetteTag: 'neutral',   repRange: [12, 15], isAvailable: 1, note: '広背筋アイソレート' },
+  { id: 18, name: 'インクラインダンベルプレス',         equipment: 'dumbbell',   type: 'compound',  increment: 2.5,  restSec: 150, silhouetteTag: 'neutral',   repRange: [8, 12],  isAvailable: 1, note: '30度固定。上部のみ' },
+  { id: 19, name: 'インクラインチェストプレス(PL)',     equipment: 'plate',      type: 'compound',  increment: 1.25, restSec: 150, silhouetteTag: 'neutral',   repRange: [8, 12],  isAvailable: 1 },
+  { id: 20, name: 'ケーブルローフライ(DAP)',          equipment: 'cable',      type: 'isolation', increment: 2.5,  restSec: 75,  silhouetteTag: 'neutral',   repRange: [12, 15], isAvailable: 1, note: '下から上への軌道で上部狙い' },
+  { id: 21, name: 'チェストプレス(マシン)',            equipment: 'machine',    type: 'compound',  increment: 5.0,  restSec: 150, silhouetteTag: 'suppress',  repRange: [8, 12],  isAvailable: 1, note: '中部維持。下限のみ' },
+  { id: 22, name: 'ディップス(チンディップ)',          equipment: 'bodyweight', type: 'compound',  increment: 2.5,  restSec: 150, silhouetteTag: 'suppress',  repRange: [8, 12],  isAvailable: 0, note: '下部関与大。既定では無効' },
+  { id: 23, name: 'ケーブルプレスダウン',              equipment: 'cable',      type: 'isolation', increment: 2.5,  restSec: 75,  silhouetteTag: 'neutral',   repRange: [10, 15], isAvailable: 1 },
+  { id: 24, name: 'オーバーヘッドエクステンション(DAP)', equipment: 'cable',      type: 'isolation', increment: 2.5,  restSec: 75,  silhouetteTag: 'neutral',   repRange: [10, 15], isAvailable: 1, note: '三頭長頭' },
+  { id: 25, name: 'アブドミナルクランチ(マシン)',       equipment: 'machine',    type: 'core',      increment: 5.0,  restSec: 60,  silhouetteTag: 'priority',  repRange: [12, 20], isAvailable: 1, note: '漸進負荷可' },
+  { id: 26, name: 'ケーブルクランチ',                  equipment: 'cable',      type: 'core',      increment: 2.5,  restSec: 60,  silhouetteTag: 'priority',  repRange: [12, 20], isAvailable: 1 },
+  { id: 27, name: 'ハンギングレッグレイズ',            equipment: 'bodyweight', type: 'core',      increment: 0,    restSec: 60,  silhouetteTag: 'priority',  repRange: [10, 20], isAvailable: 1, note: '下腹部。レップ漸進のみ' },
+  { id: 28, name: 'ロータリートルソー',               equipment: 'machine',    type: 'core',      increment: 5.0,  restSec: 60,  silhouetteTag: 'forbidden', repRange: [12, 20], isAvailable: 0, note: '腹斜筋肥大。使用禁止' },
+  { id: 29, name: 'レッグカール',                     equipment: 'machine',    type: 'isolation', increment: 5.0,  restSec: 90,  silhouetteTag: 'neutral',   repRange: [10, 15], isAvailable: 1 },
+  { id: 30, name: 'プローンレッグカール',              equipment: 'machine',    type: 'isolation', increment: 5.0,  restSec: 90,  silhouetteTag: 'neutral',   repRange: [10, 15], isAvailable: 1 },
+  { id: 31, name: 'ヒップスラスト',                    equipment: 'barbell',    type: 'compound',  increment: 2.5,  restSec: 150, silhouetteTag: 'neutral',   repRange: [8, 12],  isAvailable: 1, note: 'ウエスト無影響' },
+  { id: 32, name: 'レッグプレス(足位置ハイ)',          equipment: 'machine',    type: 'compound',  increment: 5.0,  restSec: 150, silhouetteTag: 'suppress',  repRange: [10, 15], isAvailable: 1, note: '四頭抑制・臀ハム寄り' },
+  { id: 33, name: 'レッグエクステンション',            equipment: 'machine',    type: 'isolation', increment: 5.0,  restSec: 90,  silhouetteTag: 'suppress',  repRange: [12, 15], isAvailable: 1, note: '四頭下限維持のみ' },
+  { id: 34, name: 'ローワーバック',                    equipment: 'machine',    type: 'isolation', increment: 5.0,  restSec: 90,  silhouetteTag: 'neutral',   repRange: [12, 15], isAvailable: 1 },
+  { id: 35, name: 'アブダクター',                     equipment: 'machine',    type: 'isolation', increment: 5.0,  restSec: 60,  silhouetteTag: 'optional',  repRange: [12, 20], isAvailable: 1, note: '中臀筋' },
+  { id: 36, name: 'カーフレイズ(スミス)',              equipment: 'smith',      type: 'isolation', increment: 2.5,  restSec: 60,  silhouetteTag: 'optional',  repRange: [12, 20], isAvailable: 1, note: '予算余剰時のみ' },
+];
+</file>
+
+<file path="src/db/seed/foods.ts">
+import type { Food } from '../types';
+
+export const FOODS: Food[] = [
+  { id: 1,  name: '鶏むね肉(皮なし)',       unitLabel: '100g',  unitG: 100, kcal: 108, p: 22.3, f: 1.5,  c: 0.1,  tag: 'protein', note: '主力。冷凍作り置き可' },
+  { id: 2,  name: 'ゆで卵',                 unitLabel: '1個',   unitG: 50,  kcal: 68,  p: 6.1,  f: 4.7,  c: 0.2,  tag: 'protein', note: '脂質確保も兼ねる' },
+  { id: 3,  name: 'ホエイプロテイン',        unitLabel: '1杯',   unitG: 30,  kcal: 117, p: 24.0, f: 1.5,  c: 2.0,  tag: 'protein', note: '不足分の最終調整用' },
+  { id: 4,  name: 'ギリシャヨーグルト(無脂肪)', unitLabel: '1個', unitG: 100, kcal: 59, p: 10.2, f: 0.2,  c: 3.9,  tag: 'protein', note: 'カゼイン。就寝前推奨' },
+  { id: 5,  name: 'ツナ水煮缶',             unitLabel: '1缶',   unitG: 70,  kcal: 50,  p: 11.2, f: 0.5,  c: 0.1,  tag: 'protein', note: '調理不要' },
+  { id: 6,  name: '絹豆腐',                 unitLabel: '1丁',   unitG: 300, kcal: 168, p: 15.9, f: 10.5, c: 5.1,  tag: 'protein' },
+  { id: 7,  name: '鮭(生)',                 unitLabel: '1切',   unitG: 80,  kcal: 106, p: 17.8, f: 3.3,  c: 0.1,  tag: 'protein', note: '脂質の質が良い' },
+  { id: 8,  name: '白米(炊飯)',             unitLabel: '150g',  unitG: 150, kcal: 234, p: 3.8,  f: 0.5,  c: 53.4, tag: 'carb',    note: '主力炭水化物' },
+  { id: 9,  name: 'オートミール',            unitLabel: '40g',   unitG: 40,  kcal: 152, p: 5.5,  f: 2.8,  c: 27.6, tag: 'carb',    note: '朝食向き' },
+  { id: 10, name: 'バナナ',                 unitLabel: '1本',   unitG: 100, kcal: 86,  p: 1.1,  f: 0.2,  c: 22.5, tag: 'carb',    note: 'トレ前' },
+  { id: 11, name: 'さつまいも',             unitLabel: '150g',  unitG: 150, kcal: 197, p: 1.8,  f: 0.3,  c: 47.0, tag: 'carb' },
+  { id: 12, name: 'アーモンド',             unitLabel: '20g',   unitG: 20,  kcal: 120, p: 3.9,  f: 10.9, c: 2.1,  tag: 'fat',     note: '脂質枠の確保' },
+  { id: 13, name: 'オリーブオイル',         unitLabel: '大さじ1', unitG: 12, kcal: 111, p: 0,    f: 12.0, c: 0,    tag: 'fat',     note: '調理油' },
+  { id: 14, name: '冷凍ブロッコリー',        unitLabel: '150g',  unitG: 150, kcal: 50,  p: 6.5,  f: 0.8,  c: 3.0,  tag: 'veg',     note: '現行食に追加想定' },
+  { id: 15, name: '冷凍ほうれん草',          unitLabel: '150g',  unitG: 150, kcal: 30,  p: 3.3,  f: 0.6,  c: 0.5,  tag: 'veg' },
+];
+</file>
+
+<file path="src/db/seed/index.ts">
+import { db } from '../db';
+import { MUSCLES, TOTAL_MIN_SETS } from './muscles';
+import { EXERCISES } from './exercises';
+import { MUSCLE_CREDITS } from './muscleCredits';
+import { FOODS } from './foods';
+import type { MuscleCode } from '../types';
+
+export const SEED_VERSION = '1.0.1';
+export const WEEKLY_SET_BUDGET_MAX = 94;
+
+export interface ValidationResult {
+  errors: string[];
+  warnings: string[];
+  stats: {
+    muscles: number;
+    exercises: number;
+    exercisesAvailable: number;
+    credits: number;
+    foods: number;
+    totalMinSets: number;
+    budgetHeadroom: number;
+  };
+}
+
+export function validateSeed(): ValidationResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const muscleCodes = new Set(MUSCLES.map((m) => m.code));
+  const exerciseIds = new Set(EXERCISES.map((e) => e.id));
+
+  for (const c of MUSCLE_CREDITS) {
+    if (!exerciseIds.has(c.exerciseId)) {
+      errors.push(`[credit] 未定義の exercise_id: ${c.exerciseId}`);
+    }
+    if (!muscleCodes.has(c.muscle)) {
+      errors.push(`[credit] 未定義の muscle: ${c.muscle}`);
+    }
+  }
+
+  for (const ex of EXERCISES) {
+    const hasPrimary = MUSCLE_CREDITS.some(
+      (c) => c.exerciseId === ex.id && c.credit === 1.0
+    );
+    if (!hasPrimary) errors.push(`[exercise] 主働筋未定義: #${ex.id} ${ex.name}`);
+  }
+
+  for (const m of MUSCLES) {
+    if (m.weeklySetsMin <= 0) continue;
+    const covered = MUSCLE_CREDITS.some((c) => {
+      if (c.muscle !== m.code || c.credit < 0.5) return false;
+      return EXERCISES.find((e) => e.id === c.exerciseId)?.isAvailable === 1;
+    });
+    if (!covered) {
+      errors.push(`[coverage] 下限充足不能な部位: ${m.code} (${m.nameJa})`);
+    }
+  }
+
+  const headroom = WEEKLY_SET_BUDGET_MAX - TOTAL_MIN_SETS;
+  if (headroom < 0) {
+    errors.push(`[budget] 下限合計 ${TOTAL_MIN_SETS} が予算上限を超過`);
+  } else if (headroom < 5) {
+    warnings.push(`[budget] 余裕が ${headroom} セットしかありません`);
+  }
+
+  const forbidden = new Set(
+    MUSCLES.filter((m) => m.tag === 'forbidden').map((m) => m.code as MuscleCode)
+  );
+  for (const c of MUSCLE_CREDITS) {
+    if (c.credit === 1.0 && forbidden.has(c.muscle)) {
+      const ex = EXERCISES.find((e) => e.id === c.exerciseId);
+      if (ex?.isAvailable === 1) {
+        errors.push(`[forbidden] 禁止部位の主働種目が有効: #${ex.id} ${ex.name}`);
+      }
+    }
+  }
+
+  for (const m of MUSCLES) {
+    if (m.weeklySetsMin > m.weeklySetsMax) {
+      errors.push(`[range] min>max: ${m.code}`);
+    }
+  }
+
+  return {
+    errors,
+    warnings,
+    stats: {
+      muscles: MUSCLES.length,
+      exercises: EXERCISES.length,
+      exercisesAvailable: EXERCISES.filter((e) => e.isAvailable === 1).length,
+      credits: MUSCLE_CREDITS.length,
+      foods: FOODS.length,
+      totalMinSets: TOTAL_MIN_SETS,
+      budgetHeadroom: headroom,
+    },
+  };
+}
+
+export async function seedDatabase(force = false): Promise<ValidationResult> {
+  const result = validateSeed();
+  if (result.errors.length > 0 && !force) {
+    console.error('[seed] 整合性エラー:\n' + result.errors.join('\n'));
+    throw new Error(`Seed validation failed (${result.errors.length} errors)`);
+  }
+
+  const current = await db.settings.get('seedVersion');
+  if (!force && current?.value === SEED_VERSION) {
+    console.info('[seed] 最新のためスキップ');
+    return result;
+  }
+
+  await db.transaction(
+    'rw',
+    [db.muscles, db.exercises, db.muscleCredits, db.foods, db.settings],
+    async () => {
+      await db.muscles.bulkPut(MUSCLES);
+      await db.exercises.bulkPut(EXERCISES);
+      await db.muscleCredits.clear();
+      await db.muscleCredits.bulkAdd(MUSCLE_CREDITS);
+      await db.foods.bulkPut(FOODS);
+
+      const existing = await db.settings.get('calibrationDone');
+      await db.settings.bulkPut([
+        { key: 'seedVersion', value: SEED_VERSION },
+        { key: 'seededAt', value: Date.now() },
+        { key: 'calibrationDone', value: existing?.value ?? false },
+        { key: 'programStartDate', value: null },
+        { key: 'currentMesocycleWeek', value: 0 },
+        { key: 'nextSplitType', value: 'upper_A' },
+        { key: 'lastExportAt', value: null },
+      ]);
+    }
+  );
+
+  console.info(
+    `[seed] v${SEED_VERSION} 完了: muscles=${result.stats.muscles}, ` +
+    `exercises=${result.stats.exercises}, credits=${result.stats.credits}`
+  );
+  return result;
+}
+
+export async function initializeApp(): Promise<ValidationResult> {
+  if (navigator.storage?.persist) {
+    const persisted = await navigator.storage.persisted();
+    if (!persisted) {
+      const granted = await navigator.storage.persist();
+      console.info(`[storage] persistent: ${granted ? 'granted' : 'denied'}`);
+    }
+  }
+  await db.open();
+  return seedDatabase();
+}
+
+export async function nukeDatabase(): Promise<void> {
+  await db.delete();
+  await db.open();
+  await seedDatabase(true);
+}
+</file>
+
+<file path="src/db/seed/muscleCredits.ts">
+import type { MuscleCredit, MuscleCode } from '../types';
+
+type CreditSpec = Record<number, Partial<Record<MuscleCode, 1.0 | 0.5 | 0.3>>>;
+
+const SPEC: CreditSpec = {
+  1:  { delt_lateral: 1.0, delt_front: 0.3, traps_upper: 0.3 },
+  2:  { delt_lateral: 1.0, traps_upper: 0.3 },
+  3:  { delt_lateral: 1.0, traps_upper: 0.3 },
+  4:  { delt_front: 1.0, delt_lateral: 0.5, triceps: 0.5, chest_upper: 0.3 },
+  5:  { delt_front: 1.0, delt_lateral: 0.5, triceps: 0.5, traps_upper: 0.3 },
+  6:  { delt_rear: 1.0, traps_mid: 0.5 },
+  7:  { delt_rear: 1.0, traps_mid: 0.3 },
+  8:  { biceps_long: 1.0, biceps_short: 0.5, brachialis: 0.3 },
+  9:  { biceps_short: 1.0, biceps_long: 0.5, brachialis: 0.3 },
+  10: { biceps_short: 1.0, biceps_long: 0.5, brachialis: 0.3 },
+  11: { brachialis: 1.0, biceps_long: 0.5, biceps_short: 0.3 },
+  12: { lat: 1.0, biceps_long: 0.5, traps_mid: 0.3, delt_rear: 0.3 },
+  13: { lat: 1.0, biceps_long: 0.5, traps_mid: 0.3 },
+  14: { lat: 1.0, traps_mid: 0.5, delt_rear: 0.3, biceps_long: 0.3, erector: 0.3 },
+  15: { traps_mid: 1.0, lat: 0.5, delt_rear: 0.5, biceps_long: 0.3 },
+  16: { traps_mid: 1.0, lat: 0.5, erector: 0.5, delt_rear: 0.3, biceps_long: 0.3 },
+  17: { lat: 1.0, triceps: 0.3, abs_rectus: 0.3 },
+  18: { chest_upper: 1.0, delt_front: 0.5, triceps: 0.5, chest_mid: 0.3 },
+  19: { chest_upper: 1.0, delt_front: 0.5, triceps: 0.5, chest_mid: 0.3 },
+  20: { chest_upper: 1.0, delt_front: 0.3 },
+  21: { chest_mid: 1.0, chest_lower: 0.5, triceps: 0.5, delt_front: 0.3 },
+  22: { chest_lower: 1.0, triceps: 1.0, chest_mid: 0.5, delt_front: 0.3 },
+  23: { triceps: 1.0 },
+  24: { triceps: 1.0 },
+  25: { abs_rectus: 1.0, obliques: 0.3 },
+  26: { abs_rectus: 1.0, obliques: 0.3 },
+  27: { abs_rectus: 1.0, obliques: 0.3, quads: 0.3 },
+  28: { obliques: 1.0 },
+  29: { hams: 1.0, calves: 0.3 },
+  30: { hams: 1.0, calves: 0.3 },
+  31: { glutes: 1.0, hams: 0.5, quads: 0.3, erector: 0.3 },
+  32: { glutes: 1.0, hams: 0.5, quads: 0.5, erector: 0.3 },
+  33: { quads: 1.0 },
+  34: { erector: 1.0, glutes: 0.3, hams: 0.3 },
+  35: { abductor: 1.0, glutes: 0.3 },
+  36: { calves: 1.0 },
+};
+
+export const MUSCLE_CREDITS: MuscleCredit[] = Object.entries(SPEC).flatMap(
+  ([exerciseId, credits]) =>
+    Object.entries(credits).map(([muscle, credit]) => ({
+      exerciseId: Number(exerciseId),
+      muscle: muscle as MuscleCode,
+      credit: credit as 1.0 | 0.5 | 0.3,
+    }))
+);
+</file>
+
+<file path="src/db/seed/muscles.ts">
+import type { Muscle } from '../types';
+
+export const MUSCLES: Muscle[] = [
+  { code: 'delt_lateral', nameJa: '三角筋中部',        weeklySetsMin: 14, weeklySetsMax: 20, priorityRank: 1, tag: 'priority',  note: '肩幅の主役' },
+  { code: 'biceps_long',  nameJa: '上腕二頭筋 長頭',   weeklySetsMin: 7,  weeklySetsMax: 10, priorityRank: 1, tag: 'priority',  note: '腕の高さ' },
+  { code: 'biceps_short', nameJa: '上腕二頭筋 短頭',   weeklySetsMin: 7,  weeklySetsMax: 10, priorityRank: 1, tag: 'priority',  note: '腕の太さ' },
+  { code: 'abs_rectus',   nameJa: '腹直筋',            weeklySetsMin: 8,  weeklySetsMax: 12, priorityRank: 2, tag: 'priority',  note: 'カット強調' },
+  { code: 'lat',          nameJa: '広背筋',            weeklySetsMin: 10, weeklySetsMax: 14, priorityRank: 2, tag: 'neutral',   note: 'V字の土台' },
+  { code: 'delt_rear',    nameJa: '三角筋後部',        weeklySetsMin: 6,  weeklySetsMax: 8,  priorityRank: 3, tag: 'neutral' },
+  { code: 'traps_mid',    nameJa: '僧帽筋中部・菱形筋', weeklySetsMin: 4,  weeklySetsMax: 6,  priorityRank: 3, tag: 'neutral' },
+  { code: 'chest_upper',  nameJa: '大胸筋上部',        weeklySetsMin: 5,  weeklySetsMax: 9,  priorityRank: 3, tag: 'neutral',   note: 'F2-B: 下限6→5' },
+  { code: 'triceps',      nameJa: '上腕三頭筋',        weeklySetsMin: 5,  weeklySetsMax: 9,  priorityRank: 3, tag: 'neutral',   note: 'F2-B: 下限6→5' },
+  { code: 'brachialis',   nameJa: '上腕筋・前腕',      weeklySetsMin: 3,  weeklySetsMax: 5,  priorityRank: 4, tag: 'neutral' },
+  { code: 'hams',         nameJa: 'ハムストリングス',   weeklySetsMin: 5,  weeklySetsMax: 7,  priorityRank: 4, tag: 'neutral' },
+  { code: 'glutes',       nameJa: '臀筋',              weeklySetsMin: 4,  weeklySetsMax: 6,  priorityRank: 4, tag: 'neutral',   note: 'ウエスト無影響' },
+  { code: 'erector',      nameJa: '脊柱起立筋',        weeklySetsMin: 3,  weeklySetsMax: 4,  priorityRank: 5, tag: 'neutral',   note: '傷害予防' },
+  { code: 'abductor',     nameJa: '中臀筋・外転筋',    weeklySetsMin: 0,  weeklySetsMax: 3,  priorityRank: 5, tag: 'optional' },
+  { code: 'delt_front',   nameJa: '三角筋前部',        weeklySetsMin: 0,  weeklySetsMax: 8,  priorityRank: 5, tag: 'suppress',  note: 'プレス副次で充足' },
+  { code: 'quads',        nameJa: '大腿四頭筋',        weeklySetsMin: 4,  weeklySetsMax: 6,  priorityRank: 5, tag: 'suppress',  note: '過剰バルク回避' },
+  { code: 'chest_mid',    nameJa: '大胸筋中部',        weeklySetsMin: 3,  weeklySetsMax: 4,  priorityRank: 5, tag: 'suppress',  note: '維持のみ' },
+  { code: 'traps_upper',  nameJa: '僧帽筋上部',        weeklySetsMin: 0,  weeklySetsMax: 6,  priorityRank: 6, tag: 'suppress',  note: '肩幅の見え方を相殺' },
+  { code: 'chest_lower',  nameJa: '大胸筋下部',        weeklySetsMin: 0,  weeklySetsMax: 2,  priorityRank: 6, tag: 'suppress',  note: 'シルエット悪化要因' },
+  { code: 'calves',       nameJa: '下腿三頭筋',        weeklySetsMin: 0,  weeklySetsMax: 4,  priorityRank: 6, tag: 'optional',  note: '予算余剰時のみ' },
+  { code: 'obliques',     nameJa: '腹斜筋',            weeklySetsMin: 0,  weeklySetsMax: 0,  priorityRank: 7, tag: 'forbidden', note: '重量種目禁止' },
+];
+
+export const TOTAL_MIN_SETS = MUSCLES.reduce((s, m) => s + m.weeklySetsMin, 0);
+</file>
+
+<file path="src/db/db.ts">
+import Dexie, { type Table } from 'dexie';
+import type {
+  Muscle, Exercise, MuscleCredit, SessionRecord, SetRecord,
+  BodyMetric, NutritionLog, CardioLog, EventLog,
+  ExerciseBaseline, Food, Setting,
+} from './types';
+
+export class HypertrophyDB extends Dexie {
+  muscles!: Table<Muscle, string>;
+  exercises!: Table<Exercise, number>;
+  muscleCredits!: Table<MuscleCredit, [number, string]>;
+  sessions!: Table<SessionRecord, number>;
+  sets!: Table<SetRecord, number>;
+  bodyMetrics!: Table<BodyMetric, string>;
+  nutritionLogs!: Table<NutritionLog, string>;
+  cardioLogs!: Table<CardioLog, number>;
+  events!: Table<EventLog, number>;
+  baselines!: Table<ExerciseBaseline, number>;
+  foods!: Table<Food, number>;
+  settings!: Table<Setting, string>;
+
+  constructor() {
+    super('HypertrophyNavigatorDB');
+
+    this.version(1).stores({
+      muscles:       'code, priorityRank, tag',
+      exercises:     'id, name, equipment, type, silhouetteTag, isAvailable',
+      muscleCredits: '[exerciseId+muscle], exerciseId, muscle, credit',
+      sessions:      '++id, date, splitType, mesocycleWeek, isDeload',
+      sets:          '++id, sessionId, exerciseId, date, [exerciseId+date], [sessionId+setOrder]',
+      bodyMetrics:    'date',
+      nutritionLogs: 'date',
+      cardioLogs:    '++id, date',
+      events:        '++id, date, eventType, acknowledged',
+      baselines:     'exerciseId, calibratedAt',
+      foods:         'id, tag',
+      settings:      'key',
+    });
+  }
+}
+
+export const db = new HypertrophyDB();
+</file>
+
+<file path="src/db/types.ts">
+export type MuscleCode =
+  | 'delt_lateral' | 'delt_front' | 'delt_rear'
+  | 'biceps_long' | 'biceps_short' | 'brachialis' | 'triceps'
+  | 'lat' | 'traps_mid' | 'traps_upper' | 'erector'
+  | 'chest_upper' | 'chest_mid' | 'chest_lower'
+  | 'abs_rectus' | 'obliques'
+  | 'quads' | 'hams' | 'glutes' | 'abductor' | 'calves';
+
+export type SilhouetteTag = 'priority' | 'neutral' | 'suppress' | 'optional' | 'forbidden';
+export type Equipment =
+  | 'dumbbell' | 'cable' | 'machine' | 'plate' | 'barbell' | 'smith' | 'bodyweight';
+export type ExerciseType = 'compound' | 'isolation' | 'core';
+export type SplitType = 'upper_A' | 'lower' | 'upper_B';
+
+export interface Muscle {
+  code: MuscleCode;
+  nameJa: string;
+  weeklySetsMin: number;
+  weeklySetsMax: number;
+  priorityRank: number;
+  tag: SilhouetteTag;
+  note?: string;
+}
+
+export interface Exercise {
+  id: number;
+  name: string;
+  equipment: Equipment;
+  type: ExerciseType;
+  increment: number;
+  restSec: number;
+  silhouetteTag: SilhouetteTag;
+  repRange: [number, number];
+  isAvailable: 0 | 1;
+  note?: string;
+}
+
+export interface MuscleCredit {
+  exerciseId: number;
+  muscle: MuscleCode;
+  credit: 1.0 | 0.5 | 0.3;
+}
+
+export interface SessionRecord {
+  id?: number;
+  date: string;
+  startedAt: number;
+  finishedAt?: number;
+  splitType: SplitType;
+  prsScore: number | null;
+  sleepHours: number | null;
+  mesocycleWeek: number;
+  isDeload: 0 | 1;
+  estMinutes?: number;
+  note?: string;
+}
+
+export interface SetRecord {
+  id?: number;
+  sessionId: number;
+  exerciseId: number;
+  date: string;
+  setOrder: number;
+  targetWeight: number;
+  actualWeight: number;
+  targetReps: number;
+  actualReps: number;
+  targetRir: number;
+  actualRir: number;
+  volumeLoad: number;
+  est1rm: number;
+  isWarmup: 0 | 1;
+  mode: 'load' | 'reps' | 'calibration';
+}
+
+export interface BodyMetric {
+  date: string;
+  weightKg: number | null;
+  bodyFatPct: number | null;
+  ffmKg: number | null;
+  weightMa7: number | null;
+  ffmMa30: number | null;
+  waistCm: number | null;
+  shoulderCm: number | null;
+  chestCm: number | null;
+  armCm: number | null;
+  thighCm: number | null;
+  vTaperRatio: number | null;
+  vTaperMa7: number | null;
+  sleepHours: number | null;
+  prsScore: number | null;
+  isInterpolated: 0 | 1;
+}
+
+export interface NutritionLog {
+  date: string;
+  estimatedTdee: number;
+  targetKcal: number;
+  targetP: number;
+  targetF: number;
+  targetC: number;
+  proteinCoef: number;
+  isRefeed: 0 | 1;
+  isDietBreak: 0 | 1;
+  proteinCheckedG: number;
+}
+
+export interface CardioLog {
+  id?: number;
+  date: string;
+  modality: string;
+  durationMin: number;
+  estKcal: number;
+  triggerReason: string;
+}
+
+export interface EventLog {
+  id?: number;
+  date: string;
+  createdAt: number;
+  eventType:
+    | 'stall' | 'global_stall' | 'deload' | 'diet_break' | 'refeed'
+    | 'overreaching' | 'ffm_loss_warning' | 'sleep_guard'
+    | 'calibration_done' | 'export' | 'carryover';
+  triggerReason: string;
+  payload: Record<string, unknown>;
+  acknowledged: 0 | 1;
+}
+
+export interface ExerciseBaseline {
+  exerciseId: number;
+  weightKg: number;
+  reps: number;
+  rir: number;
+  est1rm: number;
+  calibratedAt: number;
+}
+
+export interface Food {
+  id: number;
+  name: string;
+  unitLabel: string;
+  unitG: number;
+  kcal: number;
+  p: number;
+  f: number;
+  c: number;
+  tag: 'protein' | 'carb' | 'fat' | 'veg';
+  note?: string;
+}
+
+export interface Setting {
+  key: string;
+  value: unknown;
+}
+</file>
+
+<file path="src/engine/calibration.ts">
+import type { Exercise } from '../db/types';
+import { roundToIncrement, isRepProgressionOnly } from './units';
+
+export const CALIB = {
+  setsPerExercise: 3,
+  targetRir: 2,
+  convergenceRir: [1, 3] as [number, number],
+  rirTooEasy: 4,
+  repsTooHard: 5,
+  tooHardRatio: 0.80,
+  maxChangeRatio: 0.25,
+  rirPlusValue: 5,
+} as const;
+
+export interface Attempt {
+  setNo: number;
+  weight: number;
+  reps: number;
+  rir: number;
+}
+
+export type CalibVerdict = 'too_light' | 'too_heavy' | 'converged' | 'adjusting';
+
+export interface Suggestion {
+  weight: number;
+  targetReps: number;
+  targetRir: number;
+  verdict: CalibVerdict;
+  message: string;
+  est1rm: number;
+  repProgressionOnly: boolean;
+}
+
+export function epley1RM(weight: number, reps: number, rir = 0): number {
+  const effectiveRir = rir >= CALIB.rirTooEasy ? CALIB.rirPlusValue : rir;
+  return weight * (1 + (reps + effectiveRir) / 30);
+}
+
+export function targetRepsOf(ex: Exercise): number {
+  const [lo, hi] = ex.repRange;
+  return Math.floor((lo + hi) / 2);
+}
+
+export function suggestNext(ex: Exercise, last: Attempt): Suggestion {
+  const targetReps = targetRepsOf(ex);
+  const est1rm = epley1RM(last.weight, last.reps, last.rir);
+
+  if (ex.increment === 0) {
+    return {
+      weight: 0,
+      targetReps,
+      targetRir: CALIB.targetRir,
+      verdict: 'converged',
+      message: '自重種目。到達レップ数をベースラインとして記録します',
+      est1rm: 0,
+      repProgressionOnly: true,
+    };
+  }
+
+  let raw: number;
+  let verdict: CalibVerdict;
+  let message: string;
+
+  if (last.reps < CALIB.repsTooHard) {
+    raw = last.weight * CALIB.tooHardRatio;
+    verdict = 'too_heavy';
+    message = `${last.reps}回で限界のため重量過大。20%下げて再測定します`;
+  } else {
+    raw = est1rm / (1 + (targetReps + CALIB.targetRir) / 30);
+    if (last.rir >= CALIB.rirTooEasy) {
+      verdict = 'too_light';
+      message = `RIR${last.rir}+（余力大）のため重量を引き上げます`;
+    } else if (last.rir >= CALIB.convergenceRir[0] && last.rir <= CALIB.convergenceRir[1]) {
+      verdict = 'converged';
+      message = `RIR${last.rir} は目標域内。微調整して確定します`;
+    } else {
+      verdict = 'adjusting';
+      message = `RIR${last.rir}（限界到達）のため強度を調整します`;
+    }
+  }
+
+  const lo = last.weight * (1 - CALIB.maxChangeRatio);
+  const hi = last.weight * (1 + CALIB.maxChangeRatio);
+  raw = Math.min(hi, Math.max(lo, raw));
+
+  const weight = roundToIncrement(raw, ex);
+  return {
+    weight,
+    targetReps,
+    targetRir: CALIB.targetRir,
+    verdict,
+    message,
+    est1rm: Number(est1rm.toFixed(1)),
+    repProgressionOnly: isRepProgressionOnly(weight, ex),
+  };
+}
+
+export function finalizeBaseline(ex: Exercise, attempts: Attempt[]) {
+  const valid = attempts.filter((a) => a.reps >= CALIB.repsTooHard);
+  const source = valid.length > 0 ? valid : attempts;
+  const recent = source.slice(-2);
+  const est1rm =
+    recent.reduce((s, a) => s + epley1RM(a.weight, a.reps, a.rir), 0) / recent.length;
+
+  const last = attempts[attempts.length - 1];
+  const targetReps = targetRepsOf(ex);
+  const working = ex.increment === 0
+    ? 0
+    : roundToIncrement(est1rm / (1 + (targetReps + CALIB.targetRir) / 30), ex);
+
+  return {
+    exerciseId: ex.id,
+    weightKg: working,
+    reps: targetReps,
+    rir: CALIB.targetRir,
+    est1rm: Number(est1rm.toFixed(1)),
+    calibratedAt: Date.now(),
+    lastAttempt: last,
+  };
+}
+</file>
+
+<file path="src/engine/progression.ts">
+import type { Exercise } from '../db/types';
+import { roundToIncrement, isRepProgressionOnly } from './units';
+
+export interface LastSetPerformance {
+  weight: number;
+  reps: number;
+  rir: number;
+}
+
+export interface ProgressionRules {
+  repsExceededIncrement: number; // 例: 0.10 (+10%)
+  repsShortDecrement: number;   // 例: 0.05 (-5%)
+  rpeDeviationAdjust: number;   // 例: 0.02 (±2%)
+}
+
+export const DEFAULT_RULES: ProgressionRules = {
+  repsExceededIncrement: 0.10,
+  repsShortDecrement: 0.05,
+  rpeDeviationAdjust: 0.02,
+};
+
+export interface Prescription {
+  mode: 'load' | 'reps';
+  targetWeight: number;
+  targetReps: number;
+  note?: string;
+}
+
+/**
+ * 直近のセットパフォーマンスに基づき、次回（または次セット）の処方重量・目標レップを算出する
+ */
+export function prescribeNextLoad(
+  last: LastSetPerformance,
+  exercise: Exercise,
+  rules: ProgressionRules = DEFAULT_RULES
+): Prescription {
+  const [repLow, repHigh] = exercise.repRange;
+
+  // 1. 達成判定（上限レップ数を達成し、かつ余力RIRが2以下であること）
+  const achieved = last.reps >= repHigh && last.rir <= 2;
+
+  if (!achieved) {
+    // 不足レップ数に応じた減量処理、または同重量でのレップ維持・微増
+    const shortfall = Math.max(0, repLow - last.reps);
+    if (shortfall > 0) {
+      const newWeight = last.weight * (1 - rules.repsShortDecrement * shortfall);
+      return {
+        mode: 'load',
+        targetWeight: roundToIncrement(newWeight, exercise),
+        targetReps: repLow,
+        note: `目標下限（${repLow}レップ）未達のため重量を微調整`,
+      };
+    }
+    // レンジ内の場合は同重量でレップを1増やす（ダブルプログレッション）
+    return {
+      mode: 'reps',
+      targetWeight: last.weight,
+      targetReps: Math.min(last.reps + 1, repHigh),
+      note: '同重量でレップ数を伸ばす二重漸進モード',
+    };
+  }
+
+  // 2. 上限達成時：器具の刻みが大きすぎないか判定（重量比4%超ならレップ漸進へ）
+  if (isRepProgressionOnly(last.weight, exercise)) {
+    return {
+      mode: 'reps',
+      targetWeight: last.weight,
+      targetReps: last.reps + 1,
+      note: '刻みが粗いため同重量でレップ数を漸進',
+    };
+  }
+
+  // 3. 重量アップ（+10%目標）
+  const idealDelta = last.weight * rules.repsExceededIncrement;
+  const inc = exercise.increment;
+  const steps = Math.max(1, Math.round(idealDelta / (inc || 1)));
+  const newWeight = last.weight + steps * inc;
+
+  return {
+    mode: 'load',
+    targetWeight: roundToIncrement(newWeight, exercise),
+    targetReps: repLow,
+    note: `目標達成！ 重量アップ (${last.weight}kg → ${newWeight}kg)`,
+  };
+}
+</file>
+
+<file path="src/engine/units.ts">
+import type { Exercise } from '../db/types';
+
+export function effectiveIncrement(exercise: Exercise, weight: number): number {
+  if (exercise.equipment === 'dumbbell') {
+    return weight < 20 ? 1.0 : 2.5;
+  }
+  return exercise.increment;
+}
+
+export function roundToIncrement(weight: number, exercise: Exercise): number {
+  const inc = effectiveIncrement(exercise, weight);
+  if (inc <= 0) return 0;
+  const w = Math.round(weight / inc) * inc;
+  return Math.max(inc, Number(w.toFixed(2)));
+}
+
+export function incrementRatio(weight: number, exercise: Exercise): number {
+  if (weight <= 0) return Infinity;
+  return effectiveIncrement(exercise, weight) / weight;
+}
+
+export function isRepProgressionOnly(weight: number, exercise: Exercise): boolean {
+  if (exercise.increment === 0) return true;
+  return incrementRatio(weight, exercise) > 0.04;
+}
+
+export function formatWeight(w: number, exercise: Exercise): string {
+  if (exercise.increment === 0) return '自重';
+  return `${w % 1 === 0 ? w.toFixed(0) : w.toFixed(1)} kg`;
+}
+</file>
+
+<file path="src/pages/Calibration.tsx">
+import { useMemo, useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import type { Exercise, SplitType } from '../db/types';
+import {
+  CALIBRATION_PLAN, CALIBRATION_TOTAL, getCalibrationExercises,
+  getBaselineMap, getOrCreateCalibrationSession, saveCalibrationResult,
+} from '../db/queries/calibration';
+import {
+  CALIB, suggestNext, finalizeBaseline, targetRepsOf, type Attempt,
+} from '../engine/calibration';
+import { effectiveIncrement, formatWeight } from '../engine/units';
+
+const SPLIT_LABEL: Record<SplitType, string> = {
+  upper_A: '上半身 A（背中・肩中部・二頭）',
+  lower: '下半身',
+  upper_B: '上半身 B（胸上部・肩・三頭）',
+};
+
+export default function Calibration() {
+  const [split, setSplit] = useState<SplitType>('upper_A');
+  const [active, setActive] = useState<Exercise | null>(null);
+
+  const exercises = useLiveQuery(() => getCalibrationExercises(split), [split]);
+  const baselines = useLiveQuery(() => getBaselineMap(), []);
+  const doneCount = baselines?.size ?? 0;
+
+  if (active) {
+    return (
+      <Wizard
+        exercise={active}
+        split={split}
+        onClose={() => setActive(null)}
+      />
+    );
+  }
+
+  return (
+    <div className="page">
+      <header className="hdr">
+        <h1>Week 0 キャリブレーション</h1>
+        <div className="progress">
+          <div className="bar" style={{ width: `${(doneCount / CALIBRATION_TOTAL) * 100}%` }} />
+        </div>
+        <p className="sub">{doneCount} / {CALIBRATION_TOTAL} 種目 完了</p>
+      </header>
+
+      <div className="tabs">
+        {(Object.keys(CALIBRATION_PLAN) as SplitType[]).map((s) => (
+          <button
+            key={s}
+            className={`tab ${s === split ? 'on' : ''}`}
+            onClick={() => setSplit(s)}
+          >
+            {s.replace('upper_', 'Upper ').replace('lower', 'Lower')}
+          </button>
+        ))}
+      </div>
+      <p className="sub">{SPLIT_LABEL[split]}</p>
+
+      <ul className="list">
+        {exercises?.map((ex) => {
+          const b = baselines?.get(ex.id);
+          return (
+            <li key={ex.id}>
+              <button className={`row ${b ? 'done' : ''}`} onClick={() => setActive(ex)}>
+                <span className="name">{ex.name}</span>
+                <span className="meta">
+                  {b
+                    ? `${formatWeight(b.weightKg, ex)} × ${b.reps}`
+                    : `${ex.repRange[0]}–${ex.repRange[1]} reps`}
+                </span>
+                <span className="mark">{b ? '✓' : '›'}</span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+
+      <p className="note">
+        各種目3セット。1セット目は「これくらいかな」で構いません。
+        RIRの入力から2・3セット目の重量を自動計算します。
+      </p>
+    </div>
+  );
+}
+
+function Wizard({
+  exercise, split, onClose,
+}: { exercise: Exercise; split: SplitType; onClose: () => void }) {
+  const inc = effectiveIncrement(exercise, 10);
+  const [weight, setWeight] = useState<number>(
+    exercise.increment === 0 ? 0 : guessInitial(exercise)
+  );
+  const [reps, setReps] = useState<number>(targetRepsOf(exercise));
+  const [rir, setRir] = useState<number>(2);
+  const [attempts, setAttempts] = useState<Attempt[]>([]);
+  const [suggestions, setSuggestions] = useState<number[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  const setNo = attempts.length + 1;
+  const isLast = setNo === CALIB.setsPerExercise;
+
+  const lastSuggestion = useMemo(() => {
+    if (attempts.length === 0) return null;
+    return suggestNext(exercise, attempts[attempts.length - 1]);
+  }, [attempts, exercise]);
+
+  const step = exercise.increment === 0 ? 0 : effectiveIncrement(exercise, weight);
+
+  const handleNext = async () => {
+    const attempt: Attempt = { setNo, weight, reps, rir };
+    const next = [...attempts, attempt];
+    setAttempts(next);
+    setSuggestions([...suggestions, weight]);
+
+    if (next.length < CALIB.setsPerExercise) {
+      const s = suggestNext(exercise, attempt);
+      setWeight(s.weight);
+      setReps(s.targetReps);
+      setRir(2);
+      return;
+    }
+
+    setSaving(true);
+    const baseline = finalizeBaseline(exercise, next);
+    const sessionId = await getOrCreateCalibrationSession(split);
+    await saveCalibrationResult({
+      sessionId,
+      exercise,
+      attempts: next,
+      suggestions: [...suggestions, weight],
+      baseline,
+    });
+    setSaving(false);
+    onClose();
+  };
+
+  return (
+    <div className="page wizard">
+      <header className="hdr">
+        <button className="back" onClick={onClose}>‹ 戻る</button>
+        <h2>{exercise.name}</h2>
+        <p className="sub">
+          Set {setNo} / {CALIB.setsPerExercise} ・ 目標 {exercise.repRange[0]}–{exercise.repRange[1]} reps
+        </p>
+      </header>
+
+      {lastSuggestion && (
+        <div className={`hint ${lastSuggestion.verdict}`}>
+          <p>{lastSuggestion.message}</p>
+          <p className="mono">推定1RM {lastSuggestion.est1rm} kg</p>
+          {lastSuggestion.repProgressionOnly && exercise.increment > 0 && (
+            <p className="mono warn">
+              ▲ 刻み {inc}kg が重量比4%超。以降はレップ漸進で管理します
+            </p>
+          )}
+        </div>
+      )}
+
+      {exercise.increment > 0 && (
+        <section className="field">
+          <label>重量</label>
+          <div className="stepper">
+            <button onClick={() => setWeight((w) => Math.max(step, w - step))}>−</button>
+            <span className="value">{formatWeight(weight, exercise)}</span>
+            <button onClick={() => setWeight((w) => w + step)}>＋</button>
+          </div>
+          <p className="mono sub">刻み {step} kg</p>
+        </section>
+      )}
+
+      <section className="field">
+        <label>実施レップ数</label>
+        <div className="stepper">
+          <button onClick={() => setReps((r) => Math.max(1, r - 1))}>−</button>
+          <span className="value">{reps} reps</span>
+          <button onClick={() => setReps((r) => r + 1)}>＋</button>
+        </div>
+      </section>
+
+      <section className="field">
+        <label>RIR（あと何回挙がったか）</label>
+        <div className="rir">
+          {[0, 1, 2, 3, 4].map((v) => (
+            <button
+              key={v}
+              className={`rir-btn ${rir === v ? 'on' : ''}`}
+              onClick={() => setRir(v)}
+            >
+              {v === 4 ? '4+' : v}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {attempts.length > 0 && (
+        <section className="log">
+          <h3>記録済み</h3>
+          {attempts.map((a) => (
+            <p key={a.setNo} className="mono">
+              Set{a.setNo}: {a.weight}kg × {a.reps} (RIR {a.rir >= 4 ? '4+' : a.rir})
+            </p>
+          ))}
+        </section>
+      )}
+
+      <button className="btn primary big" onClick={handleNext} disabled={saving}>
+        {saving ? '保存中…' : isLast ? 'ベースラインを確定' : `Set ${setNo} を記録して次へ`}
+      </button>
+    </div>
+  );
+}
+
+function guessInitial(ex: Exercise): number {
+  switch (ex.equipment) {
+    case 'dumbbell': return ex.type === 'isolation' ? 8 : 12;
+    case 'cable': return ex.type === 'isolation' ? 10 : 30;
+    case 'machine': return ex.type === 'isolation' ? 20 : 35;
+    case 'plate': return 20;
+    case 'barbell': return 40;
+    case 'smith': return 20;
+    default: return 0;
+  }
+}
+</file>
+
+<file path="src/pages/DebugSeed.tsx">
+import { useEffect, useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../db/db';
+import { validateSeed, nukeDatabase, SEED_VERSION, WEEKLY_SET_BUDGET_MAX } from '../db/seed';
+
+export default function DebugSeed() {
+  const [report, setReport] = useState(() => validateSeed());
+  const [busy, setBusy] = useState(false);
+
+  const counts = useLiveQuery(async () => ({
+    muscles: await db.muscles.count(),
+    exercises: await db.exercises.count(),
+    available: await db.exercises.where('isAvailable').equals(1).count(),
+    credits: await db.muscleCredits.count(),
+    foods: await db.foods.count(),
+    baselines: await db.baselines.count(),
+    sessions: await db.sessions.count(),
+    sets: await db.sets.count(),
+  }), []);
+
+  const muscles = useLiveQuery(() => db.muscles.orderBy('priorityRank').toArray(), []);
+
+  useEffect(() => { setReport(validateSeed()); }, []);
+
+  const handleNuke = async () => {
+    if (!confirm('全データを削除して再投入します。よろしいですか？')) return;
+    setBusy(true);
+    await nukeDatabase();
+    setReport(validateSeed());
+    setBusy(false);
+  };
+
+  const ok = report.errors.length === 0;
+
+  return (
+    <div className="page">
+      <h1>Seed 動作確認</h1>
+
+      <section className={`card ${ok ? 'ok' : 'ng'}`}>
+        <h2>{ok ? '✓ 整合性チェック PASS' : `✗ エラー ${report.errors.length} 件`}</h2>
+        <p className="mono">seedVersion: {SEED_VERSION}</p>
+        {report.errors.map((e, i) => <p key={i} className="err">{e}</p>)}
+        {report.warnings.map((w, i) => <p key={i} className="warn">{w}</p>)}
+      </section>
+
+      <section className="card">
+        <h2>ボリューム予算</h2>
+        <table className="kv">
+          <tbody>
+            <tr><th>部位別下限 合計</th><td>{report.stats.totalMinSets} セット</td></tr>
+            <tr><th>週間予算 上限</th><td>{WEEKLY_SET_BUDGET_MAX} セット</td></tr>
+            <tr>
+              <th>余裕</th>
+              <td className={report.stats.budgetHeadroom >= 5 ? 'good' : 'warn'}>
+                {report.stats.budgetHeadroom} セット
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section className="card">
+        <h2>DB レコード数</h2>
+        <table className="kv">
+          <tbody>
+            {counts && Object.entries(counts).map(([k, v]) => (
+              <tr key={k}><th>{k}</th><td>{v}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+
+      <section className="card">
+        <h2>部位マスタ（下限 / 上限）</h2>
+        <table className="grid">
+          <thead>
+            <tr><th>部位</th><th>下限</th><th>上限</th><th>tag</th></tr>
+          </thead>
+          <tbody>
+            {muscles?.map((m) => (
+              <tr key={m.code} className={`tag-${m.tag}`}>
+                <td>{m.nameJa}</td>
+                <td>{m.weeklySetsMin}</td>
+                <td>{m.weeklySetsMax}</td>
+                <td className="mono">{m.tag}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+
+      <button className="btn danger" onClick={handleNuke} disabled={busy}>
+        {busy ? '処理中…' : 'DB完全削除 → 再投入'}
+      </button>
+    </div>
+  );
+}
+</file>
+
+<file path="src/pages/Workout.tsx">
+import { useEffect, useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../db/db';
+import type { Exercise, SplitType } from '../db/types';
+import { effectiveIncrement, formatWeight } from '../engine/units';
+import { prescribeNextLoad } from '../engine/progression';
+import { getExerciseRecommendation } from '../engine/generator';
+import { BodyAnatomy } from '../components/BodyAnatomy';
+
+export default function Workout() {
+  const [split, setSplit] = useState<SplitType>('upper_A');
+  const [exerciseIndex, setExerciseIndex] = useState(0);
+
+  const exercises = useLiveQuery(async () => {
+    const allEx = await db.exercises.where('isAvailable').equals(1).toArray();
+    return allEx.filter((e) => e.silhouetteTag !== 'forbidden');
+  }, [split]);
+
+  const currentEx = exercises?.[exerciseIndex] ?? null;
+  const totalCount = exercises?.length ?? 0;
+
+  if (!currentEx) {
+    return (
+      <div className="page">
+        <h1>本番ワークアウト</h1>
+        <p className="sub">種目を読み込み中、または対象種目がありません。</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="page">
+      <header className="hdr">
+        <div className="tabs">
+          {(['upper_A', 'lower', 'upper_B'] as SplitType[]).map((s) => (
+            <button
+              key={s}
+              className={`tab ${s === split ? 'on' : ''}`}
+              onClick={() => { setSplit(s); setExerciseIndex(0); }}
+            >
+              {s.replace('upper_', 'Upper ').replace('lower', 'Lower')}
+            </button>
+          ))}
+        </div>
+        <h2>{currentEx.name}</h2>
+        <p className="sub">
+          種目 {exerciseIndex + 1} / {totalCount} ・ 目標 {currentEx.repRange[0]}–{currentEx.repRange[1]} reps
+        </p>
+      </header>
+
+      <LoggerSection
+        exercise={currentEx}
+        onNextExercise={() => setExerciseIndex((i) => Math.min(i + 1, Math.max(0, totalCount - 1)))}
+      />
+    </div>
+  );
+}
+
+function LoggerSection({ exercise, onNextExercise }: { exercise: Exercise; onNextExercise: () => void }) {
+  const baseline = useLiveQuery(() => db.baselines.get(exercise.id), [exercise.id]);
+  const historySets = useLiveQuery(
+    () => db.sets.where('exerciseId').equals(exercise.id).reverse().toArray(),
+    [exercise.id]
+  );
+  const recommendation = useLiveQuery(() => getExerciseRecommendation(exercise), [exercise.id]);
+  const credits = useLiveQuery(() => db.muscleCredits.where('exerciseId').equals(exercise.id).toArray(), [exercise.id]);
+
+  const primaryMuscles = credits?.filter((c) => c.credit >= 0.8).map((c) => c.muscle) ?? [];
+  const secondaryMuscles = credits?.filter((c) => c.credit < 0.8).map((c) => c.muscle) ?? [];
+
+  const lastSet = historySets?.[0];
+  const defaultWeight = lastSet?.actualWeight ?? baseline?.weightKg ?? 10;
+  const defaultReps = lastSet?.actualReps ?? baseline?.reps ?? 10;
+
+  const [weight, setWeight] = useState(defaultWeight);
+  const [reps, setReps] = useState(defaultReps);
+  const [rir, setRir] = useState(2);
+  const [timerSec, setTimerSec] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (lastSet) {
+      setWeight(lastSet.actualWeight);
+      setReps(lastSet.actualReps);
+    } else if (baseline) {
+      setWeight(baseline.weightKg);
+      setReps(baseline.reps);
+    }
+  }, [baseline, lastSet, exercise.id]);
+
+  useEffect(() => {
+    if (timerSec === null || timerSec <= 0) return;
+    const timer = setInterval(() => setTimerSec((s) => (s && s > 1 ? s - 1 : null)), 1000);
+    return () => clearInterval(timer);
+  }, [timerSec]);
+
+  const step = effectiveIncrement(exercise, weight);
+
+  const handleLogSet = async () => {
+    const date = new Date().toISOString().slice(0, 10);
+    const setOrder = (historySets?.length ?? 0) + 1;
+    const presc = prescribeNextLoad({ weight, reps, rir }, exercise);
+
+    await db.sets.add({
+      sessionId: 1,
+      exerciseId: exercise.id,
+      date,
+      setOrder,
+      targetWeight: presc.targetWeight,
+      actualWeight: weight,
+      targetReps: presc.targetReps,
+      actualReps: reps,
+      targetRir: 2,
+      actualRir: rir,
+      volumeLoad: Number((weight * reps).toFixed(1)),
+      est1rm: Number((weight * (1 + (reps + rir) / 30)).toFixed(1)),
+      isWarmup: 0,
+      mode: presc.mode,
+    });
+
+    setTimerSec(exercise.type === 'compound' ? 150 : 75);
+  };
+
+  return (
+    <div className="card">
+      {/* 筋肉発光ネオンアナトミーマップ */}
+      <BodyAnatomy primaryMuscles={primaryMuscles} secondaryMuscles={secondaryMuscles} />
+
+      {recommendation && (
+        <div className="hint converged" style={{ marginBottom: '16px' }}>
+          <strong>🤖 AI処方アドバイス:</strong> {recommendation.reason}
+        </div>
+      )}
+
+      {timerSec !== null && (
+        <div className="hint converged" style={{ textAlign: 'center', fontSize: '20px', fontWeight: 'bold' }}>
+          ⏱ 休憩タイマー: {Math.floor(timerSec / 60)}分 {timerSec % 60}秒
+        </div>
+      )}
+
+      <div className="log" style={{ marginBottom: '16px' }}>
+        <h3>前回記録 / ベースライン</h3>
+        <p className="mono">
+          {lastSet
+            ? `直近: ${formatWeight(lastSet.actualWeight, exercise)} × ${lastSet.actualReps} reps (RIR ${lastSet.actualRir})`
+            : baseline
+            ? `基準: ${formatWeight(baseline.weightKg, exercise)} × ${baseline.reps} reps`
+            : '未測定（Week 0で確定してください）'}
+        </p>
+      </div>
+
+      {exercise.increment > 0 && (
+        <section className="field">
+          <label>重量</label>
+          <div className="stepper">
+            <button onClick={() => setWeight((w) => Math.max(step, w - step))}>−</button>
+            <span className="value">{formatWeight(weight, exercise)}</span>
+            <button onClick={() => setWeight((w) => w + step)}>＋</button>
+          </div>
+        </section>
+      )}
+
+      <section className="field">
+        <label>レップ数</label>
+        <div className="stepper">
+          <button onClick={() => setReps((r) => Math.max(1, r - 1))}>−</button>
+          <span className="value">{reps} reps</span>
+          <button onClick={() => setReps((r) => r + 1)}>＋</button>
+        </div>
+      </section>
+
+      <section className="field">
+        <label>RIR（余力）</label>
+        <div className="rir">
+          {[0, 1, 2, 3, 4].map((v) => (
+            <button
+              key={v}
+              className={`rir-btn ${rir === v ? 'on' : ''}`}
+              onClick={() => setRir(v)}
+            >
+              {v === 4 ? '4+' : v}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <button className="btn primary big" onClick={handleLogSet} style={{ marginBottom: '12px' }}>
+        1セット完了して休憩タイマー起動
+      </button>
+
+      <button className="btn" onClick={onNextExercise}>
+        次の種目へ進む ›
+      </button>
+    </div>
+  );
+}
+</file>
+
+<file path="src/App.css">
+.counter {
+  font-size: 16px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  color: var(--accent);
+  background: var(--accent-bg);
+  border: 2px solid transparent;
+  transition: border-color 0.3s;
+  margin-bottom: 24px;
+
+  &:hover {
+    border-color: var(--accent-border);
+  }
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+
+.hero {
+  position: relative;
+
+  .base,
+  .framework,
+  .vite {
+    inset-inline: 0;
+    margin: 0 auto;
+  }
+
+  .base {
+    width: 170px;
+    position: relative;
+    z-index: 0;
+  }
+
+  .framework,
+  .vite {
+    position: absolute;
+  }
+
+  .framework {
+    z-index: 1;
+    top: 34px;
+    height: 28px;
+    transform: perspective(2000px) rotateZ(300deg) rotateX(44deg) rotateY(39deg)
+      scale(1.4);
+  }
+
+  .vite {
+    z-index: 0;
+    top: 107px;
+    height: 26px;
+    width: auto;
+    transform: perspective(2000px) rotateZ(300deg) rotateX(40deg) rotateY(39deg)
+      scale(0.8);
+  }
+}
+
+#center {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  place-content: center;
+  place-items: center;
+  flex-grow: 1;
+
+  @media (max-width: 1024px) {
+    padding: 32px 20px 24px;
+    gap: 18px;
+  }
+}
+
+#next-steps {
+  display: flex;
+  border-top: 1px solid var(--border);
+  text-align: left;
+
+  & > div {
+    flex: 1 1 0;
+    padding: 32px;
+    @media (max-width: 1024px) {
+      padding: 24px 20px;
+    }
+  }
+
+  .icon {
+    margin-bottom: 16px;
+    width: 22px;
+    height: 22px;
+  }
+
+  @media (max-width: 1024px) {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+#docs {
+  border-right: 1px solid var(--border);
+
+  @media (max-width: 1024px) {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+}
+
+#next-steps ul {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  gap: 8px;
+  margin: 32px 0 0;
+
+  .logo {
+    height: 18px;
+  }
+
+  a {
+    color: var(--text-h);
+    font-size: 16px;
+    border-radius: 6px;
+    background: var(--social-bg);
+    display: flex;
+    padding: 6px 12px;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    transition: box-shadow 0.3s;
+
+    &:hover {
+      box-shadow: var(--shadow);
+    }
+    .button-icon {
+      height: 18px;
+      width: 18px;
+    }
+  }
+
+  @media (max-width: 1024px) {
+    margin-top: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+
+    li {
+      flex: 1 1 calc(50% - 8px);
+    }
+
+    a {
+      width: 100%;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+  }
+}
+
+#spacer {
+  height: 88px;
+  border-top: 1px solid var(--border);
+  @media (max-width: 1024px) {
+    height: 48px;
+  }
+}
+
+.ticks {
+  position: relative;
+  width: 100%;
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    top: -4.5px;
+    border: 5px solid transparent;
+  }
+
+  &::before {
+    left: 0;
+    border-left-color: var(--border);
+  }
+  &::after {
+    right: 0;
+    border-right-color: var(--border);
+  }
+}
+</file>
+
+<file path="src/App.tsx">
+import { useEffect, useState } from 'react';
+import { initializeApp } from './db/seed';
+import DebugSeed from './pages/DebugSeed';
+import Calibration from './pages/Calibration';
+import Workout from './pages/Workout';
+import Nutrition from './pages/Nutrition';
+import BodyTracking from './pages/BodyTracking';
+
+type Tab = 'workout' | 'nutrition' | 'body' | 'calibration' | 'debug';
+
+export default function App() {
+  const [ready, setReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>('workout');
+
+  useEffect(() => {
+    initializeApp()
+      .then(() => setReady(true))
+      .catch((e) => setError(String(e)));
+  }, []);
+
+  if (error) return <div className="page"><h1>初期化エラー</h1><pre>{error}</pre></div>;
+  if (!ready) return <div className="page"><p>初期化中…</p></div>;
+
+  return (
+    <div className="app">
+      {tab === 'workout' && <Workout />}
+      {tab === 'nutrition' && <Nutrition />}
+      {tab === 'body' && <BodyTracking />}
+      {tab === 'calibration' && <Calibration />}
+      {tab === 'debug' && <DebugSeed />}
+
+      <nav className="tabbar">
+        <button className={tab === 'workout' ? 'on' : ''} onClick={() => setTab('workout')}>
+          本番記録
+        </button>
+        <button className={tab === 'nutrition' ? 'on' : ''} onClick={() => setTab('nutrition')}>
+          栄養
+        </button>
+        <button className={tab === 'body' ? 'on' : ''} onClick={() => setTab('body')}>
+          体組成
+        </button>
+        <button className={tab === 'calibration' ? 'on' : ''} onClick={() => setTab('calibration')}>
+          Week 0
+        </button>
+        <button className={tab === 'debug' ? 'on' : ''} onClick={() => setTab('debug')}>
+          Debug
+        </button>
+      </nav>
+    </div>
+  );
+}
+</file>
+
+<file path="src/index.css">
+:root {
+  --text: #6b6375;
+  --text-h: #08060d;
+  --bg: #fff;
+  --border: #e5e4e7;
+  --code-bg: #f4f3ec;
+  --accent: #aa3bff;
+  --accent-bg: rgba(170, 59, 255, 0.1);
+  --accent-border: rgba(170, 59, 255, 0.5);
+  --social-bg: rgba(244, 243, 236, 0.5);
+  --shadow:
+    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+
+  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+
+  font: 18px/145% var(--sans);
+  letter-spacing: 0.18px;
+  color-scheme: light dark;
+  color: var(--text);
+  background: var(--bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  @media (max-width: 1024px) {
+    font-size: 16px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text: #9ca3af;
+    --text-h: #f3f4f6;
+    --bg: #16171d;
+    --border: #2e303a;
+    --code-bg: #1f2028;
+    --accent: #c084fc;
+    --accent-bg: rgba(192, 132, 252, 0.15);
+    --accent-border: rgba(192, 132, 252, 0.5);
+    --social-bg: rgba(47, 48, 58, 0.5);
+    --shadow:
+      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+  }
+
+  #social .button-icon {
+    filter: invert(1) brightness(2);
+  }
+}
+
+#root {
+  width: 1126px;
+  max-width: 100%;
+  margin: 0 auto;
+  text-align: center;
+  border-inline: 1px solid var(--border);
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+h1,
+h2 {
+  font-family: var(--heading);
+  font-weight: 500;
+  color: var(--text-h);
+}
+
+h1 {
+  font-size: 56px;
+  letter-spacing: -1.68px;
+  margin: 32px 0;
+  @media (max-width: 1024px) {
+    font-size: 36px;
+    margin: 20px 0;
+  }
+}
+h2 {
+  font-size: 24px;
+  line-height: 118%;
+  letter-spacing: -0.24px;
+  margin: 0 0 8px;
+  @media (max-width: 1024px) {
+    font-size: 20px;
+  }
+}
+p {
+  margin: 0;
+}
+
+code,
+.counter {
+  font-family: var(--mono);
+  display: inline-flex;
+  border-radius: 4px;
+  color: var(--text-h);
+}
+
+code {
+  font-size: 15px;
+  line-height: 135%;
+  padding: 4px 8px;
+  background: var(--code-bg);
+}
+</file>
+
+<file path="src/main.tsx">
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import './styles.css';
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+</file>
+
+<file path="src/styles.css">
+:root {
+  --bg: #090a0f;
+  --card: #13151f;
+  --card-hover: #1a1d2b;
+  --line: #232738;
+  --line-glow: rgba(0, 242, 254, 0.15);
+  --fg: #f0f3f8;
+  --sub: #8a94a6;
+  
+  /* サイバー・ネオンアクセント */
+  --accent-grad: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+  --accent-glow: rgba(0, 242, 254, 0.35);
+  --accent: #00f2fe;
+  
+  --good: #00e676;
+  --good-glow: rgba(0, 230, 118, 0.25);
+  --warn: #ffab00;
+  --bad: #ff1744;
+  --tap: 56px;
+}
+
+* { 
+  box-sizing: border-box; 
+  -webkit-tap-highlight-color: transparent; 
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Hiragino Sans', sans-serif;
+  font-size: 16px;
+  background-image: 
+    radial-gradient(circle at 50% 0%, rgba(0, 242, 254, 0.05) 0%, transparent 70%),
+    radial-gradient(circle at 80% 100%, rgba(79, 172, 254, 0.03) 0%, transparent 50%);
+  background-attachment: fixed;
+}
+
+.app { padding-bottom: 84px; }
+.page { padding: 20px 16px 32px; max-width: 600px; margin: 0 auto; }
+
+/* 見出し＆タイポグラフィ */
+h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; margin: 12px 0; color: #fff; }
+h2 { font-size: 18px; font-weight: 700; margin: 0 0 12px; letter-spacing: -0.3px; }
+h3 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--sub); margin: 16px 0 8px; }
+.sub { color: var(--sub); font-size: 13px; margin: 4px 0; }
+.mono { font-family: 'SF Mono', ui-monospace, monospace; font-size: 13px; }
+.note { color: var(--sub); font-size: 13px; line-height: 1.6; margin-top: 20px; }
+.good { color: var(--good); text-shadow: 0 0 12px var(--good-glow); }
+.warn { color: var(--warn); }
+.err { color: var(--bad); font-size: 12px; }
+
+/* カードデザイン */
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 18px;
+  margin-bottom: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  transition: transform 0.2s, border-color 0.2s;
+}
+.card.ok { border-color: var(--good); box-shadow: 0 0 16px var(--good-glow); }
+.card.ng { border-color: var(--bad); }
+
+/* テーブル */
+table.kv, table.grid { width: 100%; border-collapse: collapse; font-size: 14px; }
+table.kv th { text-align: left; color: var(--sub); font-weight: 500; padding: 8px 0; }
+table.kv td { text-align: right; font-family: 'SF Mono', monospace; font-weight: 600; color: #fff; }
+table.grid th, table.grid td { padding: 10px 6px; border-bottom: 1px solid var(--line); text-align: left; }
+
+/* プログレスバー */
+.progress { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; }
+.progress .bar { height: 100%; background: var(--accent-grad); box-shadow: 0 0 10px var(--accent-glow); transition: width .4s cubic-bezier(0.4, 0, 0.2, 1); }
+
+/* タブ切り替え */
+.tabs { display: flex; gap: 8px; margin: 16px 0 8px; background: rgba(255,255,255,0.03); padding: 4px; border-radius: 12px; }
+.tab {
+  flex: 1; height: 42px; border-radius: 8px; border: none;
+  background: transparent; color: var(--sub); font-size: 13px; font-weight: 600;
+  transition: all 0.2s;
+}
+.tab.on { background: var(--card); color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.3); border: 1px solid var(--line); }
+
+/* リスト＆行 */
+.list { list-style: none; padding: 0; margin: 16px 0; }
+.row {
+  width: 100%; min-height: 60px;
+  display: grid; grid-template-columns: 1fr auto 20px; align-items: center; gap: 12px;
+  background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+  padding: 12px 16px; margin-bottom: 10px; color: var(--fg); text-align: left;
+  transition: all 0.2s;
+}
+.row:active { transform: scale(0.98); }
+.row.done { border-color: rgba(0, 230, 118, 0.4); background: rgba(0, 230, 118, 0.03); }
+.row.done .mark { color: var(--good); text-shadow: 0 0 8px var(--good-glow); }
+.row .name { font-size: 15px; font-weight: 600; }
+.row .meta { font-family: 'SF Mono', monospace; font-size: 12px; color: var(--sub); }
+
+/* AIアドバイス＆ヒントバッジ */
+.hint {
+  background: rgba(0, 242, 254, 0.05); border: 1px solid rgba(0, 242, 254, 0.2);
+  border-left: 4px solid var(--accent); border-radius: 10px;
+  padding: 12px 14px; margin: 14px 0; font-size: 13px; backdrop-filter: blur(4px);
+}
+.hint p { margin: 3px 0; }
+
+/* フィールド＆入力UI */
+.field { margin: 24px 0; }
+.field label { display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--sub); margin-bottom: 10px; }
+
+/* ステッパー（+-ボタン） */
+.stepper { display: grid; grid-template-columns: 60px 1fr 60px; align-items: center; gap: 12px; }
+.stepper button {
+  height: 60px; border-radius: 14px; border: 1px solid var(--line);
+  background: var(--card); color: var(--fg); font-size: 24px; font-weight: 600;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2); transition: all 0.15s;
+}
+.stepper button:active { transform: scale(0.92); background: var(--line); }
+.stepper .value { text-align: center; font-size: 32px; font-weight: 800; letter-spacing: -1px; color: #fff; font-variant-numeric: tabular-nums; }
+
+/* RIR ボタン */
+.rir { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.rir-btn {
+  height: 52px; border-radius: 12px; border: 1px solid var(--line);
+  background: var(--card); color: var(--sub); font-size: 16px; font-weight: 700;
+  transition: all 0.2s;
+}
+.rir-btn.on { 
+  background: var(--accent-grad); color: #000; border: none; 
+  box-shadow: 0 0 16px var(--accent-glow); transform: translateY(-2px);
+}
+
+/* メインボタン */
+.btn {
+  width: 100%; min-height: 54px; border-radius: 14px;
+  border: 1px solid var(--line); background: var(--card); color: var(--fg);
+  font-size: 15px; font-weight: 600; transition: all 0.2s;
+}
+.btn:active { transform: scale(0.98); }
+.btn.primary { 
+  background: var(--accent-grad); color: #050b14; border: none; 
+  font-weight: 800; font-size: 16px; letter-spacing: 0.3px;
+  box-shadow: 0 6px 20px var(--accent-glow);
+}
+.btn.big { min-height: 62px; margin-top: 24px; }
+.btn.danger { border-color: var(--bad); color: var(--bad); margin-top: 20px; background: rgba(255,23,68,0.05); }
+
+/* 下部ナビゲーションバー（ガラスモーフィズム） */
+.tabbar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  display: flex; background: rgba(19, 21, 31, 0.85); 
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 100;
+}
+.tabbar button {
+  flex: 1; height: 60px; background: none; border: none; color: var(--sub); 
+  font-size: 12px; font-weight: 600; transition: all 0.2s;
+}
+.tabbar button.on { 
+  color: var(--accent); text-shadow: 0 0 10px var(--accent-glow);
+}
+
+/* --- ネオン・アナトミーマップのスタイル --- */
+.anatomy-container {
+  width: 100%;
+  max-width: 180px;
+  margin: 12px auto;
+  display: flex;
+  justify-content: center;
+}
+
+.anatomy-svg {
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 0 12px rgba(0, 0, 0, 0.8));
+}
+
+.muscle {
+  transition: all 0.4s ease;
+}
+
+.muscle.inactive {
+  fill: #1e2230;
+  stroke: #2d3345;
+  stroke-width: 0.5;
+  opacity: 0.4;
+}
+
+/* 主働筋（シアンブルー発光） */
+.muscle.primary-glow {
+  fill: #00f2fe;
+  stroke: #ffffff;
+  stroke-width: 1;
+  filter: url(#neon-blue);
+  animation: neonPulseBlue 1.8s infinite alternate;
+}
+
+/* 副次筋（パープル発光） */
+.muscle.secondary-glow {
+  fill: #b537ff;
+  stroke: #ffffff;
+  stroke-width: 1;
+  filter: url(#neon-purple);
+  animation: neonPulsePurple 1.8s infinite alternate;
+}
+
+@keyframes neonPulseBlue {
+  0% {
+    fill: #00c6ff;
+    filter: drop-shadow(0 0 4px #00f2fe) drop-shadow(0 0 8px #00f2fe);
+  }
+  100% {
+    fill: #00f2fe;
+    filter: drop-shadow(0 0 10px #00f2fe) drop-shadow(0 0 20px #00f2fe);
+  }
+}
+
+@keyframes neonPulsePurple {
+  0% {
+    fill: #8a2be2;
+    filter: drop-shadow(0 0 4px #b537ff) drop-shadow(0 0 8px #b537ff);
+  }
+  100% {
+    fill: #d870ff;
+    filter: drop-shadow(0 0 10px #b537ff) drop-shadow(0 0 20px #b537ff);
+  }
+}
+</file>
+
+<file path=".gitignore">
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+</file>
+
+<file path=".oxlintrc.json">
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["react", "typescript", "oxc"],
+  "rules": {
+    "react/rules-of-hooks": "error",
+    "react/only-export-components": ["warn", { "allowConstantExport": true }]
+  }
+}
+</file>
+
+<file path="index.html">
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="#0f1115" />
+    <title>Hypertrophy Navigator</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+</file>
+
+<file path="package.json">
+{
+  "name": "hypertrophy-navigator",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist",
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "oxlint",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "dexie": "^4.4.5",
+    "dexie-react-hooks": "^4.4.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.4",
+    "gh-pages": "^6.3.0",
+    "oxlint": "^1.75.0",
+    "typescript": "~6.0.2",
+    "vite": "^8.2.0"
+  }
+}
+</file>
+
+<file path="README.md">
+# React + TypeScript + Vite
+
+This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+
+Currently, two official plugins are available:
+
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+
+## React Compiler
+
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+
+## Expanding the Oxlint configuration
+
+If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+
+```json
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["react", "typescript", "oxc"],
+  "options": {
+    "typeAware": true
+  },
+  "rules": {
+    "react/rules-of-hooks": "error",
+    "react/only-export-components": ["warn", { "allowConstantExport": true }]
+  }
+}
+```
+
+See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+</file>
+
+<file path="tsconfig.app.json">
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "target": "es2023",
+    "lib": ["ES2023", "DOM"],
+    "module": "esnext",
+    "types": ["vite/client"],
+    "allowArbitraryExtensions": true,
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Linting */
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src"]
+}
+</file>
+
+<file path="tsconfig.json">
+{
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ]
+}
+</file>
+
+<file path="tsconfig.node.json">
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
+    "target": "es2023",
+    "lib": ["ES2023"],
+    "types": ["node"],
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "module": "nodenext",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+
+    /* Linting */
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["vite.config.ts"]
+}
+</file>
+
+<file path="vite.config.ts">
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig({
+  plugins: [react()],
+  base: process.env.NODE_ENV === 'production' ? '/hypertrophy-navigator/' : '/',
+  server: {
+    host: true,
+    port: 5173,
+  },
+});
+</file>
+
+</files>

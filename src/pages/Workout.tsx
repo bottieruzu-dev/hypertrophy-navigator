@@ -4,12 +4,13 @@ import { db } from '../db/db';
 import type { Exercise, SplitType } from '../db/types';
 import { effectiveIncrement, formatWeight } from '../engine/units';
 import { prescribeNextLoad } from '../engine/progression';
+import { getExerciseRecommendation } from '../engine/generator';
+import { BodyAnatomy } from '../components/BodyAnatomy';
 
 export default function Workout() {
   const [split, setSplit] = useState<SplitType>('upper_A');
   const [exerciseIndex, setExerciseIndex] = useState(0);
 
-  // 選択された分割の種目一覧を取得
   const exercises = useLiveQuery(async () => {
     const allEx = await db.exercises.where('isAvailable').equals(1).toArray();
     return allEx.filter((e) => e.silhouetteTag !== 'forbidden');
@@ -61,6 +62,11 @@ function LoggerSection({ exercise, onNextExercise }: { exercise: Exercise; onNex
     () => db.sets.where('exerciseId').equals(exercise.id).reverse().toArray(),
     [exercise.id]
   );
+  const recommendation = useLiveQuery(() => getExerciseRecommendation(exercise), [exercise.id]);
+  const credits = useLiveQuery(() => db.muscleCredits.where('exerciseId').equals(exercise.id).toArray(), [exercise.id]);
+
+  const primaryMuscles = credits?.filter((c) => c.credit >= 0.8).map((c) => c.muscle) ?? [];
+  const secondaryMuscles = credits?.filter((c) => c.credit < 0.8).map((c) => c.muscle) ?? [];
 
   const lastSet = historySets?.[0];
   const defaultWeight = lastSet?.actualWeight ?? baseline?.weightKg ?? 10;
@@ -81,7 +87,6 @@ function LoggerSection({ exercise, onNextExercise }: { exercise: Exercise; onNex
     }
   }, [baseline, lastSet, exercise.id]);
 
-  // インターバルタイマーのカウントダウン処理
   useEffect(() => {
     if (timerSec === null || timerSec <= 0) return;
     const timer = setInterval(() => setTimerSec((s) => (s && s > 1 ? s - 1 : null)), 1000);
@@ -93,8 +98,6 @@ function LoggerSection({ exercise, onNextExercise }: { exercise: Exercise; onNex
   const handleLogSet = async () => {
     const date = new Date().toISOString().slice(0, 10);
     const setOrder = (historySets?.length ?? 0) + 1;
-
-    // 次回重量の処方を計算
     const presc = prescribeNextLoad({ weight, reps, rir }, exercise);
 
     await db.sets.add({
@@ -114,12 +117,20 @@ function LoggerSection({ exercise, onNextExercise }: { exercise: Exercise; onNex
       mode: presc.mode,
     });
 
-    // タイマー起動（コンパウンド150秒、アイソレーション75秒）
     setTimerSec(exercise.type === 'compound' ? 150 : 75);
   };
 
   return (
     <div className="card">
+      {/* 筋肉発光ネオンアナトミーマップ */}
+      <BodyAnatomy primaryMuscles={primaryMuscles} secondaryMuscles={secondaryMuscles} />
+
+      {recommendation && (
+        <div className="hint converged" style={{ marginBottom: '16px' }}>
+          <strong>🤖 AI処方アドバイス:</strong> {recommendation.reason}
+        </div>
+      )}
+
       {timerSec !== null && (
         <div className="hint converged" style={{ textAlign: 'center', fontSize: '20px', fontWeight: 'bold' }}>
           ⏱ 休憩タイマー: {Math.floor(timerSec / 60)}分 {timerSec % 60}秒
