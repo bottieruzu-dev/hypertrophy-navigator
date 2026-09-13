@@ -6,6 +6,7 @@ import { effectiveIncrement, formatWeight } from '../engine/units';
 import { prescribeNextLoad } from '../engine/progression';
 import { getExerciseRecommendation } from '../engine/generator';
 import { BodyAnatomy } from '../components/BodyAnatomy';
+import { TrainerGuide } from '../components/TrainerGuide';
 
 export default function Workout() {
   const [split, setSplit] = useState<SplitType>('upper_A');
@@ -122,6 +123,9 @@ function LoggerSection({ exercise, onNextExercise }: { exercise: Exercise; onNex
 
   return (
     <div className="card">
+      {/* 🤖 AIトレーナー解説メッセージ */}
+      <TrainerGuide exerciseName={exercise.name} note={exercise.note} />
+
       {/* 筋肉発光ネオンアナトミーマップ */}
       <BodyAnatomy primaryMuscles={primaryMuscles} secondaryMuscles={secondaryMuscles} />
 
