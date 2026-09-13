@@ -1,22 +1,55 @@
 import React, { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/db';
-import { calculateUserLevel } from '../engine/achievements';
+import { calculateUserLevel, type IconName } from '../engine/achievements';
 import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Egg, Milk, Dumbbell, Flame, UtensilsCrossed,
+  Wand2, Footprints, Bot, Zap, Crown, Award
+} from 'lucide-react';
+
+/** Lucideベクターアイコンのレンダラー */
+const TitleIcon: React.FC<{ iconName: IconName; size?: number }> = ({ iconName, size = 14 }) => {
+  const props = { size, className: "title-lucide-icon" };
+  switch (iconName) {
+    case 'Egg': return <Egg {...props} />;
+    case 'Milk': return <Milk {...props} />;
+    case 'Dumbbell': return <Dumbbell {...props} />;
+    case 'Flame': return <Flame {...props} />;
+    case 'UtensilsCrossed': return <UtensilsCrossed {...props} />;
+    case 'Wand2': return <Wand2 {...props} />;
+    case 'Footprints': return <Footprints {...props} />;
+    case 'Bot': return <Bot {...props} />;
+    case 'Zap': return <Zap {...props} />;
+    case 'Crown': return <Crown {...props} />;
+    default: return <Award {...props} />;
+  }
+};
 
 export const HeaderLevelBadge: React.FC = () => {
   const [showDetail, setShowDetail] = useState(false);
 
+  // 筋トレ・Week0・体組成・栄養ログの全実績をリアルタイム集計
   const stats = useLiveQuery(async () => {
     const allSets = await db.sets.toArray();
     const totalSets = allSets.length;
-    const totalVolume = allSets.reduce((sum, s) => sum + (s.volumeLoad || 0), 0);
-    return { totalSets, totalVolume };
+    const totalVolumeKg = allSets.reduce((sum, s) => sum + (s.volumeLoad || 0), 0);
+
+    const bodyMetrics = await db.bodyMetrics.toArray();
+    const bodyMetricDays = bodyMetrics.length;
+
+    const nutritionLogs = await db.nutritionLogs.toArray();
+    const totalProteinCheckedG = nutritionLogs.reduce((sum, n) => sum + (n.proteinCheckedG || 0), 0);
+
+    return { totalSets, totalVolumeKg, bodyMetricDays, totalProteinCheckedG };
   }, []);
 
-  const totalSets = stats?.totalSets ?? 0;
-  const totalVolume = stats?.totalVolume ?? 0;
-  const levelInfo = calculateUserLevel(totalSets, totalVolume);
+  const levelInfo = calculateUserLevel({
+    totalSets: stats?.totalSets ?? 0,
+    totalVolumeKg: stats?.totalVolumeKg ?? 0,
+    bodyMetricDays: stats?.bodyMetricDays ?? 0,
+    totalProteinCheckedG: stats?.totalProteinCheckedG ?? 0,
+  });
 
   return (
     <>
@@ -26,7 +59,10 @@ export const HeaderLevelBadge: React.FC = () => {
           <span className="badge-lv-num">{levelInfo.level}</span>
         </div>
         <div className="badge-info-box">
-          <div className="badge-title">{levelInfo.title}</div>
+          <div className="badge-title-wrap">
+            <span className="badge-title">{levelInfo.title}</span>
+            <TitleIcon iconName={levelInfo.iconName} size={13} />
+          </div>
           <div className="badge-exp-bar">
             <div
               className="badge-exp-fill"
@@ -56,7 +92,11 @@ export const HeaderLevelBadge: React.FC = () => {
               <div className="status-modal-avatar">
                 <span className="status-lv-badge">LV.{levelInfo.level}</span>
               </div>
-              <div className="status-modal-title">{levelInfo.title}</div>
+              
+              <div className="status-modal-title-wrap">
+                <TitleIcon iconName={levelInfo.iconName} size={22} />
+                <span className="status-modal-title">{levelInfo.title}</span>
+              </div>
 
               <div className="status-modal-exp-section">
                 <div className="status-exp-label">
@@ -74,11 +114,19 @@ export const HeaderLevelBadge: React.FC = () => {
               <div className="status-stats-grid">
                 <div className="status-stat-card">
                   <div className="stat-label">総完了セット数</div>
-                  <div className="stat-value">{totalSets} <span className="stat-unit">SET</span></div>
+                  <div className="stat-value">{stats?.totalSets ?? 0} <span className="stat-unit">SET</span></div>
                 </div>
                 <div className="status-stat-card">
-                  <div className="stat-label">累計挙上ボリューム</div>
-                  <div className="stat-value">{Math.floor(totalVolume).toLocaleString()} <span className="stat-unit">KG</span></div>
+                  <div className="stat-label">累計挙上量</div>
+                  <div className="stat-value">{Math.floor(stats?.totalVolumeKg ?? 0).toLocaleString()} <span className="stat-unit">KG</span></div>
+                </div>
+                <div className="status-stat-card">
+                  <div className="stat-label">体組成記録日数</div>
+                  <div className="stat-value">{stats?.bodyMetricDays ?? 0} <span className="stat-unit">日</span></div>
+                </div>
+                <div className="status-stat-card">
+                  <div className="stat-label">累計タンパク質</div>
+                  <div className="stat-value">{Math.floor(stats?.totalProteinCheckedG ?? 0).toLocaleString()} <span className="stat-unit">G</span></div>
                 </div>
               </div>
 

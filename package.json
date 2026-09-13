@@ -17,6 +17,7 @@
     "dexie": "^4.4.5",
     "dexie-react-hooks": "^4.4.0",
     "framer-motion": "^13.2.0",
+    "lucide-react": "^1.45.0",
     "react": "^19.2.8",
     "react-activity-calendar": "^3.2.1",
     "react-circular-progressbar": "^2.2.0",

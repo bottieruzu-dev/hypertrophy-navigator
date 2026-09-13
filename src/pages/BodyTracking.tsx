@@ -1,3 +1,4 @@
+import { fireNeonConfetti } from '../engine/achievements';
 import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/db';
@@ -29,6 +30,7 @@ export default function BodyTracking() {
       waistCm: waist !== '' ? Number(waist) : null,
       shoulderCm: shoulder !== '' ? Number(shoulder) : null,
     });
+    fireNeonConfetti(); // 🌟 EXP加算＆スパーク演出
     setSavedMessage(true);
     setTimeout(() => setSavedMessage(false), 3000);
   };

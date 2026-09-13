@@ -1,3 +1,4 @@
+import { fireNeonConfetti } from '../engine/achievements';
 import { useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/db';
@@ -138,6 +139,7 @@ function Wizard({
       suggestions: [...suggestions, weight],
       baseline,
     });
+    fireNeonConfetti(); // 🌟 EXP加算＆スパーク演出
     setSaving(false);
     onClose();
   };

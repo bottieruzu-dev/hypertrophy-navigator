@@ -484,3 +484,39 @@ button.row.done .mark { color: var(--good); text-shadow: 0 0 8px var(--good-glow
   font-size: 10px;
   color: var(--accent);
 }
+
+
+/* --- Lucideネオンアイコンスタイル --- */
+.badge-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 140px;
+}
+
+.title-lucide-icon {
+  color: var(--accent);
+  filter: drop-shadow(0 0 6px var(--accent-glow));
+  flex-shrink: 0;
+}
+
+.status-modal-title-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  color: var(--good);
+}
+
+.status-modal-title-wrap .title-lucide-icon {
+  color: var(--good);
+  filter: drop-shadow(0 0 8px var(--good-glow));
+}
+
+.status-modal-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--good);
+  text-shadow: 0 0 10px var(--good-glow);
+}

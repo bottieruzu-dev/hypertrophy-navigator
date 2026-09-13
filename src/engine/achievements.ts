@@ -1,41 +1,58 @@
 import confetti from 'canvas-confetti';
 
+export type IconName =
+  | 'Egg' | 'Milk' | 'Dumbbell' | 'Flame' | 'UtensilsCrossed'
+  | 'Wand2' | 'Footprints' | 'Bot' | 'Zap' | 'Crown' | 'Award';
+
 export interface LevelTitle {
   minLevel: number;
   title: string;
+  iconName: IconName;
 }
 
-/** ユーモアあふれるレベル別称号リスト */
+/** 洗練されたベクターアイコン指定付きのレベル別称号マスタ */
 export const HUMOR_TITLES: LevelTitle[] = [
-  { minLevel: 1, title: '筋肉の生まれたてひよこ 🐣' },
-  { minLevel: 2, title: 'プロテインビギナー 🥛' },
-  { minLevel: 3, title: 'ダンベルと初対面 🏋️' },
-  { minLevel: 5, title: '筋肉痛を愛し始めた者 💥' },
-  { minLevel: 8, title: '鶏むね肉の調理マスター 🍗' },
-  { minLevel: 10, title: 'プロテインシェイカーの魔術師 🧙‍♂️' },
-  { minLevel: 15, title: '階段を下りるのが恐怖の漢 😰' },
-  { minLevel: 20, title: 'プロテイン錬金術師 ⚗️' },
-  { minLevel: 25, title: 'ジムの地縛霊 👻' },
-  { minLevel: 30, title: '人間ベンチプレス機 🤖' },
-  { minLevel: 40, title: '重力の法則を無視する者 🌌' },
-  { minLevel: 50, title: '歩く人間兵器 💣' },
-  { minLevel: 75, title: '超サイヤ筋 ⚡' },
-  { minLevel: 99, title: '筋神 (Hypertrophy God) 👑' },
+  { minLevel: 1,  title: '筋肉の生まれたてひよこ', iconName: 'Egg' },
+  { minLevel: 2,  title: 'プロテインビギナー',     iconName: 'Milk' },
+  { minLevel: 3,  title: 'ダンベルと初対面',       iconName: 'Dumbbell' },
+  { minLevel: 5,  title: '筋肉痛を愛し始めた者',   iconName: 'Flame' },
+  { minLevel: 8,  title: '鶏むね肉の調理マスター', iconName: 'UtensilsCrossed' },
+  { minLevel: 10, title: 'プロテインシェイカーの魔術師', iconName: 'Wand2' },
+  { minLevel: 15, title: '階段を下りるのが恐怖の漢', iconName: 'Footprints' },
+  { minLevel: 20, title: 'プロテイン錬金術師',     iconName: 'Wand2' },
+  { minLevel: 25, title: 'ジムの地縛霊',           iconName: 'Award' },
+  { minLevel: 30, title: '人間ベンチプレス機',     iconName: 'Bot' },
+  { minLevel: 40, title: '重力の法則を無視する者', iconName: 'Zap' },
+  { minLevel: 50, title: '歩く人間兵器',           iconName: 'Flame' },
+  { minLevel: 75, title: '超サイヤ筋',             iconName: 'Zap' },
+  { minLevel: 99, title: '筋神 (Hypertrophy God)', iconName: 'Crown' },
 ];
 
 export interface UserLevelInfo {
   level: number;
   title: string;
+  iconName: IconName;
   totalExp: number;
   currentLevelExp: number;
   nextLevelExp: number;
   progressPct: number;
 }
 
-/** 累計セット数とボリュームからレベル・称号・EXPを即座に計算 */
-export function calculateUserLevel(totalSets: number, totalVolumeKg: number): UserLevelInfo {
-  // 1セット = 50 EXP, 10kg挙上 = 1 EXP
-  const totalExp = Math.floor(totalSets * 50 + totalVolumeKg / 10);
+/** 筋トレ・Week0・体組成・栄養すべての実績から総合EXPとレベルを計算 */
+export function calculateUserLevel(params: {
+  totalSets: number;         // 本番・Week0のセット数 (1セット = 50 EXP)
+  totalVolumeKg: number;     // 挙上重量 (10kg = 1 EXP)
+  bodyMetricDays: number;    // 体組成の記録日数 (1日 = 100 EXP)
+  totalProteinCheckedG: number; // 摂取タンパク質 (1g = 2 EXP)
+}): UserLevelInfo {
+  const { totalSets, totalVolumeKg, bodyMetricDays, totalProteinCheckedG } = params;
+
+  const totalExp = Math.floor(
+    totalSets * 50 +
+    totalVolumeKg / 10 +
+    bodyMetricDays * 100 +
+    totalProteinCheckedG * 2
+  );
 
   let level = 1;
   let expAccumulated = 0;
@@ -51,6 +68,7 @@ export function calculateUserLevel(totalSets: number, totalVolumeKg: number): Us
       return {
         level,
         title: titleObj.title,
+        iconName: titleObj.iconName,
         totalExp,
         currentLevelExp,
         nextLevelExp: requiredForNext,
@@ -63,7 +81,8 @@ export function calculateUserLevel(totalSets: number, totalVolumeKg: number): Us
 
   return {
     level: 99,
-    title: '筋神 (Hypertrophy God) 👑',
+    title: '筋神 (Hypertrophy God)',
+    iconName: 'Crown',
     totalExp,
     currentLevelExp: 0,
     nextLevelExp: 0,
