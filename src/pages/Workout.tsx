@@ -7,27 +7,21 @@ import { prescribeNextLoad } from '../engine/progression';
 import { getExerciseRecommendation } from '../engine/generator';
 import { BodyAnatomy } from '../components/BodyAnatomy';
 import { TrainerGuide } from '../components/TrainerGuide';
+import { CALIBRATION_PLAN } from '../db/queries/calibration';
 
 export default function Workout() {
   const [split, setSplit] = useState<SplitType>('upper_A');
   const [exerciseIndex, setExerciseIndex] = useState(0);
 
+  // 選択された分割（split）に対応する種目のみを取得するように修正
   const exercises = useLiveQuery(async () => {
-    const allEx = await db.exercises.where('isAvailable').equals(1).toArray();
-    return allEx.filter((e) => e.silhouetteTag !== 'forbidden');
+    const ids = CALIBRATION_PLAN[split] ?? [];
+    const list = await db.exercises.bulkGet(ids);
+    return list.filter((e): e is Exercise => !!e && e.isAvailable === 1 && e.silhouetteTag !== 'forbidden');
   }, [split]);
 
   const currentEx = exercises?.[exerciseIndex] ?? null;
   const totalCount = exercises?.length ?? 0;
-
-  if (!currentEx) {
-    return (
-      <div className="page">
-        <h1>本番ワークアウト</h1>
-        <p className="sub">種目を読み込み中、または対象種目がありません。</p>
-      </div>
-    );
-  }
 
   return (
     <div className="page">
@@ -43,16 +37,24 @@ export default function Workout() {
             </button>
           ))}
         </div>
-        <h2>{currentEx.name}</h2>
-        <p className="sub">
-          種目 {exerciseIndex + 1} / {totalCount} ・ 目標 {currentEx.repRange[0]}–{currentEx.repRange[1]} reps
-        </p>
+        {currentEx ? (
+          <>
+            <h2>{currentEx.name}</h2>
+            <p className="sub">
+              種目 {exerciseIndex + 1} / {totalCount} ・ 目標 {currentEx.repRange[0]}–{currentEx.repRange[1]} reps
+            </p>
+          </>
+        ) : (
+          <p className="sub">種目を読み込み中、または対象種目がありません。</p>
+        )}
       </header>
 
-      <LoggerSection
-        exercise={currentEx}
-        onNextExercise={() => setExerciseIndex((i) => Math.min(i + 1, Math.max(0, totalCount - 1)))}
-      />
+      {currentEx && (
+        <LoggerSection
+          exercise={currentEx}
+          onNextExercise={() => setExerciseIndex((i) => Math.min(i + 1, Math.max(0, totalCount - 1)))}
+        />
+      )}
     </div>
   );
 }
