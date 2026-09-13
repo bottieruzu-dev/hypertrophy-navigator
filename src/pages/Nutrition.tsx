@@ -2,10 +2,6 @@ import { useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/db';
 import { getTodayNutrition, ensureTodayNutrition, addFoodProtein, resetTodayProtein } from '../db/queries/nutrition';
-import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
-import 'react-circular-progressbar/dist/styles.css';
-import CountUp from 'react-countup';
-import { motion } from 'framer-motion';
 
 export default function Nutrition() {
   useEffect(() => {
@@ -20,14 +16,14 @@ export default function Nutrition() {
   }
 
   const pPct = Math.min(100, Math.round((nutrition.proteinCheckedG / nutrition.targetP) * 100));
+  
+  // 円形SVGゲージの計算
+  const radius = 52;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (pPct / 100) * circumference;
 
   return (
-    <motion.div 
-      className="page"
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-    >
+    <div className="page">
       <header className="hdr">
         <h1>本日の栄養管理</h1>
         <p className="sub">{nutrition.date} ・ 減量モード (−286 kcal)</p>
@@ -36,22 +32,47 @@ export default function Nutrition() {
       <section className="card">
         <h2>タンパク質 (P) 摂取達成度</h2>
         
-        {/* 円形ゲージメーター */}
-        <div className="circular-progress-wrap">
-          <CircularProgressbar
-            value={pPct}
-            text={`${pPct}%`}
-            styles={buildStyles({
-              textColor: '#ffffff',
-              pathColor: pPct >= 100 ? '#00e676' : '#00f2fe',
-              trailColor: '#232a42',
-              textSize: '22px',
-            })}
-          />
+        {/* ネオンSVG円形ゲージメーター */}
+        <div style={{ position: 'relative', width: '140px', height: '140px', margin: '16px auto' }}>
+          <svg width="140" height="140" viewBox="0 0 120 120" style={{ transform: 'rotate(-90deg)' }}>
+            <circle
+              cx="60"
+              cy="60"
+              r={radius}
+              fill="none"
+              stroke="#232a42"
+              strokeWidth="10"
+            />
+            <circle
+              cx="60"
+              cy="60"
+              r={radius}
+              fill="none"
+              stroke={pPct >= 100 ? '#00e676' : '#00f2fe'}
+              strokeWidth="10"
+              strokeDasharray={circumference}
+              strokeDashoffset={strokeDashoffset}
+              strokeLinecap="round"
+              style={{ transition: 'stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.4s' }}
+            />
+          </svg>
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '26px',
+            fontWeight: '900',
+            color: '#fff',
+            textShadow: '0 0 10px rgba(0, 242, 254, 0.5)'
+          }}>
+            {pPct}%
+          </div>
         </div>
 
         <p className="mono" style={{ fontSize: '18px', textAlign: 'center', fontWeight: 'bold' }}>
-          <CountUp end={nutrition.proteinCheckedG} decimals={1} duration={0.8} /> / {nutrition.targetP} g
+          {nutrition.proteinCheckedG} / {nutrition.targetP} g
         </p>
 
         <button className="btn" style={{ marginTop: '16px', minHeight: '44px', fontSize: '13px' }} onClick={() => resetTodayProtein()}>
@@ -73,9 +94,8 @@ export default function Nutrition() {
 
       <section className="card">
         <h2>クイック食材タップ記録</h2>
-        <p className="sub">タップするとタンパク質がリアルタイム加算されます</p>
+        <p className="sub">タップするとタンパク質が加算されます</p>
         
-        {/* 整列されたサイバーネオングリッド */}
         <div className="food-grid">
           {foods?.map((f) => (
             <div key={f.id} className="food-card" onClick={() => addFoodProtein(f.p)}>
@@ -88,6 +108,6 @@ export default function Nutrition() {
           ))}
         </div>
       </section>
-    </motion.div>
+    </div>
   );
 }
