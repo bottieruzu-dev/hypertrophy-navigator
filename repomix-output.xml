@@ -52,6 +52,7 @@ src/
     vite.svg
   components/
     BodyAnatomy.tsx
+    HeaderLevelBadge.tsx
     LevelUpModal.tsx
     TrainerGuide.tsx
   db/
@@ -103,6 +104,103 @@ vite.config.ts
 
 <files>
 This section contains the contents of the repository's files.
+
+<file path="src/components/HeaderLevelBadge.tsx">
+import React, { useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../db/db';
+import { calculateUserLevel } from '../engine/achievements';
+import { motion, AnimatePresence } from 'framer-motion';
+
+export const HeaderLevelBadge: React.FC = () => {
+  const [showDetail, setShowDetail] = useState(false);
+
+  const stats = useLiveQuery(async () => {
+    const allSets = await db.sets.toArray();
+    const totalSets = allSets.length;
+    const totalVolume = allSets.reduce((sum, s) => sum + (s.volumeLoad || 0), 0);
+    return { totalSets, totalVolume };
+  }, []);
+
+  const totalSets = stats?.totalSets ?? 0;
+  const totalVolume = stats?.totalVolume ?? 0;
+  const levelInfo = calculateUserLevel(totalSets, totalVolume);
+
+  return (
+    <>
+      <div className="game-level-badge" onClick={() => setShowDetail(true)}>
+        <div className="badge-level-box">
+          <span className="badge-lv-label">LV</span>
+          <span className="badge-lv-num">{levelInfo.level}</span>
+        </div>
+        <div className="badge-info-box">
+          <div className="badge-title">{levelInfo.title}</div>
+          <div className="badge-exp-bar">
+            <div
+              className="badge-exp-fill"
+              style={{ width: `${levelInfo.progressPct}%` }}
+            />
+          </div>
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {showDetail && (
+          <motion.div
+            className="levelup-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowDetail(false)}
+          >
+            <motion.div
+              className="level-status-modal"
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="status-modal-header">PLAYER STATUS</div>
+              <div className="status-modal-avatar">
+                <span className="status-lv-badge">LV.{levelInfo.level}</span>
+              </div>
+              <div className="status-modal-title">{levelInfo.title}</div>
+
+              <div className="status-modal-exp-section">
+                <div className="status-exp-label">
+                  <span>EXP</span>
+                  <span>{levelInfo.currentLevelExp} / {levelInfo.nextLevelExp} ({levelInfo.progressPct}%)</span>
+                </div>
+                <div className="badge-exp-bar big">
+                  <div
+                    className="badge-exp-fill"
+                    style={{ width: `${levelInfo.progressPct}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="status-stats-grid">
+                <div className="status-stat-card">
+                  <div className="stat-label">総完了セット数</div>
+                  <div className="stat-value">{totalSets} <span className="stat-unit">SET</span></div>
+                </div>
+                <div className="status-stat-card">
+                  <div className="stat-label">累計挙上ボリューム</div>
+                  <div className="stat-value">{Math.floor(totalVolume).toLocaleString()} <span className="stat-unit">KG</span></div>
+                </div>
+              </div>
+
+              <button className="btn primary big" onClick={() => setShowDetail(false)}>
+                閉じる
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+};
+</file>
 
 <file path="repomix実行.bat">
 @echo off
@@ -1023,6 +1121,77 @@ export interface Setting {
 <file path="src/engine/achievements.ts">
 import confetti from 'canvas-confetti';
 
+export interface LevelTitle {
+  minLevel: number;
+  title: string;
+}
+
+/** ユーモアあふれるレベル別称号リスト */
+export const HUMOR_TITLES: LevelTitle[] = [
+  { minLevel: 1, title: '筋肉の生まれたてひよこ 🐣' },
+  { minLevel: 2, title: 'プロテインビギナー 🥛' },
+  { minLevel: 3, title: 'ダンベルと初対面 🏋️' },
+  { minLevel: 5, title: '筋肉痛を愛し始めた者 💥' },
+  { minLevel: 8, title: '鶏むね肉の調理マスター 🍗' },
+  { minLevel: 10, title: 'プロテインシェイカーの魔術師 🧙‍♂️' },
+  { minLevel: 15, title: '階段を下りるのが恐怖の漢 😰' },
+  { minLevel: 20, title: 'プロテイン錬金術師 ⚗️' },
+  { minLevel: 25, title: 'ジムの地縛霊 👻' },
+  { minLevel: 30, title: '人間ベンチプレス機 🤖' },
+  { minLevel: 40, title: '重力の法則を無視する者 🌌' },
+  { minLevel: 50, title: '歩く人間兵器 💣' },
+  { minLevel: 75, title: '超サイヤ筋 ⚡' },
+  { minLevel: 99, title: '筋神 (Hypertrophy God) 👑' },
+];
+
+export interface UserLevelInfo {
+  level: number;
+  title: string;
+  totalExp: number;
+  currentLevelExp: number;
+  nextLevelExp: number;
+  progressPct: number;
+}
+
+/** 累計セット数とボリュームからレベル・称号・EXPを即座に計算 */
+export function calculateUserLevel(totalSets: number, totalVolumeKg: number): UserLevelInfo {
+  // 1セット = 50 EXP, 10kg挙上 = 1 EXP
+  const totalExp = Math.floor(totalSets * 50 + totalVolumeKg / 10);
+
+  let level = 1;
+  let expAccumulated = 0;
+
+  while (level < 99) {
+    const requiredForNext = Math.floor(Math.pow(level, 1.7) * 60);
+    if (totalExp < expAccumulated + requiredForNext) {
+      const currentLevelExp = totalExp - expAccumulated;
+      const progressPct = Math.min(100, Math.floor((currentLevelExp / requiredForNext) * 100));
+      
+      const titleObj = [...HUMOR_TITLES].reverse().find((t) => level >= t.minLevel) ?? HUMOR_TITLES[0];
+
+      return {
+        level,
+        title: titleObj.title,
+        totalExp,
+        currentLevelExp,
+        nextLevelExp: requiredForNext,
+        progressPct,
+      };
+    }
+    expAccumulated += requiredForNext;
+    level++;
+  }
+
+  return {
+    level: 99,
+    title: '筋神 (Hypertrophy God) 👑',
+    totalExp,
+    currentLevelExp: 0,
+    nextLevelExp: 0,
+    progressPct: 100,
+  };
+}
+
 export interface Achievement {
   level: number;
   title: string;
@@ -1030,7 +1199,6 @@ export interface Achievement {
   message: string;
 }
 
-/** 累計ボリュームに応じた称号リスト */
 export const ACHIEVEMENTS: Achievement[] = [
   { level: 1, title: '鉄の目覚め', requiredVolumeKg: 100, message: '筋肥大への第一歩を踏み出しました！' },
   { level: 2, title: '重力の挑戦者', requiredVolumeKg: 1000, message: '累計1トン突破！体に変化が表れ始めています！' },
@@ -1039,13 +1207,9 @@ export const ACHIEVEMENTS: Achievement[] = [
   { level: 5, title: '筋神 (Hypertrophy God)', requiredVolumeKg: 50000, message: '累計50トン到達！誰もあなたを止められません！' },
 ];
 
-/** ネオンカラーのクラッカー・スパークを画面全体に炸裂させる */
 export function fireNeonConfetti() {
-  // シアンブルーとパープルのネオン粒子
   const count = 200;
-  const defaults = {
-    origin: { y: 0.7 }
-  };
+  const defaults = { origin: { y: 0.7 } };
 
   function fire(particleRatio: number, opts: confetti.Options) {
     confetti({
@@ -1055,32 +1219,11 @@ export function fireNeonConfetti() {
     });
   }
 
-  fire(0.25, {
-    spread: 26,
-    startVelocity: 55,
-    colors: ['#00f2fe', '#4facfe']
-  });
-  fire(0.2, {
-    spread: 60,
-    colors: ['#b537ff', '#ffffff']
-  });
-  fire(0.35, {
-    spread: 100,
-    decay: 0.91,
-    scalar: 0.8,
-    colors: ['#00f2fe', '#b537ff', '#00e676']
-  });
-  fire(0.1, {
-    spread: 120,
-    startVelocity: 25,
-    decay: 0.92,
-    colors: ['#ffffff', '#00f2fe']
-  });
-  fire(0.1, {
-    spread: 120,
-    startVelocity: 45,
-    colors: ['#b537ff', '#4facfe']
-  });
+  fire(0.25, { spread: 26, startVelocity: 55, colors: ['#00f2fe', '#4facfe'] });
+  fire(0.2, { spread: 60, colors: ['#b537ff', '#ffffff'] });
+  fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8, colors: ['#00f2fe', '#b537ff', '#00e676'] });
+  fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, colors: ['#ffffff', '#00f2fe'] });
+  fire(0.1, { spread: 120, startVelocity: 45, colors: ['#b537ff', '#4facfe'] });
 }
 </file>
 
@@ -1744,80 +1887,6 @@ export default function DebugSeed() {
 		}
 	],
 	"settings": {}
-}
-</file>
-
-<file path="src/pages/Nutrition.tsx">
-import { useEffect } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db/db';
-import { getTodayNutrition, ensureTodayNutrition, addFoodProtein, resetTodayProtein } from '../db/queries/nutrition';
-
-export default function Nutrition() {
-  // 画面が開いた時に初期データが存在するか確認・作成する
-  useEffect(() => {
-    ensureTodayNutrition();
-  }, []);
-
-  // 読み取り専用クエリで安全に監視する
-  const nutrition = useLiveQuery(() => getTodayNutrition(), []);
-  const foods = useLiveQuery(() => db.foods.toArray(), []);
-
-  if (!nutrition) {
-    return <div className="page"><p>読み込み中…</p></div>;
-  }
-
-  const pPct = Math.min(100, Math.round((nutrition.proteinCheckedG / nutrition.targetP) * 100));
-
-  return (
-    <div className="page">
-      <header className="hdr">
-        <h1>本日の栄養管理</h1>
-        <p className="sub">{nutrition.date} ・ 減量モード (−286 kcal)</p>
-      </header>
-
-      <section className="card">
-        <h2>目標マクロ栄養素 (PFC)</h2>
-        <table className="kv">
-          <tbody>
-            <tr><th>目標カロリー</th><td>{nutrition.targetKcal} kcal</td></tr>
-            <tr><th>タンパク質 (P)</th><td>{nutrition.targetP} g ({nutrition.proteinCoef}g/kg FFM)</td></tr>
-            <tr><th>脂質 (F)</th><td>{nutrition.targetF} g</td></tr>
-            <tr><th>炭水化物 (C)</th><td>{nutrition.targetC} g</td></tr>
-          </tbody>
-        </table>
-      </section>
-
-      <section className="card">
-        <h2>タンパク質 (P) 摂取達成度</h2>
-        <div className="progress" style={{ height: '12px', margin: '12px 0' }}>
-          <div className="bar" style={{ width: `${pPct}%`, backgroundColor: pPct >= 100 ? 'var(--good)' : 'var(--accent)' }} />
-        </div>
-        <p className="mono" style={{ fontSize: '16px', textAlign: 'center' }}>
-          {nutrition.proteinCheckedG} / {nutrition.targetP} g ({pPct}%)
-        </p>
-        <button className="btn" style={{ marginTop: '12px', minHeight: '40px', fontSize: '13px' }} onClick={() => resetTodayProtein()}>
-          本日の記録をリセット
-        </button>
-      </section>
-
-      <section className="card">
-        <h2>クイック食材タップ記録</h2>
-        <p className="sub">食べた食材をタップするとタンパク質が加算されます</p>
-        <div className="list">
-          {foods?.map((f) => (
-            <button key={f.id} className="row" onClick={() => addFoodProtein(f.p)}>
-              <div>
-                <span className="name">{f.name}</span>
-                <span className="sub" style={{ display: 'block' }}>{f.unitLabel} ({f.kcal} kcal)</span>
-              </div>
-              <span className="mono good">+{f.p}g P</span>
-            </button>
-          ))}
-        </div>
-      </section>
-    </div>
-  );
 }
 </file>
 
@@ -2531,6 +2600,7 @@ import Calibration from './pages/Calibration';
 import Workout from './pages/Workout';
 import Nutrition from './pages/Nutrition';
 import BodyTracking from './pages/BodyTracking';
+import { HeaderLevelBadge } from './components/HeaderLevelBadge';
 
 type Tab = 'workout' | 'nutrition' | 'body' | 'calibration' | 'debug';
 
@@ -2550,6 +2620,11 @@ export default function App() {
 
   return (
     <div className="app">
+      {/* 画面右上常駐のソシャゲ風レベル＆称号バッジ */}
+      <div className="app-header-bar">
+        <HeaderLevelBadge />
+      </div>
+
       {tab === 'workout' && <Workout />}
       {tab === 'nutrition' && <Nutrition />}
       {tab === 'body' && <BodyTracking />}
@@ -2714,41 +2789,6 @@ code {
 </html>
 </file>
 
-<file path="package.json">
-{
-  "name": "hypertrophy-navigator",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist",
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "oxlint",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "canvas-confetti": "^1.9.4",
-    "dexie": "^4.4.5",
-    "dexie-react-hooks": "^4.4.0",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8"
-  },
-  "devDependencies": {
-    "@types/canvas-confetti": "^1.9.0",
-    "@types/node": "^24.13.3",
-    "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.4",
-    "gh-pages": "^6.3.0",
-    "oxlint": "^1.75.0",
-    "typescript": "~6.0.2",
-    "vite": "^8.2.0"
-  }
-}
-</file>
-
 <file path="vite.config.ts">
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
@@ -2810,6 +2850,163 @@ export const TrainerGuide: React.FC<TrainerGuideProps> = ({ exercise }) => {
 };
 </file>
 
+<file path="src/pages/Nutrition.tsx">
+import { useEffect } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../db/db';
+import { getTodayNutrition, ensureTodayNutrition, addFoodProtein, resetTodayProtein } from '../db/queries/nutrition';
+
+export default function Nutrition() {
+  useEffect(() => {
+    ensureTodayNutrition();
+  }, []);
+
+  const nutrition = useLiveQuery(() => getTodayNutrition(), []);
+  const foods = useLiveQuery(() => db.foods.toArray(), []);
+
+  if (!nutrition) {
+    return <div className="page"><p>読み込み中…</p></div>;
+  }
+
+  const pPct = Math.min(100, Math.round((nutrition.proteinCheckedG / nutrition.targetP) * 100));
+  
+  // 円形SVGゲージの計算
+  const radius = 52;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (pPct / 100) * circumference;
+
+  return (
+    <div className="page">
+      <header className="hdr">
+        <h1>本日の栄養管理</h1>
+        <p className="sub">{nutrition.date} ・ 減量モード (−286 kcal)</p>
+      </header>
+
+      <section className="card">
+        <h2>タンパク質 (P) 摂取達成度</h2>
+        
+        {/* ネオンSVG円形ゲージメーター */}
+        <div style={{ position: 'relative', width: '140px', height: '140px', margin: '16px auto' }}>
+          <svg width="140" height="140" viewBox="0 0 120 120" style={{ transform: 'rotate(-90deg)' }}>
+            <circle
+              cx="60"
+              cy="60"
+              r={radius}
+              fill="none"
+              stroke="#232a42"
+              strokeWidth="10"
+            />
+            <circle
+              cx="60"
+              cy="60"
+              r={radius}
+              fill="none"
+              stroke={pPct >= 100 ? '#00e676' : '#00f2fe'}
+              strokeWidth="10"
+              strokeDasharray={circumference}
+              strokeDashoffset={strokeDashoffset}
+              strokeLinecap="round"
+              style={{ transition: 'stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.4s' }}
+            />
+          </svg>
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '26px',
+            fontWeight: '900',
+            color: '#fff',
+            textShadow: '0 0 10px rgba(0, 242, 254, 0.5)'
+          }}>
+            {pPct}%
+          </div>
+        </div>
+
+        <p className="mono" style={{ fontSize: '18px', textAlign: 'center', fontWeight: 'bold' }}>
+          {nutrition.proteinCheckedG} / {nutrition.targetP} g
+        </p>
+
+        <button className="btn" style={{ marginTop: '16px', minHeight: '44px', fontSize: '13px' }} onClick={() => resetTodayProtein()}>
+          本日の記録をリセット
+        </button>
+      </section>
+
+      <section className="card">
+        <h2>目標マクロ栄養素 (PFC)</h2>
+        <table className="kv">
+          <tbody>
+            <tr><th>目標カロリー</th><td>{nutrition.targetKcal} kcal</td></tr>
+            <tr><th>タンパク質 (P)</th><td>{nutrition.targetP} g ({nutrition.proteinCoef}g/kg FFM)</td></tr>
+            <tr><th>脂質 (F)</th><td>{nutrition.targetF} g</td></tr>
+            <tr><th>炭水化物 (C)</th><td>{nutrition.targetC} g</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section className="card">
+        <h2>クイック食材タップ記録</h2>
+        <p className="sub">タップするとタンパク質が加算されます</p>
+        
+        <div className="food-grid">
+          {foods?.map((f) => (
+            <div key={f.id} className="food-card" onClick={() => addFoodProtein(f.p)}>
+              <div>
+                <div className="food-name">{f.name}</div>
+                <div className="food-sub">{f.unitLabel} ({f.kcal}kcal)</div>
+              </div>
+              <div className="food-protein">+{f.p}g P</div>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+</file>
+
+<file path="package.json">
+{
+  "name": "hypertrophy-navigator",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist",
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "oxlint",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "canvas-confetti": "^1.9.4",
+    "dayjs": "^1.11.23",
+    "dexie": "^4.4.5",
+    "dexie-react-hooks": "^4.4.0",
+    "framer-motion": "^13.2.0",
+    "react": "^19.2.8",
+    "react-activity-calendar": "^3.2.1",
+    "react-circular-progressbar": "^2.2.0",
+    "react-countup": "^6.5.3",
+    "react-dom": "^19.2.8",
+    "swiper": "^14.2.0"
+  },
+  "devDependencies": {
+    "@types/canvas-confetti": "^1.9.0",
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.4",
+    "gh-pages": "^6.3.0",
+    "oxlint": "^1.75.0",
+    "typescript": "~6.0.2",
+    "vite": "^8.2.0"
+  }
+}
+</file>
+
 <file path="src/pages/Workout.tsx">
 import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -2823,6 +3020,9 @@ import { TrainerGuide } from '../components/TrainerGuide';
 import { CALIBRATION_PLAN } from '../db/queries/calibration';
 import { fireNeonConfetti, ACHIEVEMENTS, type Achievement } from '../engine/achievements';
 import { LevelUpModal } from '../components/LevelUpModal';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import 'swiper/css';
+import { motion } from 'framer-motion';
 
 export default function Workout() {
   const [split, setSplit] = useState<SplitType>('upper_A');
@@ -2838,7 +3038,12 @@ export default function Workout() {
   const totalCount = exercises?.length ?? 0;
 
   return (
-    <div className="page">
+    <motion.div 
+      className="page"
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
       <header className="hdr">
         <div className="tabs">
           {(['upper_A', 'lower', 'upper_B'] as SplitType[]).map((s) => (
@@ -2855,7 +3060,7 @@ export default function Workout() {
           <>
             <h2>{currentEx.name}</h2>
             <p className="sub">
-              種目 {exerciseIndex + 1} / {totalCount} ・ 目標 {currentEx.repRange[0]}–{currentEx.repRange[1]} reps
+              種目 {exerciseIndex + 1} / {totalCount} ・ 左右フリックで種目切替 👈 👉
             </p>
           </>
         ) : (
@@ -2863,17 +3068,24 @@ export default function Workout() {
         )}
       </header>
 
-      {currentEx && (
-        <LoggerSection
-          exercise={currentEx}
-          onNextExercise={() => setExerciseIndex((i) => Math.min(i + 1, Math.max(0, totalCount - 1)))}
-        />
+      {exercises && exercises.length > 0 && (
+        <Swiper
+          spaceBetween={16}
+          slidesPerView={1}
+          onSlideChange={(swiper) => setExerciseIndex(swiper.activeIndex)}
+        >
+          {exercises.map((ex) => (
+            <SwiperSlide key={ex.id}>
+              <LoggerSection exercise={ex} />
+            </SwiperSlide>
+          ))}
+        </Swiper>
       )}
-    </div>
+    </motion.div>
   );
 }
 
-function LoggerSection({ exercise, onNextExercise }: { exercise: Exercise; onNextExercise: () => void }) {
+function LoggerSection({ exercise }: { exercise: Exercise }) {
   const baseline = useLiveQuery(() => db.baselines.get(exercise.id), [exercise.id]);
   const historySets = useLiveQuery(
     () => db.sets.where('exerciseId').equals(exercise.id).reverse().toArray(),
@@ -2936,14 +3148,10 @@ function LoggerSection({ exercise, onNextExercise }: { exercise: Exercise; onNex
       mode: presc.mode,
     });
 
-    // 🌟 サプライズ演出1: ネオン・スパークの爆発
     fireNeonConfetti();
 
-    // 🌟 サプライズ演出2: 累計ボリューム計算とレベルアップチェック
     const allSets = await db.sets.toArray();
     const totalVol = allSets.reduce((sum, s) => sum + (s.volumeLoad || 0), 0);
-    
-    // 直前までの累計ボリュームで未解放だった最大の称号を探す
     const prevVol = totalVol - addedVolume;
     const newUnlocked = ACHIEVEMENTS.find(
       (a) => prevVol < a.requiredVolumeKg && totalVol >= a.requiredVolumeKg
@@ -2958,16 +3166,13 @@ function LoggerSection({ exercise, onNextExercise }: { exercise: Exercise; onNex
 
   return (
     <div className="card">
-      {/* 🌟 サプライズ・レベルアップダイアログ */}
       <LevelUpModal
         achievement={unlockedAchievement}
         onClose={() => setUnlockedAchievement(null)}
       />
 
-      {/* 🤖 AIトレーナー4ステップタップ解説 */}
       <TrainerGuide exercise={exercise} />
 
-      {/* 筋肉発光ネオンアナトミーマップ */}
       <BodyAnatomy primaryMuscles={primaryMuscles} secondaryMuscles={secondaryMuscles} />
 
       {recommendation && (
@@ -3028,12 +3233,8 @@ function LoggerSection({ exercise, onNextExercise }: { exercise: Exercise; onNex
         </div>
       </section>
 
-      <button className="btn primary big" onClick={handleLogSet} style={{ marginBottom: '12px' }}>
+      <button className="btn primary big" onClick={handleLogSet}>
         1セット完了して休憩タイマー起動
-      </button>
-
-      <button className="btn" onClick={onNextExercise}>
-        次の種目へ進む ›
       </button>
     </div>
   );
@@ -3050,7 +3251,6 @@ function LoggerSection({ exercise, onNextExercise }: { exercise: Exercise; onNex
   --fg: #f0f4fc;
   --sub: #828eab;
   
-  /* サイバー・ゲーム調アクセント */
   --accent-grad: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
   --accent-glow: rgba(0, 242, 254, 0.4);
   --accent: #00f2fe;
@@ -3085,7 +3285,7 @@ body {
 .page { padding: 16px 14px 32px; max-width: 580px; margin: 0 auto; }
 
 /* 見出し＆タイポグラフィ */
-h1 { font-size: 22px; font-weight: 900; letter-spacing: -0.5px; margin: 12px 0; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.2); }
+h1 { font-size: 22px; font-weight: 900; letter-spacing: -0.5px; margin: 12px 0; color: #fff; }
 h2 { font-size: 18px; font-weight: 800; margin: 0 0 12px; letter-spacing: -0.3px; }
 h3 { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.2px; color: var(--sub); margin: 16px 0 8px; }
 .sub { color: var(--sub); font-size: 13px; margin: 4px 0; }
@@ -3105,6 +3305,85 @@ h3 { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacin
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(12px);
 }
+
+/* リスト・ボタン崩れ修正（Week 0 用） */
+ul.list, .list {
+  list-style: none !important;
+  padding: 0 !important;
+  margin: 16px 0 !important;
+}
+
+ul.list li {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+button.row {
+  width: 100%;
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: 1fr auto 20px;
+  align-items: center;
+  gap: 12px;
+  background: var(--card) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 14px !important;
+  padding: 12px 16px;
+  margin-bottom: 10px;
+  color: var(--fg) !important;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+button.row:active {
+  transform: scale(0.98);
+  border-color: var(--accent-border) !important;
+}
+
+button.row.done {
+  border-color: rgba(0, 230, 118, 0.4) !important;
+  background: rgba(0, 230, 118, 0.05) !important;
+}
+
+button.row .name { font-size: 14px; font-weight: 700; color: #fff; }
+button.row .meta { font-family: 'SF Mono', monospace; font-size: 12px; color: var(--sub); }
+button.row .mark { color: var(--sub); }
+button.row.done .mark { color: var(--good); text-shadow: 0 0 8px var(--good-glow); }
+
+/* クイック食材タップ用ネオングリッド（栄養画面修正） */
+.food-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.food-card {
+  background: linear-gradient(135deg, rgba(20, 24, 40, 0.9) 0%, rgba(12, 14, 24, 0.95) 100%);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 10px;
+  color: var(--fg);
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 82px;
+}
+
+.food-card:active {
+  transform: scale(0.95);
+  border-color: var(--accent);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.food-card .food-name { font-size: 13px; font-weight: 700; color: #fff; }
+.food-card .food-sub { font-size: 10px; color: var(--sub); margin-top: 2px; }
+.food-card .food-protein { font-size: 13px; font-weight: 900; color: var(--good); margin-top: 6px; text-shadow: 0 0 8px var(--good-glow); }
 
 /* タブ切り替え */
 .tabs { display: flex; gap: 8px; margin: 12px 0 16px; background: rgba(0, 0, 0, 0.3); padding: 5px; border-radius: 14px; border: 1px solid var(--line); }
@@ -3146,167 +3425,58 @@ h3 { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacin
   margin: 0 auto;
 }
 
-.hud-anatomy-svg {
-  width: 100%;
-  height: auto;
-}
+.hud-anatomy-svg { width: 100%; height: auto; }
+.hud-muscle { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
 
-.hud-muscle {
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
+.hud-muscle.inactive { fill: #1a2035; stroke: #2e3854; stroke-width: 0.8; opacity: 0.35; }
+.hud-muscle.primary { fill: #00f2fe; stroke: #ffffff; stroke-width: 1.2; filter: url(#hud-cyan-glow); animation: primaryPulse 1.6s infinite alternate ease-in-out; }
+.hud-muscle.secondary { fill: #b537ff; stroke: #ffffff; stroke-width: 1.2; filter: url(#hud-purple-glow); animation: secondaryPulse 1.6s infinite alternate ease-in-out; }
 
-.hud-muscle.inactive {
-  fill: #1a2035;
-  stroke: #2e3854;
-  stroke-width: 0.8;
-  opacity: 0.35;
-}
+@keyframes primaryPulse { 0% { fill: #00c8fe; opacity: 0.8; } 100% { fill: #00f2fe; opacity: 1; filter: drop-shadow(0 0 12px #00f2fe); } }
+@keyframes secondaryPulse { 0% { fill: #9d1aff; opacity: 0.8; } 100% { fill: #b537ff; opacity: 1; filter: drop-shadow(0 0 12px #b537ff); } }
 
-.hud-muscle.primary {
-  fill: #00f2fe;
-  stroke: #ffffff;
-  stroke-width: 1.2;
-  filter: url(#hud-cyan-glow);
-  animation: primaryPulse 1.6s infinite alternate ease-in-out;
-}
-
-.hud-muscle.secondary {
-  fill: #b537ff;
-  stroke: #ffffff;
-  stroke-width: 1.2;
-  filter: url(#hud-purple-glow);
-  animation: secondaryPulse 1.6s infinite alternate ease-in-out;
-}
-
-@keyframes primaryPulse {
-  0% { fill: #00c8fe; opacity: 0.8; }
-  100% { fill: #00f2fe; opacity: 1; filter: drop-shadow(0 0 12px #00f2fe); }
-}
-
-@keyframes secondaryPulse {
-  0% { fill: #9d1aff; opacity: 0.8; }
-  100% { fill: #b537ff; opacity: 1; filter: drop-shadow(0 0 12px #b537ff); }
-}
-
-/* AIトレーナー 対話吹き出しUI (立ち絵デザイン) */
+/* AIトレーナー 対話吹き出しUI (キャラ立ち絵デザイン) */
 .trainer-dialog-card {
-  display: flex;
-  align-items: flex-end;
-  gap: 10px;
+  display: flex; align-items: flex-end; gap: 12px;
   background: linear-gradient(135deg, rgba(22, 27, 44, 0.95) 0%, rgba(10, 12, 22, 0.95) 100%);
-  border: 1px solid var(--accent-border);
-  border-radius: 20px;
-  padding: 10px 12px 10px 4px;
-  margin-bottom: 16px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
-  cursor: pointer;
-  user-select: none;
-  position: relative;
-  min-height: 135px;
-}
-
-.trainer-dialog-card:active {
-  transform: scale(0.98);
+  border: 1px solid var(--accent-border); border-radius: 20px;
+  padding: 10px 12px 10px 4px; margin-bottom: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6); cursor: pointer; user-select: none;
+  position: relative; min-height: 135px;
 }
 
 .trainer-character-area {
-  position: relative;
-  width: 110px;
-  height: 135px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  margin-bottom: -10px;
+  position: relative; width: 110px; height: 135px; flex-shrink: 0;
+  display: flex; align-items: flex-end; justify-content: center; margin-bottom: -10px;
 }
 
 .trainer-character-img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  object-position: bottom center;
-  filter: drop-shadow(0 4px 10px rgba(0, 242, 254, 0.3));
-  z-index: 2;
+  width: 100%; height: 100%; object-fit: contain; object-position: bottom center;
+  filter: drop-shadow(0 4px 10px rgba(0, 242, 254, 0.3)); z-index: 2;
 }
 
-.trainer-fallback-icon {
-  position: absolute;
-  bottom: 12px;
-  font-size: 52px;
-  z-index: 1;
-}
+.trainer-fallback-icon { position: absolute; bottom: 12px; font-size: 52px; z-index: 1; }
 
 .trainer-speech-box {
-  position: relative;
-  flex: 1;
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 12px 14px 22px 14px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
-  min-height: 96px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  position: relative; flex: 1; background: #ffffff; border-radius: 16px;
+  padding: 12px 14px 22px 14px; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+  min-height: 96px; display: flex; flex-direction: column; justify-content: center; margin-bottom: 4px;
 }
 
 .trainer-speech-box::before {
-  content: '';
-  position: absolute;
-  left: -9px;
-  bottom: 24px;
-  border-top: 7px solid transparent;
-  border-bottom: 7px solid transparent;
-  border-right: 10px solid #ffffff;
+  content: ''; position: absolute; left: -9px; bottom: 24px;
+  border-top: 7px solid transparent; border-bottom: 7px solid transparent; border-right: 10px solid #ffffff;
 }
 
-.trainer-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 4px;
-}
+.trainer-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.trainer-title { font-size: 10px; font-weight: 900; color: #050b14; letter-spacing: 1px; }
+.step-badge { font-size: 10px; font-weight: 800; background: rgba(170, 59, 255, 0.12); color: #863bff; padding: 2px 7px; border-radius: 6px; border: 1px solid rgba(170, 59, 255, 0.3); }
+.trainer-speech-text { font-size: 12.5px; font-weight: 700; line-height: 1.45; color: #1a1d2b; margin: 0; }
+.tap-prompt { position: absolute; right: 12px; bottom: 5px; font-size: 9px; font-weight: 800; color: #863bff; animation: tapBlink 1.2s infinite alternate; }
 
-.trainer-title {
-  font-size: 10px;
-  font-weight: 900;
-  color: #050b14;
-  letter-spacing: 1px;
-}
+@keyframes tapBlink { 0% { opacity: 0.4; transform: translateX(0); } 100% { opacity: 1; transform: translateX(3px); } }
 
-.step-badge {
-  font-size: 10px;
-  font-weight: 800;
-  background: rgba(170, 59, 255, 0.12);
-  color: #863bff;
-  padding: 2px 7px;
-  border-radius: 6px;
-  border: 1px solid rgba(170, 59, 255, 0.3);
-}
-
-.trainer-speech-text {
-  font-size: 12.5px;
-  font-weight: 700;
-  line-height: 1.45;
-  color: #1a1d2b;
-  margin: 0;
-}
-
-.tap-prompt {
-  position: absolute;
-  right: 12px;
-  bottom: 5px;
-  font-size: 9px;
-  font-weight: 800;
-  color: #863bff;
-  animation: tapBlink 1.2s infinite alternate;
-}
-
-@keyframes tapBlink {
-  0% { opacity: 0.4; transform: translateX(0); }
-  100% { opacity: 1; transform: translateX(3px); }
-}
-
-/* 入力・ステッパーUI */
+/* ステッパーUI */
 .field { margin: 20px 0; }
 .field label { display: block; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--sub); margin-bottom: 8px; }
 
@@ -3322,13 +3492,9 @@ h3 { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacin
 .rir { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
 .rir-btn {
   height: 48px; border-radius: 12px; border: 1px solid var(--line);
-  background: var(--card); color: var(--sub); font-size: 15px; font-weight: 800;
-  transition: all 0.2s;
+  background: var(--card); color: var(--sub); font-size: 15px; font-weight: 800; transition: all 0.2s;
 }
-.rir-btn.on { 
-  background: var(--accent-grad); color: #000; border: none; 
-  box-shadow: 0 0 16px var(--accent-glow); transform: translateY(-2px);
-}
+.rir-btn.on { background: var(--accent-grad); color: #000; border: none; box-shadow: 0 0 16px var(--accent-glow); transform: translateY(-2px); }
 
 /* メインボタン */
 .btn {
@@ -3336,12 +3502,16 @@ h3 { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacin
   border: 1px solid var(--line); background: var(--card); color: var(--fg);
   font-size: 15px; font-weight: 700; transition: all 0.2s;
 }
-.btn.primary { 
-  background: var(--accent-grad); color: #050b14; border: none; 
-  font-weight: 900; font-size: 16px; letter-spacing: 0.5px;
-  box-shadow: 0 6px 20px var(--accent-glow);
-}
+.btn.primary { background: var(--accent-grad); color: #050b14; border: none; font-weight: 900; font-size: 16px; letter-spacing: 0.3px; box-shadow: 0 6px 20px var(--accent-glow); }
 .btn.big { min-height: 60px; margin-top: 20px; }
+
+/* 円形プログレス用ラッパー */
+.circular-progress-wrap {
+  width: 140px;
+  height: 140px;
+  margin: 16px auto;
+  position: relative;
+}
 
 /* 下部ナビゲーションバー */
 .tabbar {
@@ -3356,11 +3526,9 @@ h3 { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacin
   flex: 1; height: 58px; background: none; border: none; color: var(--sub); 
   font-size: 11px; font-weight: 700; transition: all 0.2s;
 }
-.tabbar button.on { 
-  color: var(--accent); text-shadow: 0 0 10px var(--accent-glow);
-}
+.tabbar button.on { color: var(--accent); text-shadow: 0 0 10px var(--accent-glow); }
 
-/* サプライズ・レベルアップ全画面ダイアログ */
+/* レベルアップモーダル */
 .levelup-overlay {
   position: fixed; inset: 0; background: rgba(5, 7, 15, 0.92);
   backdrop-filter: blur(14px); z-index: 1000;
@@ -3383,6 +3551,183 @@ h3 { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacin
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes popUp { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+
+/* --- ソシャゲ風 画面右上常駐レベルバッジ --- */
+.app-header-bar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 12px 16px 0;
+  max-width: 580px;
+  margin: 0 auto;
+}
+
+.game-level-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, rgba(20, 24, 42, 0.9) 0%, rgba(10, 12, 22, 0.9) 100%);
+  border: 1px solid var(--accent-border);
+  border-radius: 12px;
+  padding: 4px 10px 4px 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.15s ease, border-color 0.2s;
+}
+
+.game-level-badge:active {
+  transform: scale(0.96);
+  border-color: var(--accent);
+}
+
+.badge-level-box {
+  background: var(--accent-grad);
+  color: #050b14;
+  border-radius: 8px;
+  padding: 2px 6px;
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.badge-lv-label {
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.badge-lv-num {
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.badge-info-box {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 110px;
+}
+
+.badge-title {
+  font-size: 10px;
+  font-weight: 800;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 130px;
+}
+
+.badge-exp-bar {
+  height: 5px;
+  background: #1b2035;
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.badge-exp-bar.big {
+  height: 10px;
+  border-radius: 5px;
+}
+
+.badge-exp-fill {
+  height: 100%;
+  background: var(--accent-grad);
+  box-shadow: 0 0 8px var(--accent-glow);
+  transition: width 0.4s ease;
+}
+
+/* ステータス詳細モーダル */
+.level-status-modal {
+  background: linear-gradient(135deg, #161b30 0%, #090b14 100%);
+  border: 2px solid var(--accent);
+  border-radius: 24px;
+  padding: 28px 20px;
+  text-align: center;
+  max-width: 380px;
+  width: 100%;
+  box-shadow: 0 0 50px var(--accent-glow), inset 0 0 20px var(--accent-glow);
+}
+
+.status-modal-header {
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--accent);
+  letter-spacing: 2.5px;
+  margin-bottom: 12px;
+}
+
+.status-modal-avatar {
+  margin: 12px auto;
+}
+
+.status-lv-badge {
+  font-size: 32px;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 0 16px var(--accent-glow);
+}
+
+.status-modal-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--good);
+  text-shadow: 0 0 10px var(--good-glow);
+  margin-bottom: 20px;
+}
+
+.status-modal-exp-section {
+  margin-bottom: 20px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+}
+
+.status-exp-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--sub);
+  margin-bottom: 6px;
+}
+
+.status-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.status-stat-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 8px;
+}
+
+.status-stat-card .stat-label {
+  font-size: 10px;
+  color: var(--sub);
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.status-stat-card .stat-value {
+  font-size: 16px;
+  font-weight: 900;
+  color: #fff;
+}
+
+.status-stat-card .stat-unit {
+  font-size: 10px;
+  color: var(--accent);
+}
 </file>
 
 </files>

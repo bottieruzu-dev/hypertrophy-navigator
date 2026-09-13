@@ -5,6 +5,7 @@ import Calibration from './pages/Calibration';
 import Workout from './pages/Workout';
 import Nutrition from './pages/Nutrition';
 import BodyTracking from './pages/BodyTracking';
+import { HeaderLevelBadge } from './components/HeaderLevelBadge';
 
 type Tab = 'workout' | 'nutrition' | 'body' | 'calibration' | 'debug';
 
@@ -24,6 +25,11 @@ export default function App() {
 
   return (
     <div className="app">
+      {/* 画面右上常駐のソシャゲ風レベル＆称号バッジ */}
+      <div className="app-header-bar">
+        <HeaderLevelBadge />
+      </div>
+
       {tab === 'workout' && <Workout />}
       {tab === 'nutrition' && <Nutrition />}
       {tab === 'body' && <BodyTracking />}
