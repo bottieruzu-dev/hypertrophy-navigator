@@ -164,90 +164,6 @@ pause
 <svg xmlns="http://www.w3.org/2000/svg" width="77" height="47" fill="none" aria-labelledby="vite-logo-title" viewBox="0 0 77 47"><title id="vite-logo-title">Vite</title><style>.parenthesis{fill:#000}@media (prefers-color-scheme:dark){.parenthesis{fill:#fff}}</style><path fill="#9135ff" d="M40.151 45.71c-.663.844-2.02.374-2.02-.699V34.708a2.26 2.26 0 0 0-2.262-2.262H24.493c-.92 0-1.457-1.04-.92-1.788l7.479-10.471c1.07-1.498 0-3.578-1.842-3.578H15.443c-.92 0-1.456-1.04-.92-1.788l9.696-13.576c.213-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.472c-1.07 1.497 0 3.578 1.842 3.578h11.376c.944 0 1.474 1.087.89 1.83L40.153 45.712z"/><mask id="a" width="48" height="47" x="14" y="0" maskUnits="userSpaceOnUse" style="mask-type:alpha"><path fill="#000" d="M40.047 45.71c-.663.843-2.02.374-2.02-.699V34.708a2.26 2.26 0 0 0-2.262-2.262H24.389c-.92 0-1.457-1.04-.92-1.788l7.479-10.472c1.07-1.497 0-3.578-1.842-3.578H15.34c-.92 0-1.456-1.04-.92-1.788l9.696-13.575c.213-.297.556-.474.92-.474H53.93c.92 0 1.456 1.04.92 1.788L47.37 13.03c-1.07 1.498 0 3.578 1.842 3.578h11.376c.944 0 1.474 1.088.89 1.831L40.049 45.712z"/></mask><g mask="url(#a)"><g filter="url(#b)"><ellipse cx="5.508" cy="14.704" fill="#eee6ff" rx="5.508" ry="14.704" transform="rotate(269.814 20.96 11.29)scale(-1 1)"/></g><g filter="url(#c)"><ellipse cx="10.399" cy="29.851" fill="#eee6ff" rx="10.399" ry="29.851" transform="rotate(89.814 -16.902 -8.275)scale(1 -1)"/></g><g filter="url(#d)"><ellipse cx="5.508" cy="30.487" fill="#8900ff" rx="5.508" ry="30.487" transform="rotate(89.814 -19.197 -7.127)scale(1 -1)"/></g><g filter="url(#e)"><ellipse cx="5.508" cy="30.599" fill="#8900ff" rx="5.508" ry="30.599" transform="rotate(89.814 -25.928 4.177)scale(1 -1)"/></g><g filter="url(#f)"><ellipse cx="5.508" cy="30.599" fill="#8900ff" rx="5.508" ry="30.599" transform="rotate(89.814 -25.738 5.52)scale(1 -1)"/></g><g filter="url(#g)"><ellipse cx="14.072" cy="22.078" fill="#eee6ff" rx="14.072" ry="22.078" transform="rotate(93.35 31.245 55.578)scale(-1 1)"/></g><g filter="url(#h)"><ellipse cx="3.47" cy="21.501" fill="#8900ff" rx="3.47" ry="21.501" transform="rotate(89.009 35.419 55.202)scale(-1 1)"/></g><g filter="url(#i)"><ellipse cx="3.47" cy="21.501" fill="#8900ff" rx="3.47" ry="21.501" transform="rotate(89.009 35.419 55.202)scale(-1 1)"/></g><g filter="url(#j)"><ellipse cx="14.592" cy="9.743" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(39.51 14.592 9.743)"/></g><g filter="url(#k)"><ellipse cx="61.728" cy="-5.321" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(37.892 61.728 -5.32)"/></g><g filter="url(#l)"><ellipse cx="55.618" cy="7.104" fill="#00c2ff" rx="5.971" ry="9.665" transform="rotate(37.892 55.618 7.104)"/></g><g filter="url(#m)"><ellipse cx="12.326" cy="39.103" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(37.892 12.326 39.103)"/></g><g filter="url(#n)"><ellipse cx="12.326" cy="39.103" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(37.892 12.326 39.103)"/></g><g filter="url(#o)"><ellipse cx="49.857" cy="30.678" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(37.892 49.857 30.678)"/></g><g filter="url(#p)"><ellipse cx="52.623" cy="33.171" fill="#00c2ff" rx="5.971" ry="15.297" transform="rotate(37.892 52.623 33.17)"/></g></g><path d="M6.919 0c-9.198 13.166-9.252 33.575 0 46.789h6.215c-9.25-13.214-9.196-33.623 0-46.789zm62.424 0h-6.215c9.198 13.166 9.252 33.575 0 46.789h6.215c9.25-13.214 9.196-33.623 0-46.789" class="parenthesis"/><defs><filter id="b" width="60.045" height="41.654" x="-5.564" y="16.92" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="7.659"/></filter><filter id="c" width="90.34" height="51.437" x="-40.407" y="-6.762" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="7.659"/></filter><filter id="d" width="79.355" height="29.4" x="-35.435" y="2.801" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="e" width="79.579" height="29.4" x="-30.84" y="20.8" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="f" width="79.579" height="29.4" x="-29.307" y="21.949" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="g" width="74.749" height="58.852" x="29.961" y="-17.13" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="7.659"/></filter><filter id="h" width="61.377" height="25.362" x="37.754" y="3.055" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="i" width="61.377" height="25.362" x="37.754" y="3.055" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="j" width="56.045" height="63.649" x="-13.43" y="-22.082" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="k" width="54.814" height="64.646" x="34.321" y="-37.644" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="l" width="33.541" height="35.313" x="38.847" y="-10.552" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="m" width="54.814" height="64.646" x="-15.081" y="6.78" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="n" width="54.814" height="64.646" x="-15.081" y="6.78" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="o" width="54.814" height="64.646" x="22.45" y="-1.645" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="p" width="39.409" height="43.623" x="32.919" y="11.36" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter></defs></svg>
 </file>
 
-<file path="src/components/BodyAnatomy.tsx">
-import React from 'react';
-
-interface BodyAnatomyProps {
-  primaryMuscles: string[];
-  secondaryMuscles?: string[];
-}
-
-export const BodyAnatomy: React.FC<BodyAnatomyProps> = ({ primaryMuscles, secondaryMuscles = [] }) => {
-  const getMuscleClass = (code: string) => {
-    if (primaryMuscles.includes(code)) return 'muscle primary-glow';
-    if (secondaryMuscles.includes(code)) return 'muscle secondary-glow';
-    return 'muscle inactive';
-  };
-
-  return (
-    <div className="anatomy-container">
-      <svg viewBox="0 0 200 320" className="anatomy-svg">
-        <defs>
-          <filter id="neon-blue" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-            <feMerge>
-              <feMergeNode in="coloredBlur"/>
-              <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-          </filter>
-          <filter id="neon-purple" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-            <feMerge>
-              <feMergeNode in="coloredBlur"/>
-              <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-          </filter>
-        </defs>
-
-        {/* 人体ベースシルエット（前面） */}
-        <g className="body-outline">
-          {/* 頭部 */}
-          <circle cx="100" cy="35" r="16" fill="var(--card)" stroke="var(--line)" strokeWidth="1.5"/>
-          {/* 胴体・ベース */}
-          <path d="M75,55 Q100,50 125,55 Q135,90 120,150 Q100,160 80,150 Q65,90 75,55 Z" fill="var(--card)" stroke="var(--line)" strokeWidth="1.5"/>
-          {/* 腕ベース */}
-          <path d="M70,58 L52,110 Q48,115 45,160 Q52,160 56,120 L73,75 Z" fill="var(--card)" stroke="var(--line)" strokeWidth="1"/>
-          <path d="M130,58 L148,110 Q152,115 155,160 Q148,160 144,120 L127,75 Z" fill="var(--card)" stroke="var(--line)" strokeWidth="1"/>
-          {/* 脚ベース */}
-          <path d="M80,150 L75,230 L72,290 Q85,290 88,230 L95,155 Z" fill="var(--card)" stroke="var(--line)" strokeWidth="1"/>
-          <path d="M120,150 L125,230 L128,290 Q115,290 112,230 L105,155 Z" fill="var(--card)" stroke="var(--line)" strokeWidth="1"/>
-        </g>
-
-        {/* --- 筋肉パーツレイヤー --- */}
-        {/* 三角筋前部・中部 */}
-        <path d="M68,58 Q60,65 58,80 Q70,82 73,66 Z" className={getMuscleClass('delt_front')} />
-        <path d="M132,58 Q140,65 142,80 Q130,82 127,66 Z" className={getMuscleClass('delt_front')} />
-        <path d="M62,62 Q54,75 56,88 Q64,88 66,74 Z" className={getMuscleClass('delt_lateral')} />
-        <path d="M138,62 Q146,75 144,88 Q136,88 134,74 Z" className={getMuscleClass('delt_lateral')} />
-
-        {/* 大胸筋（上部・中部・下部） */}
-        <path d="M78,60 Q100,62 100,74 Q82,75 75,67 Z" className={getMuscleClass('chest_upper')} />
-        <path d="M122,60 Q100,62 100,74 Q118,75 125,67 Z" className={getMuscleClass('chest_upper')} />
-        <path d="M76,68 Q100,75 100,88 Q80,88 74,78 Z" className={getMuscleClass('chest_mid')} />
-        <path d="M124,68 Q100,75 100,88 Q120,88 126,78 Z" className={getMuscleClass('chest_mid')} />
-
-        {/* 腹直筋 */}
-        <path d="M88,95 L98,95 L98,108 L88,108 Z M102,95 L112,95 L112,108 L102,108 Z" className={getMuscleClass('abs_rectus')} />
-        <path d="M88,111 L98,111 L98,124 L88,124 Z M102,111 L112,111 L112,124 L102,124 Z" className={getMuscleClass('abs_rectus')} />
-        <path d="M89,127 L98,127 L98,138 L89,138 Z M102,127 L111,127 L111,138 L102,138 Z" className={getMuscleClass('abs_rectus')} />
-
-        {/* 上腕二頭筋 */}
-        <path d="M63,82 Q56,100 64,112 Q70,100 68,84 Z" className={getMuscleClass('biceps_long')} />
-        <path d="M137,82 Q144,100 136,112 Q130,100 132,84 Z" className={getMuscleClass('biceps_short')} />
-
-        {/* 広背筋 */}
-        <path d="M72,90 Q65,115 78,135 Q82,110 80,92 Z" className={getMuscleClass('lat')} />
-        <path d="M128,90 Q135,115 122,135 Q118,110 120,92 Z" className={getMuscleClass('lat')} />
-
-        {/* 大腿四頭筋 */}
-        <path d="M78,160 Q68,200 76,230 Q88,230 92,165 Z" className={getMuscleClass('quads')} />
-        <path d="M122,160 Q132,200 124,230 Q112,230 108,165 Z" className={getMuscleClass('quads')} />
-      </svg>
-    </div>
-  );
-};
-</file>
-
 <file path="src/components/LevelUpModal.tsx">
 import React from 'react';
 import type { Achievement } from '../engine/achievements';
@@ -2243,6 +2159,130 @@ See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rule
 }
 </file>
 
+<file path="src/components/BodyAnatomy.tsx">
+import React from 'react';
+
+interface BodyAnatomyProps {
+  primaryMuscles: string[];
+  secondaryMuscles?: string[];
+}
+
+export const BodyAnatomy: React.FC<BodyAnatomyProps> = ({ primaryMuscles, secondaryMuscles = [] }) => {
+  const getMuscleStatus = (code: string) => {
+    if (primaryMuscles.includes(code)) return 'primary';
+    if (secondaryMuscles.includes(code)) return 'secondary';
+    return 'inactive';
+  };
+
+  return (
+    <div className="hud-anatomy-card">
+      <div className="hud-header">
+        <span className="hud-tag">TARGET SCANNER v2.0</span>
+        <span className="hud-status">
+          {primaryMuscles.length > 0 ? 'TARGET LOCKED' : 'STANDBY'}
+        </span>
+      </div>
+
+      <div className="hud-anatomy-wrapper">
+        <svg viewBox="0 0 240 340" className="hud-anatomy-svg">
+          <defs>
+            {/* 主働筋用 ネオンシアンフィルター */}
+            <filter id="hud-cyan-glow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="4" result="blur" />
+              <feComponentTransfer in="blur" result="glow">
+                <feFuncA type="linear" slope="2" />
+              </feComponentTransfer>
+              <feMerge>
+                <feMergeNode in="glow" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+
+            {/* 副次筋用 ネオンマゼンタフィルター */}
+            <filter id="hud-purple-glow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="4" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+
+            {/* スキャンライン用パターン */}
+            <pattern id="scanGrid" width="12" height="12" patternUnits="userSpaceOnUse">
+              <path d="M 12 0 L 0 0 0 12" fill="none" stroke="rgba(0, 242, 254, 0.08)" strokeWidth="0.5" />
+            </pattern>
+          </defs>
+
+          {/* 背景グリッドスキャン */}
+          <rect width="240" height="340" fill="url(#scanGrid)" />
+
+          {/* 照準・ターゲット枠 */}
+          <g className="hud-crosshair" stroke="rgba(0, 242, 254, 0.25)" strokeWidth="1" fill="none">
+            <circle cx="120" cy="160" r="110" strokeDasharray="4 4" />
+            <line x1="120" y1="10" x2="120" y2="40" />
+            <line x1="120" y1="280" x2="120" y2="310" />
+            <line x1="10" y1="160" x2="40" y2="160" />
+            <line x1="200" y1="160" x2="230" y2="160" />
+          </g>
+
+          {/* 人体高精細シルエット */}
+          <g className="hud-body-frame" stroke="#2a324b" strokeWidth="1.2" fill="#121624">
+            {/* 頭部・首 */}
+            <path d="M120,25 C128,25 134,33 134,43 C134,53 128,60 120,60 C112,60 106,53 106,43 C106,33 112,25 120,25 Z" />
+            <path d="M113,59 L127,59 L130,68 L110,68 Z" />
+
+            {/* 胴体・骨盤ベース */}
+            <path d="M92,68 C108,65 132,65 148,68 C158,110 148,165 135,175 C120,180 120,180 105,175 C92,165 82,110 92,68 Z" />
+
+            {/* 左腕・右腕ベース */}
+            <path d="M88,70 L65,115 L52,165 C48,168 56,172 62,165 L76,122 L88,88 Z" />
+            <path d="M152,70 L175,115 L188,165 C192,168 184,172 178,165 L164,122 L152,88 Z" />
+
+            {/* 脚部ベース */}
+            <path d="M102,175 L95,245 L90,310 C100,312 108,308 108,245 L116,178 Z" />
+            <path d="M138,175 L145,245 L150,310 C140,312 132,308 132,245 L124,178 Z" />
+          </g>
+
+          {/* --- 筋肉部位（インタラクティブ層） --- */}
+          {/* 三角筋中部（delt_lateral） */}
+          <path d="M78,72 Q68,88 74,102 Q84,98 86,80 Z" className={`hud-muscle ${getMuscleStatus('delt_lateral')}`} />
+          <path d="M162,72 Q172,88 166,102 Q156,98 154,80 Z" className={`hud-muscle ${getMuscleStatus('delt_lateral')}`} />
+
+          {/* 三角筋前部（delt_front） */}
+          <path d="M86,70 Q78,82 84,95 Q92,92 92,76 Z" className={`hud-muscle ${getMuscleStatus('delt_front')}`} />
+          <path d="M154,70 Q162,82 156,95 Q148,92 148,76 Z" className={`hud-muscle ${getMuscleStatus('delt_front')}`} />
+
+          {/* 大胸筋上部（chest_upper） */}
+          <path d="M94,74 Q120,76 120,90 Q98,92 92,80 Z" className={`hud-muscle ${getMuscleStatus('chest_upper')}`} />
+          <path d="M146,74 Q120,76 120,90 Q142,92 148,80 Z" className={`hud-muscle ${getMuscleStatus('chest_upper')}`} />
+
+          {/* 大胸筋中部（chest_mid） */}
+          <path d="M92,82 Q120,90 120,106 Q96,106 90,92 Z" className={`hud-muscle ${getMuscleStatus('chest_mid')}`} />
+          <path d="M148,82 Q120,90 120,106 Q144,106 150,92 Z" className={`hud-muscle ${getMuscleStatus('chest_mid')}`} />
+
+          {/* 腹直筋（abs_rectus） */}
+          <path d="M106,112 L117,112 L117,128 L106,128 Z M123,112 L134,112 L134,128 L123,128 Z" className={`hud-muscle ${getMuscleStatus('abs_rectus')}`} />
+          <path d="M106,131 L117,131 L117,147 L106,147 Z M123,131 L134,131 L134,147 L123,147 Z" className={`hud-muscle ${getMuscleStatus('abs_rectus')}`} />
+          <path d="M107,150 L117,150 L117,164 L107,164 Z M123,150 L133,150 L133,164 L123,164 Z" className={`hud-muscle ${getMuscleStatus('abs_rectus')}`} />
+
+          {/* 上腕二頭筋（biceps_long / biceps_short） */}
+          <path d="M74,104 Q68,126 78,138 Q84,126 82,106 Z" className={`hud-muscle ${getMuscleStatus('biceps_long')}`} />
+          <path d="M166,104 Q172,126 162,138 Q156,126 158,106 Z" className={`hud-muscle ${getMuscleStatus('biceps_short')}`} />
+
+          {/* 広背筋（lat） */}
+          <path d="M88,110 Q78,140 95,165 Q100,135 98,112 Z" className={`hud-muscle ${getMuscleStatus('lat')}`} />
+          <path d="M152,110 Q162,140 145,165 Q140,135 142,112 Z" className={`hud-muscle ${getMuscleStatus('lat')}`} />
+
+          {/* 大腿四頭筋（quads） */}
+          <path d="M98,185 Q86,230 96,270 Q110,270 114,190 Z" className={`hud-muscle ${getMuscleStatus('quads')}`} />
+          <path d="M142,185 Q154,230 144,270 Q130,270 126,190 Z" className={`hud-muscle ${getMuscleStatus('quads')}`} />
+        </svg>
+      </div>
+    </div>
+  );
+};
+</file>
+
 <file path="src/pages/Calibration.tsx">
 import { useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -3002,24 +3042,26 @@ function LoggerSection({ exercise, onNextExercise }: { exercise: Exercise; onNex
 
 <file path="src/styles.css">
 :root {
-  --bg: #090a0f;
-  --card: #13151f;
-  --card-hover: #1a1d2b;
-  --line: #232738;
-  --line-glow: rgba(0, 242, 254, 0.15);
-  --fg: #f0f3f8;
-  --sub: #8a94a6;
+  --bg: #090a12;
+  --card: #121524;
+  --card-hover: #191e33;
+  --line: #232a42;
+  --line-glow: rgba(0, 242, 254, 0.2);
+  --fg: #f0f4fc;
+  --sub: #828eab;
   
-  /* サイバー・ネオンアクセント */
+  /* サイバー・ゲーム調アクセント */
   --accent-grad: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
-  --accent-glow: rgba(0, 242, 254, 0.35);
+  --accent-glow: rgba(0, 242, 254, 0.4);
   --accent: #00f2fe;
   
+  --purple-grad: linear-gradient(135deg, #b537ff 0%, #7e14ff 100%);
+  --purple-glow: rgba(181, 55, 255, 0.4);
+  
   --good: #00e676;
-  --good-glow: rgba(0, 230, 118, 0.25);
+  --good-glow: rgba(0, 230, 118, 0.3);
   --warn: #ffab00;
   --bad: #ff1744;
-  --tap: 56px;
 }
 
 * { 
@@ -3034,237 +3076,148 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Hiragino Sans', sans-serif;
   font-size: 16px;
   background-image: 
-    radial-gradient(circle at 50% 0%, rgba(0, 242, 254, 0.05) 0%, transparent 70%),
-    radial-gradient(circle at 80% 100%, rgba(79, 172, 254, 0.03) 0%, transparent 50%);
+    radial-gradient(circle at 50% 0%, rgba(0, 242, 254, 0.08) 0%, transparent 60%),
+    radial-gradient(circle at 85% 100%, rgba(181, 55, 255, 0.05) 0%, transparent 50%);
   background-attachment: fixed;
 }
 
-.app { padding-bottom: 84px; }
-.page { padding: 20px 16px 32px; max-width: 600px; margin: 0 auto; }
+.app { padding-bottom: 88px; }
+.page { padding: 16px 14px 32px; max-width: 580px; margin: 0 auto; }
 
 /* 見出し＆タイポグラフィ */
-h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; margin: 12px 0; color: #fff; }
-h2 { font-size: 18px; font-weight: 700; margin: 0 0 12px; letter-spacing: -0.3px; }
-h3 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--sub); margin: 16px 0 8px; }
+h1 { font-size: 22px; font-weight: 900; letter-spacing: -0.5px; margin: 12px 0; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.2); }
+h2 { font-size: 18px; font-weight: 800; margin: 0 0 12px; letter-spacing: -0.3px; }
+h3 { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.2px; color: var(--sub); margin: 16px 0 8px; }
 .sub { color: var(--sub); font-size: 13px; margin: 4px 0; }
 .mono { font-family: 'SF Mono', ui-monospace, monospace; font-size: 13px; }
-.note { color: var(--sub); font-size: 13px; line-height: 1.6; margin-top: 20px; }
 .good { color: var(--good); text-shadow: 0 0 12px var(--good-glow); }
 .warn { color: var(--warn); }
 .err { color: var(--bad); font-size: 12px; }
 
-/* カードデザイン */
+/* ゲーム調立体カードデザイン */
 .card {
-  background: var(--card);
+  background: linear-gradient(145deg, rgba(20, 24, 40, 0.9) 0%, rgba(12, 14, 24, 0.95) 100%);
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
   padding: 18px;
   margin-bottom: 16px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-  transition: transform 0.2s, border-color 0.2s;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(12px);
 }
-.card.ok { border-color: var(--good); box-shadow: 0 0 16px var(--good-glow); }
-.card.ng { border-color: var(--bad); }
-
-/* テーブル */
-table.kv, table.grid { width: 100%; border-collapse: collapse; font-size: 14px; }
-table.kv th { text-align: left; color: var(--sub); font-weight: 500; padding: 8px 0; }
-table.kv td { text-align: right; font-family: 'SF Mono', monospace; font-weight: 600; color: #fff; }
-table.grid th, table.grid td { padding: 10px 6px; border-bottom: 1px solid var(--line); text-align: left; }
-
-/* プログレスバー */
-.progress { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; }
-.progress .bar { height: 100%; background: var(--accent-grad); box-shadow: 0 0 10px var(--accent-glow); transition: width .4s cubic-bezier(0.4, 0, 0.2, 1); }
 
 /* タブ切り替え */
-.tabs { display: flex; gap: 8px; margin: 16px 0 8px; background: rgba(255,255,255,0.03); padding: 4px; border-radius: 12px; }
+.tabs { display: flex; gap: 8px; margin: 12px 0 16px; background: rgba(0, 0, 0, 0.3); padding: 5px; border-radius: 14px; border: 1px solid var(--line); }
 .tab {
-  flex: 1; height: 42px; border-radius: 8px; border: none;
-  background: transparent; color: var(--sub); font-size: 13px; font-weight: 600;
+  flex: 1; height: 44px; border-radius: 10px; border: none;
+  background: transparent; color: var(--sub); font-size: 13px; font-weight: 800;
   transition: all 0.2s;
 }
-.tab.on { background: var(--card); color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.3); border: 1px solid var(--line); }
-
-/* リスト＆行 */
-.list { list-style: none; padding: 0; margin: 16px 0; }
-.row {
-  width: 100%; min-height: 60px;
-  display: grid; grid-template-columns: 1fr auto 20px; align-items: center; gap: 12px;
-  background: var(--card); border: 1px solid var(--line); border-radius: 14px;
-  padding: 12px 16px; margin-bottom: 10px; color: var(--fg); text-align: left;
-  transition: all 0.2s;
-}
-.row:active { transform: scale(0.98); }
-.row.done { border-color: rgba(0, 230, 118, 0.4); background: rgba(0, 230, 118, 0.03); }
-.row.done .mark { color: var(--good); text-shadow: 0 0 8px var(--good-glow); }
-.row .name { font-size: 15px; font-weight: 600; }
-.row .meta { font-family: 'SF Mono', monospace; font-size: 12px; color: var(--sub); }
-
-/* AIアドバイス＆ヒントバッジ */
-.hint {
-  background: rgba(0, 242, 254, 0.05); border: 1px solid rgba(0, 242, 254, 0.2);
-  border-left: 4px solid var(--accent); border-radius: 10px;
-  padding: 12px 14px; margin: 14px 0; font-size: 13px; backdrop-filter: blur(4px);
-}
-.hint p { margin: 3px 0; }
-
-/* フィールド＆入力UI */
-.field { margin: 24px 0; }
-.field label { display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--sub); margin-bottom: 10px; }
-
-/* ステッパー（+-ボタン） */
-.stepper { display: grid; grid-template-columns: 60px 1fr 60px; align-items: center; gap: 12px; }
-.stepper button {
-  height: 60px; border-radius: 14px; border: 1px solid var(--line);
-  background: var(--card); color: var(--fg); font-size: 24px; font-weight: 600;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2); transition: all 0.15s;
-}
-.stepper button:active { transform: scale(0.92); background: var(--line); }
-.stepper .value { text-align: center; font-size: 32px; font-weight: 800; letter-spacing: -1px; color: #fff; font-variant-numeric: tabular-nums; }
-
-/* RIR ボタン */
-.rir { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
-.rir-btn {
-  height: 52px; border-radius: 12px; border: 1px solid var(--line);
-  background: var(--card); color: var(--sub); font-size: 16px; font-weight: 700;
-  transition: all 0.2s;
-}
-.rir-btn.on { 
-  background: var(--accent-grad); color: #000; border: none; 
-  box-shadow: 0 0 16px var(--accent-glow); transform: translateY(-2px);
+.tab.on { 
+  background: var(--accent-grad); 
+  color: #050b14; 
+  box-shadow: 0 4px 14px var(--accent-glow); 
 }
 
-/* メインボタン */
-.btn {
-  width: 100%; min-height: 54px; border-radius: 14px;
-  border: 1px solid var(--line); background: var(--card); color: var(--fg);
-  font-size: 15px; font-weight: 600; transition: all 0.2s;
-}
-.btn:active { transform: scale(0.98); }
-.btn.primary { 
-  background: var(--accent-grad); color: #050b14; border: none; 
-  font-weight: 800; font-size: 16px; letter-spacing: 0.3px;
-  box-shadow: 0 6px 20px var(--accent-glow);
-}
-.btn.big { min-height: 62px; margin-top: 24px; }
-.btn.danger { border-color: var(--bad); color: var(--bad); margin-top: 20px; background: rgba(255,23,68,0.05); }
-
-/* 下部ナビゲーションバー（ガラスモーフィズム） */
-.tabbar {
-  position: fixed; bottom: 0; left: 0; right: 0;
-  display: flex; background: rgba(19, 21, 31, 0.85); 
-  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-  border-top: 1px solid var(--line);
-  padding-bottom: env(safe-area-inset-bottom);
-  z-index: 100;
-}
-.tabbar button {
-  flex: 1; height: 60px; background: none; border: none; color: var(--sub); 
-  font-size: 12px; font-weight: 600; transition: all 0.2s;
-}
-.tabbar button.on { 
-  color: var(--accent); text-shadow: 0 0 10px var(--accent-glow);
+/* プロ仕様ネオンHUDアナトミー */
+.hud-anatomy-card {
+  background: rgba(8, 10, 18, 0.85);
+  border: 1px solid rgba(0, 242, 254, 0.25);
+  border-radius: 16px;
+  padding: 12px;
+  margin: 12px 0 18px;
+  box-shadow: inset 0 0 20px rgba(0, 242, 254, 0.05);
 }
 
-/* --- ネオン・アナトミーマップのスタイル --- */
-.anatomy-container {
-  width: 100%;
-  max-width: 180px;
-  margin: 12px auto;
+.hud-header {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  color: var(--accent);
+  margin-bottom: 8px;
+  padding: 0 4px;
 }
 
-.anatomy-svg {
+.hud-anatomy-wrapper {
+  width: 100%;
+  max-width: 200px;
+  margin: 0 auto;
+}
+
+.hud-anatomy-svg {
   width: 100%;
   height: auto;
-  filter: drop-shadow(0 0 12px rgba(0, 0, 0, 0.8));
 }
 
-.muscle {
-  transition: all 0.4s ease;
+.hud-muscle {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.muscle.inactive {
-  fill: #1e2230;
-  stroke: #2d3345;
-  stroke-width: 0.5;
-  opacity: 0.4;
+.hud-muscle.inactive {
+  fill: #1a2035;
+  stroke: #2e3854;
+  stroke-width: 0.8;
+  opacity: 0.35;
 }
 
-/* 主働筋（シアンブルー発光） */
-.muscle.primary-glow {
+.hud-muscle.primary {
   fill: #00f2fe;
   stroke: #ffffff;
-  stroke-width: 1;
-  filter: url(#neon-blue);
-  animation: neonPulseBlue 1.8s infinite alternate;
+  stroke-width: 1.2;
+  filter: url(#hud-cyan-glow);
+  animation: primaryPulse 1.6s infinite alternate ease-in-out;
 }
 
-/* 副次筋（パープル発光） */
-.muscle.secondary-glow {
+.hud-muscle.secondary {
   fill: #b537ff;
   stroke: #ffffff;
-  stroke-width: 1;
-  filter: url(#neon-purple);
-  animation: neonPulsePurple 1.8s infinite alternate;
+  stroke-width: 1.2;
+  filter: url(#hud-purple-glow);
+  animation: secondaryPulse 1.6s infinite alternate ease-in-out;
 }
 
-@keyframes neonPulseBlue {
-  0% {
-    fill: #00c6ff;
-    filter: drop-shadow(0 0 4px #00f2fe) drop-shadow(0 0 8px #00f2fe);
-  }
-  100% {
-    fill: #00f2fe;
-    filter: drop-shadow(0 0 10px #00f2fe) drop-shadow(0 0 20px #00f2fe);
-  }
+@keyframes primaryPulse {
+  0% { fill: #00c8fe; opacity: 0.8; }
+  100% { fill: #00f2fe; opacity: 1; filter: drop-shadow(0 0 12px #00f2fe); }
 }
 
-@keyframes neonPulsePurple {
-  0% {
-    fill: #8a2be2;
-    filter: drop-shadow(0 0 4px #b537ff) drop-shadow(0 0 8px #b537ff);
-  }
-  100% {
-    fill: #d870ff;
-    filter: drop-shadow(0 0 10px #b537ff) drop-shadow(0 0 20px #b537ff);
-  }
+@keyframes secondaryPulse {
+  0% { fill: #9d1aff; opacity: 0.8; }
+  100% { fill: #b537ff; opacity: 1; filter: drop-shadow(0 0 12px #b537ff); }
 }
 
-/* --- AIトレーナー＆対話吹き出しUI (キャラ立ち絵デザイン) --- */
+/* AIトレーナー 対話吹き出しUI (立ち絵デザイン) */
 .trainer-dialog-card {
   display: flex;
   align-items: flex-end;
-  gap: 12px;
-  background: linear-gradient(135deg, rgba(20, 24, 38, 0.95) 0%, rgba(10, 12, 20, 0.95) 100%);
+  gap: 10px;
+  background: linear-gradient(135deg, rgba(22, 27, 44, 0.95) 0%, rgba(10, 12, 22, 0.95) 100%);
   border: 1px solid var(--accent-border);
   border-radius: 20px;
-  padding: 12px 14px 12px 6px;
-  margin-bottom: 20px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  padding: 10px 12px 10px 4px;
+  margin-bottom: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
   cursor: pointer;
   user-select: none;
-  transition: transform 0.15s ease, border-color 0.2s;
   position: relative;
-  min-height: 140px;
+  min-height: 135px;
 }
 
 .trainer-dialog-card:active {
   transform: scale(0.98);
-  border-color: var(--accent);
 }
 
-/* 左側：キャラ立ち絵領域 */
 .trainer-character-area {
   position: relative;
-  width: 120px;
-  height: 140px;
+  width: 110px;
+  height: 135px;
   flex-shrink: 0;
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  margin-bottom: -12px;
+  margin-bottom: -10px;
 }
 
 .trainer-character-img {
@@ -3272,57 +3225,49 @@ table.grid th, table.grid td { padding: 10px 6px; border-bottom: 1px solid var(-
   height: 100%;
   object-fit: contain;
   object-position: bottom center;
-  filter: drop-shadow(0 4px 12px rgba(0, 242, 254, 0.35));
+  filter: drop-shadow(0 4px 10px rgba(0, 242, 254, 0.3));
   z-index: 2;
-  transition: transform 0.2s ease;
-}
-
-.trainer-dialog-card:hover .trainer-character-img {
-  transform: scale(1.03);
 }
 
 .trainer-fallback-icon {
   position: absolute;
-  bottom: 16px;
-  font-size: 56px;
+  bottom: 12px;
+  font-size: 52px;
   z-index: 1;
 }
 
-/* 右側：横長大型白吹き出し */
 .trainer-speech-box {
   position: relative;
   flex: 1;
   background: #ffffff;
   border-radius: 16px;
-  padding: 12px 14px 24px 14px;
+  padding: 12px 14px 22px 14px;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
-  min-height: 100px;
+  min-height: 96px;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  margin-bottom: 4px;
 }
 
-/* 吹き出しのシッポ */
 .trainer-speech-box::before {
   content: '';
   position: absolute;
-  left: -10px;
-  bottom: 28px;
-  border-top: 8px solid transparent;
-  border-bottom: 8px solid transparent;
-  border-right: 11px solid #ffffff;
+  left: -9px;
+  bottom: 24px;
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+  border-right: 10px solid #ffffff;
 }
 
 .trainer-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .trainer-title {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 900;
   color: #050b14;
   letter-spacing: 1px;
@@ -3333,15 +3278,15 @@ table.grid th, table.grid td { padding: 10px 6px; border-bottom: 1px solid var(-
   font-weight: 800;
   background: rgba(170, 59, 255, 0.12);
   color: #863bff;
-  padding: 3px 8px;
-  border-radius: 8px;
+  padding: 2px 7px;
+  border-radius: 6px;
   border: 1px solid rgba(170, 59, 255, 0.3);
 }
 
 .trainer-speech-text {
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 700;
-  line-height: 1.5;
+  line-height: 1.45;
   color: #1a1d2b;
   margin: 0;
 }
@@ -3349,11 +3294,10 @@ table.grid th, table.grid td { padding: 10px 6px; border-bottom: 1px solid var(-
 .tap-prompt {
   position: absolute;
   right: 12px;
-  bottom: 6px;
-  font-size: 10px;
+  bottom: 5px;
+  font-size: 9px;
   font-weight: 800;
   color: #863bff;
-  letter-spacing: 0.5px;
   animation: tapBlink 1.2s infinite alternate;
 }
 
@@ -3362,73 +3306,83 @@ table.grid th, table.grid td { padding: 10px 6px; border-bottom: 1px solid var(-
   100% { opacity: 1; transform: translateX(3px); }
 }
 
+/* 入力・ステッパーUI */
+.field { margin: 20px 0; }
+.field label { display: block; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--sub); margin-bottom: 8px; }
 
-/* --- サプライズ・レベルアップ全画面ダイアログ --- */
+.stepper { display: grid; grid-template-columns: 56px 1fr 56px; align-items: center; gap: 12px; }
+.stepper button {
+  height: 56px; border-radius: 14px; border: 1px solid var(--line);
+  background: var(--card); color: var(--fg); font-size: 22px; font-weight: 700;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: all 0.15s;
+}
+.stepper button:active { transform: scale(0.92); }
+.stepper .value { text-align: center; font-size: 30px; font-weight: 900; letter-spacing: -1px; color: #fff; }
+
+.rir { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.rir-btn {
+  height: 48px; border-radius: 12px; border: 1px solid var(--line);
+  background: var(--card); color: var(--sub); font-size: 15px; font-weight: 800;
+  transition: all 0.2s;
+}
+.rir-btn.on { 
+  background: var(--accent-grad); color: #000; border: none; 
+  box-shadow: 0 0 16px var(--accent-glow); transform: translateY(-2px);
+}
+
+/* メインボタン */
+.btn {
+  width: 100%; min-height: 52px; border-radius: 14px;
+  border: 1px solid var(--line); background: var(--card); color: var(--fg);
+  font-size: 15px; font-weight: 700; transition: all 0.2s;
+}
+.btn.primary { 
+  background: var(--accent-grad); color: #050b14; border: none; 
+  font-weight: 900; font-size: 16px; letter-spacing: 0.5px;
+  box-shadow: 0 6px 20px var(--accent-glow);
+}
+.btn.big { min-height: 60px; margin-top: 20px; }
+
+/* 下部ナビゲーションバー */
+.tabbar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  display: flex; background: rgba(12, 14, 24, 0.92); 
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 100;
+}
+.tabbar button {
+  flex: 1; height: 58px; background: none; border: none; color: var(--sub); 
+  font-size: 11px; font-weight: 700; transition: all 0.2s;
+}
+.tabbar button.on { 
+  color: var(--accent); text-shadow: 0 0 10px var(--accent-glow);
+}
+
+/* サプライズ・レベルアップ全画面ダイアログ */
 .levelup-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(5, 7, 15, 0.88);
-  backdrop-filter: blur(12px);
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
+  position: fixed; inset: 0; background: rgba(5, 7, 15, 0.92);
+  backdrop-filter: blur(14px); z-index: 1000;
+  display: flex; align-items: center; justify-content: center; padding: 20px;
   animation: fadeIn 0.3s ease;
 }
 
 .levelup-card {
-  background: linear-gradient(135deg, #131522 0%, #090a10 100%);
-  border: 2px solid var(--accent);
-  border-radius: 24px;
-  padding: 32px 24px;
-  text-align: center;
-  max-width: 400px;
-  width: 100%;
-  box-shadow: 0 0 40px var(--accent-glow), inset 0 0 15px var(--accent-glow);
+  background: linear-gradient(135deg, #181d33 0%, #080a12 100%);
+  border: 2px solid var(--accent); border-radius: 24px; padding: 32px 24px;
+  text-align: center; max-width: 380px; width: 100%;
+  box-shadow: 0 0 50px var(--accent-glow), inset 0 0 20px var(--accent-glow);
   animation: popUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-.levelup-header {
-  font-size: 14px;
-  font-weight: 900;
-  color: var(--accent);
-  letter-spacing: 3px;
-  text-shadow: 0 0 10px var(--accent-glow);
-}
+.levelup-header { font-size: 13px; font-weight: 900; color: var(--accent); letter-spacing: 3px; }
+.levelup-level { font-size: 46px; font-weight: 900; color: #fff; margin: 8px 0; text-shadow: 0 0 20px rgba(255, 255, 255, 0.8); }
+.levelup-title { font-size: 18px; font-weight: 800; color: #00e676; text-shadow: 0 0 12px var(--good-glow); margin-bottom: 14px; }
+.levelup-message { font-size: 13px; color: var(--sub); line-height: 1.6; margin-bottom: 24px; }
 
-.levelup-level {
-  font-size: 48px;
-  font-weight: 900;
-  color: #fff;
-  margin: 10px 0;
-  text-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
-}
-
-.levelup-title {
-  font-size: 18px;
-  font-weight: 800;
-  color: #00e676;
-  text-shadow: 0 0 12px var(--good-glow);
-  margin-bottom: 16px;
-}
-
-.levelup-message {
-  font-size: 14px;
-  color: var(--sub);
-  line-height: 1.6;
-  margin-bottom: 24px;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes popUp {
-  from { transform: scale(0.8); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
-}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes popUp { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 </file>
 
 </files>

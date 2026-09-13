@@ -13,10 +13,16 @@
   },
   "dependencies": {
     "canvas-confetti": "^1.9.4",
+    "dayjs": "^1.11.23",
     "dexie": "^4.4.5",
     "dexie-react-hooks": "^4.4.0",
+    "framer-motion": "^13.2.0",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-activity-calendar": "^3.2.1",
+    "react-circular-progressbar": "^2.2.0",
+    "react-countup": "^6.5.3",
+    "react-dom": "^19.2.8",
+    "swiper": "^14.2.0"
   },
   "devDependencies": {
     "@types/canvas-confetti": "^1.9.0",

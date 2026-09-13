@@ -10,6 +10,9 @@ import { TrainerGuide } from '../components/TrainerGuide';
 import { CALIBRATION_PLAN } from '../db/queries/calibration';
 import { fireNeonConfetti, ACHIEVEMENTS, type Achievement } from '../engine/achievements';
 import { LevelUpModal } from '../components/LevelUpModal';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import 'swiper/css';
+import { motion } from 'framer-motion';
 
 export default function Workout() {
   const [split, setSplit] = useState<SplitType>('upper_A');
@@ -25,7 +28,12 @@ export default function Workout() {
   const totalCount = exercises?.length ?? 0;
 
   return (
-    <div className="page">
+    <motion.div 
+      className="page"
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
       <header className="hdr">
         <div className="tabs">
           {(['upper_A', 'lower', 'upper_B'] as SplitType[]).map((s) => (
@@ -42,7 +50,7 @@ export default function Workout() {
           <>
             <h2>{currentEx.name}</h2>
             <p className="sub">
-              種目 {exerciseIndex + 1} / {totalCount} ・ 目標 {currentEx.repRange[0]}–{currentEx.repRange[1]} reps
+              種目 {exerciseIndex + 1} / {totalCount} ・ 左右フリックで種目切替 👈 👉
             </p>
           </>
         ) : (
@@ -50,17 +58,24 @@ export default function Workout() {
         )}
       </header>
 
-      {currentEx && (
-        <LoggerSection
-          exercise={currentEx}
-          onNextExercise={() => setExerciseIndex((i) => Math.min(i + 1, Math.max(0, totalCount - 1)))}
-        />
+      {exercises && exercises.length > 0 && (
+        <Swiper
+          spaceBetween={16}
+          slidesPerView={1}
+          onSlideChange={(swiper) => setExerciseIndex(swiper.activeIndex)}
+        >
+          {exercises.map((ex) => (
+            <SwiperSlide key={ex.id}>
+              <LoggerSection exercise={ex} />
+            </SwiperSlide>
+          ))}
+        </Swiper>
       )}
-    </div>
+    </motion.div>
   );
 }
 
-function LoggerSection({ exercise, onNextExercise }: { exercise: Exercise; onNextExercise: () => void }) {
+function LoggerSection({ exercise }: { exercise: Exercise }) {
   const baseline = useLiveQuery(() => db.baselines.get(exercise.id), [exercise.id]);
   const historySets = useLiveQuery(
     () => db.sets.where('exerciseId').equals(exercise.id).reverse().toArray(),
@@ -123,14 +138,10 @@ function LoggerSection({ exercise, onNextExercise }: { exercise: Exercise; onNex
       mode: presc.mode,
     });
 
-    // 🌟 サプライズ演出1: ネオン・スパークの爆発
     fireNeonConfetti();
 
-    // 🌟 サプライズ演出2: 累計ボリューム計算とレベルアップチェック
     const allSets = await db.sets.toArray();
     const totalVol = allSets.reduce((sum, s) => sum + (s.volumeLoad || 0), 0);
-    
-    // 直前までの累計ボリュームで未解放だった最大の称号を探す
     const prevVol = totalVol - addedVolume;
     const newUnlocked = ACHIEVEMENTS.find(
       (a) => prevVol < a.requiredVolumeKg && totalVol >= a.requiredVolumeKg
@@ -145,16 +156,13 @@ function LoggerSection({ exercise, onNextExercise }: { exercise: Exercise; onNex
 
   return (
     <div className="card">
-      {/* 🌟 サプライズ・レベルアップダイアログ */}
       <LevelUpModal
         achievement={unlockedAchievement}
         onClose={() => setUnlockedAchievement(null)}
       />
 
-      {/* 🤖 AIトレーナー4ステップタップ解説 */}
       <TrainerGuide exercise={exercise} />
 
-      {/* 筋肉発光ネオンアナトミーマップ */}
       <BodyAnatomy primaryMuscles={primaryMuscles} secondaryMuscles={secondaryMuscles} />
 
       {recommendation && (
@@ -215,12 +223,8 @@ function LoggerSection({ exercise, onNextExercise }: { exercise: Exercise; onNex
         </div>
       </section>
 
-      <button className="btn primary big" onClick={handleLogSet} style={{ marginBottom: '12px' }}>
+      <button className="btn primary big" onClick={handleLogSet}>
         1セット完了して休憩タイマー起動
-      </button>
-
-      <button className="btn" onClick={onNextExercise}>
-        次の種目へ進む ›
       </button>
     </div>
   );
