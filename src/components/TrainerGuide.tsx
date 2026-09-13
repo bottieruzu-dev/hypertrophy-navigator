@@ -1,30 +1,43 @@
-import React from 'react';
+import React, { useState } from 'react';
+import type { Exercise } from '../db/types';
+import { getExerciseSteps } from '../engine/exerciseGuides';
 
 interface TrainerGuideProps {
-  exerciseName: string;
-  note?: string;
+  exercise: Exercise;
 }
 
-export const TrainerGuide: React.FC<TrainerGuideProps> = ({ exerciseName, note }) => {
+export const TrainerGuide: React.FC<TrainerGuideProps> = ({ exercise }) => {
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const steps = getExerciseSteps(exercise);
+  const currentStep = steps[currentStepIndex];
+
+  const handleNextStep = () => {
+    setCurrentStepIndex((prev) => (prev + 1) % steps.length);
+  };
+
   return (
-    <div className="trainer-card">
-      <div className="trainer-avatar-wrap">
-        <img 
-          src="/trainer.png" 
-          alt="AI Trainer" 
-          className="trainer-avatar"
+    <div className="umamusume-trainer-card" onClick={handleNextStep}>
+      {/* 上部：トレーナー立ち絵キャラ */}
+      <div className="umamusume-character-area">
+        <img
+          src="/trainer.png"
+          alt="AI Trainer RIO"
+          className="umamusume-trainer-img"
           onError={(e) => {
-            // 画像がない場合のフォールバック（絵文字表示）
             (e.target as HTMLElement).style.display = 'none';
           }}
         />
-        <div className="avatar-fallback">👩‍🏫</div>
+        <div className="umamusume-fallback-icon">👩‍🏫</div>
       </div>
-      <div className="speech-bubble">
-        <div className="trainer-name">AI TRAINER RIO</div>
-        <p className="speech-text">
-          {note ? note : `「${exerciseName}」ね！狙った筋肉を意識して、丁寧な動作で効かせていきましょう！`}
-        </p>
+
+      {/* 右側：ウマ娘風 横長大型話者吹き出し */}
+      <div className="umamusume-speech-box">
+        <div className="umamusume-header">
+          <span className="trainer-title">AI TRAINER RIO</span>
+          <span className="step-badge">{currentStep.title} ({currentStepIndex + 1}/4)</span>
+        </div>
+        <p className="umamusume-speech-text">{currentStep.text}</p>
+        <div className="tap-prompt">TAP TO NEXT ›</div>
       </div>
     </div>
   );

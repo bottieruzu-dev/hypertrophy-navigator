@@ -123,8 +123,8 @@ function LoggerSection({ exercise, onNextExercise }: { exercise: Exercise; onNex
 
   return (
     <div className="card">
-      {/* 🤖 AIトレーナー解説メッセージ */}
-      <TrainerGuide exerciseName={exercise.name} note={exercise.note} />
+      {/* 🤖 ウマ娘風 AIトレーナー4ステップタップ解説 */}
+      <TrainerGuide exercise={exercise} />
 
       {/* 筋肉発光ネオンアナトミーマップ */}
       <BodyAnatomy primaryMuscles={primaryMuscles} secondaryMuscles={secondaryMuscles} />
