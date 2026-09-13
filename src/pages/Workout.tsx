@@ -8,12 +8,13 @@ import { getExerciseRecommendation } from '../engine/generator';
 import { BodyAnatomy } from '../components/BodyAnatomy';
 import { TrainerGuide } from '../components/TrainerGuide';
 import { CALIBRATION_PLAN } from '../db/queries/calibration';
+import { fireNeonConfetti, ACHIEVEMENTS, type Achievement } from '../engine/achievements';
+import { LevelUpModal } from '../components/LevelUpModal';
 
 export default function Workout() {
   const [split, setSplit] = useState<SplitType>('upper_A');
   const [exerciseIndex, setExerciseIndex] = useState(0);
 
-  // 選択された分割（split）に対応する種目のみを取得するように修正
   const exercises = useLiveQuery(async () => {
     const ids = CALIBRATION_PLAN[split] ?? [];
     const list = await db.exercises.bulkGet(ids);
@@ -79,6 +80,7 @@ function LoggerSection({ exercise, onNextExercise }: { exercise: Exercise; onNex
   const [reps, setReps] = useState(defaultReps);
   const [rir, setRir] = useState(2);
   const [timerSec, setTimerSec] = useState<number | null>(null);
+  const [unlockedAchievement, setUnlockedAchievement] = useState<Achievement | null>(null);
 
   useEffect(() => {
     if (lastSet) {
@@ -102,6 +104,7 @@ function LoggerSection({ exercise, onNextExercise }: { exercise: Exercise; onNex
     const date = new Date().toISOString().slice(0, 10);
     const setOrder = (historySets?.length ?? 0) + 1;
     const presc = prescribeNextLoad({ weight, reps, rir }, exercise);
+    const addedVolume = Number((weight * reps).toFixed(1));
 
     await db.sets.add({
       sessionId: 1,
@@ -114,18 +117,41 @@ function LoggerSection({ exercise, onNextExercise }: { exercise: Exercise; onNex
       actualReps: reps,
       targetRir: 2,
       actualRir: rir,
-      volumeLoad: Number((weight * reps).toFixed(1)),
+      volumeLoad: addedVolume,
       est1rm: Number((weight * (1 + (reps + rir) / 30)).toFixed(1)),
       isWarmup: 0,
       mode: presc.mode,
     });
+
+    // 🌟 サプライズ演出1: ネオン・スパークの爆発
+    fireNeonConfetti();
+
+    // 🌟 サプライズ演出2: 累計ボリューム計算とレベルアップチェック
+    const allSets = await db.sets.toArray();
+    const totalVol = allSets.reduce((sum, s) => sum + (s.volumeLoad || 0), 0);
+    
+    // 直前までの累計ボリュームで未解放だった最大の称号を探す
+    const prevVol = totalVol - addedVolume;
+    const newUnlocked = ACHIEVEMENTS.find(
+      (a) => prevVol < a.requiredVolumeKg && totalVol >= a.requiredVolumeKg
+    );
+
+    if (newUnlocked) {
+      setUnlockedAchievement(newUnlocked);
+    }
 
     setTimerSec(exercise.type === 'compound' ? 150 : 75);
   };
 
   return (
     <div className="card">
-      {/* 🤖 ウマ娘風 AIトレーナー4ステップタップ解説 */}
+      {/* 🌟 サプライズ・レベルアップダイアログ */}
+      <LevelUpModal
+        achievement={unlockedAchievement}
+        onClose={() => setUnlockedAchievement(null)}
+      />
+
+      {/* 🤖 AIトレーナー4ステップタップ解説 */}
       <TrainerGuide exercise={exercise} />
 
       {/* 筋肉発光ネオンアナトミーマップ */}
