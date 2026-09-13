@@ -6,76 +6,116 @@ interface BodyAnatomyProps {
 }
 
 export const BodyAnatomy: React.FC<BodyAnatomyProps> = ({ primaryMuscles, secondaryMuscles = [] }) => {
-  const getMuscleClass = (code: string) => {
-    if (primaryMuscles.includes(code)) return 'muscle primary-glow';
-    if (secondaryMuscles.includes(code)) return 'muscle secondary-glow';
-    return 'muscle inactive';
+  const getMuscleStatus = (code: string) => {
+    if (primaryMuscles.includes(code)) return 'primary';
+    if (secondaryMuscles.includes(code)) return 'secondary';
+    return 'inactive';
   };
 
   return (
-    <div className="anatomy-container">
-      <svg viewBox="0 0 200 320" className="anatomy-svg">
-        <defs>
-          <filter id="neon-blue" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-            <feMerge>
-              <feMergeNode in="coloredBlur"/>
-              <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-          </filter>
-          <filter id="neon-purple" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-            <feMerge>
-              <feMergeNode in="coloredBlur"/>
-              <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-          </filter>
-        </defs>
+    <div className="hud-anatomy-card">
+      <div className="hud-header">
+        <span className="hud-tag">TARGET SCANNER v2.0</span>
+        <span className="hud-status">
+          {primaryMuscles.length > 0 ? 'TARGET LOCKED' : 'STANDBY'}
+        </span>
+      </div>
 
-        {/* 人体ベースシルエット（前面） */}
-        <g className="body-outline">
-          {/* 頭部 */}
-          <circle cx="100" cy="35" r="16" fill="var(--card)" stroke="var(--line)" strokeWidth="1.5"/>
-          {/* 胴体・ベース */}
-          <path d="M75,55 Q100,50 125,55 Q135,90 120,150 Q100,160 80,150 Q65,90 75,55 Z" fill="var(--card)" stroke="var(--line)" strokeWidth="1.5"/>
-          {/* 腕ベース */}
-          <path d="M70,58 L52,110 Q48,115 45,160 Q52,160 56,120 L73,75 Z" fill="var(--card)" stroke="var(--line)" strokeWidth="1"/>
-          <path d="M130,58 L148,110 Q152,115 155,160 Q148,160 144,120 L127,75 Z" fill="var(--card)" stroke="var(--line)" strokeWidth="1"/>
-          {/* 脚ベース */}
-          <path d="M80,150 L75,230 L72,290 Q85,290 88,230 L95,155 Z" fill="var(--card)" stroke="var(--line)" strokeWidth="1"/>
-          <path d="M120,150 L125,230 L128,290 Q115,290 112,230 L105,155 Z" fill="var(--card)" stroke="var(--line)" strokeWidth="1"/>
-        </g>
+      <div className="hud-anatomy-wrapper">
+        <svg viewBox="0 0 240 340" className="hud-anatomy-svg">
+          <defs>
+            {/* 主働筋用 ネオンシアンフィルター */}
+            <filter id="hud-cyan-glow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="4" result="blur" />
+              <feComponentTransfer in="blur" result="glow">
+                <feFuncA type="linear" slope="2" />
+              </feComponentTransfer>
+              <feMerge>
+                <feMergeNode in="glow" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
 
-        {/* --- 筋肉パーツレイヤー --- */}
-        {/* 三角筋前部・中部 */}
-        <path d="M68,58 Q60,65 58,80 Q70,82 73,66 Z" className={getMuscleClass('delt_front')} />
-        <path d="M132,58 Q140,65 142,80 Q130,82 127,66 Z" className={getMuscleClass('delt_front')} />
-        <path d="M62,62 Q54,75 56,88 Q64,88 66,74 Z" className={getMuscleClass('delt_lateral')} />
-        <path d="M138,62 Q146,75 144,88 Q136,88 134,74 Z" className={getMuscleClass('delt_lateral')} />
+            {/* 副次筋用 ネオンマゼンタフィルター */}
+            <filter id="hud-purple-glow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="4" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
 
-        {/* 大胸筋（上部・中部・下部） */}
-        <path d="M78,60 Q100,62 100,74 Q82,75 75,67 Z" className={getMuscleClass('chest_upper')} />
-        <path d="M122,60 Q100,62 100,74 Q118,75 125,67 Z" className={getMuscleClass('chest_upper')} />
-        <path d="M76,68 Q100,75 100,88 Q80,88 74,78 Z" className={getMuscleClass('chest_mid')} />
-        <path d="M124,68 Q100,75 100,88 Q120,88 126,78 Z" className={getMuscleClass('chest_mid')} />
+            {/* スキャンライン用パターン */}
+            <pattern id="scanGrid" width="12" height="12" patternUnits="userSpaceOnUse">
+              <path d="M 12 0 L 0 0 0 12" fill="none" stroke="rgba(0, 242, 254, 0.08)" strokeWidth="0.5" />
+            </pattern>
+          </defs>
 
-        {/* 腹直筋 */}
-        <path d="M88,95 L98,95 L98,108 L88,108 Z M102,95 L112,95 L112,108 L102,108 Z" className={getMuscleClass('abs_rectus')} />
-        <path d="M88,111 L98,111 L98,124 L88,124 Z M102,111 L112,111 L112,124 L102,124 Z" className={getMuscleClass('abs_rectus')} />
-        <path d="M89,127 L98,127 L98,138 L89,138 Z M102,127 L111,127 L111,138 L102,138 Z" className={getMuscleClass('abs_rectus')} />
+          {/* 背景グリッドスキャン */}
+          <rect width="240" height="340" fill="url(#scanGrid)" />
 
-        {/* 上腕二頭筋 */}
-        <path d="M63,82 Q56,100 64,112 Q70,100 68,84 Z" className={getMuscleClass('biceps_long')} />
-        <path d="M137,82 Q144,100 136,112 Q130,100 132,84 Z" className={getMuscleClass('biceps_short')} />
+          {/* 照準・ターゲット枠 */}
+          <g className="hud-crosshair" stroke="rgba(0, 242, 254, 0.25)" strokeWidth="1" fill="none">
+            <circle cx="120" cy="160" r="110" strokeDasharray="4 4" />
+            <line x1="120" y1="10" x2="120" y2="40" />
+            <line x1="120" y1="280" x2="120" y2="310" />
+            <line x1="10" y1="160" x2="40" y2="160" />
+            <line x1="200" y1="160" x2="230" y2="160" />
+          </g>
 
-        {/* 広背筋 */}
-        <path d="M72,90 Q65,115 78,135 Q82,110 80,92 Z" className={getMuscleClass('lat')} />
-        <path d="M128,90 Q135,115 122,135 Q118,110 120,92 Z" className={getMuscleClass('lat')} />
+          {/* 人体高精細シルエット */}
+          <g className="hud-body-frame" stroke="#2a324b" strokeWidth="1.2" fill="#121624">
+            {/* 頭部・首 */}
+            <path d="M120,25 C128,25 134,33 134,43 C134,53 128,60 120,60 C112,60 106,53 106,43 C106,33 112,25 120,25 Z" />
+            <path d="M113,59 L127,59 L130,68 L110,68 Z" />
 
-        {/* 大腿四頭筋 */}
-        <path d="M78,160 Q68,200 76,230 Q88,230 92,165 Z" className={getMuscleClass('quads')} />
-        <path d="M122,160 Q132,200 124,230 Q112,230 108,165 Z" className={getMuscleClass('quads')} />
-      </svg>
+            {/* 胴体・骨盤ベース */}
+            <path d="M92,68 C108,65 132,65 148,68 C158,110 148,165 135,175 C120,180 120,180 105,175 C92,165 82,110 92,68 Z" />
+
+            {/* 左腕・右腕ベース */}
+            <path d="M88,70 L65,115 L52,165 C48,168 56,172 62,165 L76,122 L88,88 Z" />
+            <path d="M152,70 L175,115 L188,165 C192,168 184,172 178,165 L164,122 L152,88 Z" />
+
+            {/* 脚部ベース */}
+            <path d="M102,175 L95,245 L90,310 C100,312 108,308 108,245 L116,178 Z" />
+            <path d="M138,175 L145,245 L150,310 C140,312 132,308 132,245 L124,178 Z" />
+          </g>
+
+          {/* --- 筋肉部位（インタラクティブ層） --- */}
+          {/* 三角筋中部（delt_lateral） */}
+          <path d="M78,72 Q68,88 74,102 Q84,98 86,80 Z" className={`hud-muscle ${getMuscleStatus('delt_lateral')}`} />
+          <path d="M162,72 Q172,88 166,102 Q156,98 154,80 Z" className={`hud-muscle ${getMuscleStatus('delt_lateral')}`} />
+
+          {/* 三角筋前部（delt_front） */}
+          <path d="M86,70 Q78,82 84,95 Q92,92 92,76 Z" className={`hud-muscle ${getMuscleStatus('delt_front')}`} />
+          <path d="M154,70 Q162,82 156,95 Q148,92 148,76 Z" className={`hud-muscle ${getMuscleStatus('delt_front')}`} />
+
+          {/* 大胸筋上部（chest_upper） */}
+          <path d="M94,74 Q120,76 120,90 Q98,92 92,80 Z" className={`hud-muscle ${getMuscleStatus('chest_upper')}`} />
+          <path d="M146,74 Q120,76 120,90 Q142,92 148,80 Z" className={`hud-muscle ${getMuscleStatus('chest_upper')}`} />
+
+          {/* 大胸筋中部（chest_mid） */}
+          <path d="M92,82 Q120,90 120,106 Q96,106 90,92 Z" className={`hud-muscle ${getMuscleStatus('chest_mid')}`} />
+          <path d="M148,82 Q120,90 120,106 Q144,106 150,92 Z" className={`hud-muscle ${getMuscleStatus('chest_mid')}`} />
+
+          {/* 腹直筋（abs_rectus） */}
+          <path d="M106,112 L117,112 L117,128 L106,128 Z M123,112 L134,112 L134,128 L123,128 Z" className={`hud-muscle ${getMuscleStatus('abs_rectus')}`} />
+          <path d="M106,131 L117,131 L117,147 L106,147 Z M123,131 L134,131 L134,147 L123,147 Z" className={`hud-muscle ${getMuscleStatus('abs_rectus')}`} />
+          <path d="M107,150 L117,150 L117,164 L107,164 Z M123,150 L133,150 L133,164 L123,164 Z" className={`hud-muscle ${getMuscleStatus('abs_rectus')}`} />
+
+          {/* 上腕二頭筋（biceps_long / biceps_short） */}
+          <path d="M74,104 Q68,126 78,138 Q84,126 82,106 Z" className={`hud-muscle ${getMuscleStatus('biceps_long')}`} />
+          <path d="M166,104 Q172,126 162,138 Q156,126 158,106 Z" className={`hud-muscle ${getMuscleStatus('biceps_short')}`} />
+
+          {/* 広背筋（lat） */}
+          <path d="M88,110 Q78,140 95,165 Q100,135 98,112 Z" className={`hud-muscle ${getMuscleStatus('lat')}`} />
+          <path d="M152,110 Q162,140 145,165 Q140,135 142,112 Z" className={`hud-muscle ${getMuscleStatus('lat')}`} />
+
+          {/* 大腿四頭筋（quads） */}
+          <path d="M98,185 Q86,230 96,270 Q110,270 114,190 Z" className={`hud-muscle ${getMuscleStatus('quads')}`} />
+          <path d="M142,185 Q154,230 144,270 Q130,270 126,190 Z" className={`hud-muscle ${getMuscleStatus('quads')}`} />
+        </svg>
+      </div>
     </div>
   );
 };

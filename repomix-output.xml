@@ -52,6 +52,7 @@ src/
     vite.svg
   components/
     BodyAnatomy.tsx
+    LevelUpModal.tsx
     TrainerGuide.tsx
   db/
     queries/
@@ -68,6 +69,7 @@ src/
     db.ts
     types.ts
   engine/
+    achievements.ts
     calibration.ts
     exerciseGuides.ts
     generator.ts
@@ -241,6 +243,34 @@ export const BodyAnatomy: React.FC<BodyAnatomyProps> = ({ primaryMuscles, second
         <path d="M78,160 Q68,200 76,230 Q88,230 92,165 Z" className={getMuscleClass('quads')} />
         <path d="M122,160 Q132,200 124,230 Q112,230 108,165 Z" className={getMuscleClass('quads')} />
       </svg>
+    </div>
+  );
+};
+</file>
+
+<file path="src/components/LevelUpModal.tsx">
+import React from 'react';
+import type { Achievement } from '../engine/achievements';
+
+interface LevelUpModalProps {
+  achievement: Achievement | null;
+  onClose: () => void;
+}
+
+export const LevelUpModal: React.FC<LevelUpModalProps> = ({ achievement, onClose }) => {
+  if (!achievement) return null;
+
+  return (
+    <div className="levelup-overlay" onClick={onClose}>
+      <div className="levelup-card" onClick={(e) => e.stopPropagation()}>
+        <div className="levelup-header">LEVEL UP!</div>
+        <div className="levelup-level">LV.{achievement.level}</div>
+        <div className="levelup-title">称号：【{achievement.title}】</div>
+        <p className="levelup-message">{achievement.message}</p>
+        <button className="btn primary big" onClick={onClose}>
+          さらに鍛錬を続ける
+        </button>
+      </div>
     </div>
   );
 };
@@ -1074,6 +1104,70 @@ export interface Setting {
 }
 </file>
 
+<file path="src/engine/achievements.ts">
+import confetti from 'canvas-confetti';
+
+export interface Achievement {
+  level: number;
+  title: string;
+  requiredVolumeKg: number;
+  message: string;
+}
+
+/** 累計ボリュームに応じた称号リスト */
+export const ACHIEVEMENTS: Achievement[] = [
+  { level: 1, title: '鉄の目覚め', requiredVolumeKg: 100, message: '筋肥大への第一歩を踏み出しました！' },
+  { level: 2, title: '重力の挑戦者', requiredVolumeKg: 1000, message: '累計1トン突破！体に変化が表れ始めています！' },
+  { level: 3, title: '鋼鉄の肉体', requiredVolumeKg: 5000, message: '累計5トン到達！ジムの常連の仲間入りです！' },
+  { level: 4, title: '肥大の支配者', requiredVolumeKg: 10000, message: '累計10トン突破！圧倒的なバルクを手に入れました！' },
+  { level: 5, title: '筋神 (Hypertrophy God)', requiredVolumeKg: 50000, message: '累計50トン到達！誰もあなたを止められません！' },
+];
+
+/** ネオンカラーのクラッカー・スパークを画面全体に炸裂させる */
+export function fireNeonConfetti() {
+  // シアンブルーとパープルのネオン粒子
+  const count = 200;
+  const defaults = {
+    origin: { y: 0.7 }
+  };
+
+  function fire(particleRatio: number, opts: confetti.Options) {
+    confetti({
+      ...defaults,
+      ...opts,
+      particleCount: Math.floor(count * particleRatio)
+    });
+  }
+
+  fire(0.25, {
+    spread: 26,
+    startVelocity: 55,
+    colors: ['#00f2fe', '#4facfe']
+  });
+  fire(0.2, {
+    spread: 60,
+    colors: ['#b537ff', '#ffffff']
+  });
+  fire(0.35, {
+    spread: 100,
+    decay: 0.91,
+    scalar: 0.8,
+    colors: ['#00f2fe', '#b537ff', '#00e676']
+  });
+  fire(0.1, {
+    spread: 120,
+    startVelocity: 25,
+    decay: 0.92,
+    colors: ['#ffffff', '#00f2fe']
+  });
+  fire(0.1, {
+    spread: 120,
+    startVelocity: 45,
+    colors: ['#b537ff', '#4facfe']
+  });
+}
+</file>
+
 <file path="src/engine/calibration.ts">
 import type { Exercise } from '../db/types';
 import { roundToIncrement, isRepProgressionOnly } from './units';
@@ -1626,233 +1720,6 @@ export default function BodyTracking() {
 }
 </file>
 
-<file path="src/pages/Calibration.tsx">
-import { useMemo, useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import type { Exercise, SplitType } from '../db/types';
-import {
-  CALIBRATION_PLAN, CALIBRATION_TOTAL, getCalibrationExercises,
-  getBaselineMap, getOrCreateCalibrationSession, saveCalibrationResult,
-} from '../db/queries/calibration';
-import {
-  CALIB, suggestNext, finalizeBaseline, targetRepsOf, type Attempt,
-} from '../engine/calibration';
-import { effectiveIncrement, formatWeight } from '../engine/units';
-
-const SPLIT_LABEL: Record<SplitType, string> = {
-  upper_A: '上半身 A（背中・肩中部・二頭）',
-  lower: '下半身',
-  upper_B: '上半身 B（胸上部・肩・三頭）',
-};
-
-export default function Calibration() {
-  const [split, setSplit] = useState<SplitType>('upper_A');
-  const [active, setActive] = useState<Exercise | null>(null);
-
-  const exercises = useLiveQuery(() => getCalibrationExercises(split), [split]);
-  const baselines = useLiveQuery(() => getBaselineMap(), []);
-  const doneCount = baselines?.size ?? 0;
-
-  if (active) {
-    return (
-      <Wizard
-        exercise={active}
-        split={split}
-        onClose={() => setActive(null)}
-      />
-    );
-  }
-
-  return (
-    <div className="page">
-      <header className="hdr">
-        <h1>Week 0 キャリブレーション</h1>
-        <div className="progress">
-          <div className="bar" style={{ width: `${(doneCount / CALIBRATION_TOTAL) * 100}%` }} />
-        </div>
-        <p className="sub">{doneCount} / {CALIBRATION_TOTAL} 種目 完了</p>
-      </header>
-
-      <div className="tabs">
-        {(Object.keys(CALIBRATION_PLAN) as SplitType[]).map((s) => (
-          <button
-            key={s}
-            className={`tab ${s === split ? 'on' : ''}`}
-            onClick={() => setSplit(s)}
-          >
-            {s.replace('upper_', 'Upper ').replace('lower', 'Lower')}
-          </button>
-        ))}
-      </div>
-      <p className="sub">{SPLIT_LABEL[split]}</p>
-
-      <ul className="list">
-        {exercises?.map((ex) => {
-          const b = baselines?.get(ex.id);
-          return (
-            <li key={ex.id}>
-              <button className={`row ${b ? 'done' : ''}`} onClick={() => setActive(ex)}>
-                <span className="name">{ex.name}</span>
-                <span className="meta">
-                  {b
-                    ? `${formatWeight(b.weightKg, ex)} × ${b.reps}`
-                    : `${ex.repRange[0]}–${ex.repRange[1]} reps`}
-                </span>
-                <span className="mark">{b ? '✓' : '›'}</span>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-
-      <p className="note">
-        各種目3セット。1セット目は「これくらいかな」で構いません。
-        RIRの入力から2・3セット目の重量を自動計算します。
-      </p>
-    </div>
-  );
-}
-
-function Wizard({
-  exercise, split, onClose,
-}: { exercise: Exercise; split: SplitType; onClose: () => void }) {
-  const inc = effectiveIncrement(exercise, 10);
-  const [weight, setWeight] = useState<number>(
-    exercise.increment === 0 ? 0 : guessInitial(exercise)
-  );
-  const [reps, setReps] = useState<number>(targetRepsOf(exercise));
-  const [rir, setRir] = useState<number>(2);
-  const [attempts, setAttempts] = useState<Attempt[]>([]);
-  const [suggestions, setSuggestions] = useState<number[]>([]);
-  const [saving, setSaving] = useState(false);
-
-  const setNo = attempts.length + 1;
-  const isLast = setNo === CALIB.setsPerExercise;
-
-  const lastSuggestion = useMemo(() => {
-    if (attempts.length === 0) return null;
-    return suggestNext(exercise, attempts[attempts.length - 1]);
-  }, [attempts, exercise]);
-
-  const step = exercise.increment === 0 ? 0 : effectiveIncrement(exercise, weight);
-
-  const handleNext = async () => {
-    const attempt: Attempt = { setNo, weight, reps, rir };
-    const next = [...attempts, attempt];
-    setAttempts(next);
-    setSuggestions([...suggestions, weight]);
-
-    if (next.length < CALIB.setsPerExercise) {
-      const s = suggestNext(exercise, attempt);
-      setWeight(s.weight);
-      setReps(s.targetReps);
-      setRir(2);
-      return;
-    }
-
-    setSaving(true);
-    const baseline = finalizeBaseline(exercise, next);
-    const sessionId = await getOrCreateCalibrationSession(split);
-    await saveCalibrationResult({
-      sessionId,
-      exercise,
-      attempts: next,
-      suggestions: [...suggestions, weight],
-      baseline,
-    });
-    setSaving(false);
-    onClose();
-  };
-
-  return (
-    <div className="page wizard">
-      <header className="hdr">
-        <button className="back" onClick={onClose}>‹ 戻る</button>
-        <h2>{exercise.name}</h2>
-        <p className="sub">
-          Set {setNo} / {CALIB.setsPerExercise} ・ 目標 {exercise.repRange[0]}–{exercise.repRange[1]} reps
-        </p>
-      </header>
-
-      {lastSuggestion && (
-        <div className={`hint ${lastSuggestion.verdict}`}>
-          <p>{lastSuggestion.message}</p>
-          <p className="mono">推定1RM {lastSuggestion.est1rm} kg</p>
-          {lastSuggestion.repProgressionOnly && exercise.increment > 0 && (
-            <p className="mono warn">
-              ▲ 刻み {inc}kg が重量比4%超。以降はレップ漸進で管理します
-            </p>
-          )}
-        </div>
-      )}
-
-      {exercise.increment > 0 && (
-        <section className="field">
-          <label>重量</label>
-          <div className="stepper">
-            <button onClick={() => setWeight((w) => Math.max(step, w - step))}>−</button>
-            <span className="value">{formatWeight(weight, exercise)}</span>
-            <button onClick={() => setWeight((w) => w + step)}>＋</button>
-          </div>
-          <p className="mono sub">刻み {step} kg</p>
-        </section>
-      )}
-
-      <section className="field">
-        <label>実施レップ数</label>
-        <div className="stepper">
-          <button onClick={() => setReps((r) => Math.max(1, r - 1))}>−</button>
-          <span className="value">{reps} reps</span>
-          <button onClick={() => setReps((r) => r + 1)}>＋</button>
-        </div>
-      </section>
-
-      <section className="field">
-        <label>RIR（あと何回挙がったか）</label>
-        <div className="rir">
-          {[0, 1, 2, 3, 4].map((v) => (
-            <button
-              key={v}
-              className={`rir-btn ${rir === v ? 'on' : ''}`}
-              onClick={() => setRir(v)}
-            >
-              {v === 4 ? '4+' : v}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {attempts.length > 0 && (
-        <section className="log">
-          <h3>記録済み</h3>
-          {attempts.map((a) => (
-            <p key={a.setNo} className="mono">
-              Set{a.setNo}: {a.weight}kg × {a.reps} (RIR {a.rir >= 4 ? '4+' : a.rir})
-            </p>
-          ))}
-        </section>
-      )}
-
-      <button className="btn primary big" onClick={handleNext} disabled={saving}>
-        {saving ? '保存中…' : isLast ? 'ベースラインを確定' : `Set ${setNo} を記録して次へ`}
-      </button>
-    </div>
-  );
-}
-
-function guessInitial(ex: Exercise): number {
-  switch (ex.equipment) {
-    case 'dumbbell': return ex.type === 'isolation' ? 8 : 12;
-    case 'cable': return ex.type === 'isolation' ? 10 : 30;
-    case 'machine': return ex.type === 'isolation' ? 20 : 35;
-    case 'plate': return 20;
-    case 'barbell': return 40;
-    case 'smith': return 20;
-    default: return 0;
-  }
-}
-</file>
-
 <file path="src/pages/DebugSeed.tsx">
 import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -2276,39 +2143,6 @@ dist-ssr
 }
 </file>
 
-<file path="package.json">
-{
-  "name": "hypertrophy-navigator",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist",
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "oxlint",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "dexie": "^4.4.5",
-    "dexie-react-hooks": "^4.4.0",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8"
-  },
-  "devDependencies": {
-    "@types/node": "^24.13.3",
-    "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.4",
-    "gh-pages": "^6.3.0",
-    "oxlint": "^1.75.0",
-    "typescript": "~6.0.2",
-    "vite": "^8.2.0"
-  }
-}
-</file>
-
 <file path="README.md">
 # React + TypeScript + Vite
 
@@ -2409,51 +2243,244 @@ See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rule
 }
 </file>
 
-<file path="src/components/TrainerGuide.tsx">
-import React, { useState } from 'react';
-import type { Exercise } from '../db/types';
-import { getExerciseSteps } from '../engine/exerciseGuides';
+<file path="src/pages/Calibration.tsx">
+import { useMemo, useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../db/db';
+import type { Exercise, SplitType } from '../db/types';
+import {
+  CALIBRATION_PLAN, CALIBRATION_TOTAL, getCalibrationExercises,
+  getBaselineMap, getOrCreateCalibrationSession, saveCalibrationResult,
+} from '../db/queries/calibration';
+import {
+  CALIB, suggestNext, finalizeBaseline, targetRepsOf, type Attempt,
+} from '../engine/calibration';
+import { effectiveIncrement, formatWeight } from '../engine/units';
+import { TrainerGuide } from '../components/TrainerGuide';
+import { BodyAnatomy } from '../components/BodyAnatomy';
 
-interface TrainerGuideProps {
-  exercise: Exercise;
+const SPLIT_LABEL: Record<SplitType, string> = {
+  upper_A: '上半身 A（背中・肩中部・二頭）',
+  lower: '下半身',
+  upper_B: '上半身 B（胸上部・肩・三頭）',
+};
+
+export default function Calibration() {
+  const [split, setSplit] = useState<SplitType>('upper_A');
+  const [active, setActive] = useState<Exercise | null>(null);
+
+  const exercises = useLiveQuery(() => getCalibrationExercises(split), [split]);
+  const baselines = useLiveQuery(() => getBaselineMap(), []);
+  const doneCount = baselines?.size ?? 0;
+
+  if (active) {
+    return (
+      <Wizard
+        exercise={active}
+        split={split}
+        onClose={() => setActive(null)}
+      />
+    );
+  }
+
+  return (
+    <div className="page">
+      <header className="hdr">
+        <h1>Week 0 キャリブレーション</h1>
+        <div className="progress">
+          <div className="bar" style={{ width: `${(doneCount / CALIBRATION_TOTAL) * 100}%` }} />
+        </div>
+        <p className="sub">{doneCount} / {CALIBRATION_TOTAL} 種目 完了</p>
+      </header>
+
+      <div className="tabs">
+        {(Object.keys(CALIBRATION_PLAN) as SplitType[]).map((s) => (
+          <button
+            key={s}
+            className={`tab ${s === split ? 'on' : ''}`}
+            onClick={() => setSplit(s)}
+          >
+            {s.replace('upper_', 'Upper ').replace('lower', 'Lower')}
+          </button>
+        ))}
+      </div>
+      <p className="sub">{SPLIT_LABEL[split]}</p>
+
+      <ul className="list">
+        {exercises?.map((ex) => {
+          const b = baselines?.get(ex.id);
+          return (
+            <li key={ex.id}>
+              <button className={`row ${b ? 'done' : ''}`} onClick={() => setActive(ex)}>
+                <span className="name">{ex.name}</span>
+                <span className="meta">
+                  {b
+                    ? `${formatWeight(b.weightKg, ex)} × ${b.reps}`
+                    : `${ex.repRange[0]}–${ex.repRange[1]} reps`}
+                </span>
+                <span className="mark">{b ? '✓' : '›'}</span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+
+      <p className="note">
+        各種目3セット。1セット目は「これくらいかな」で構いません。
+        RIRの入力から2・3セット目の重量を自動計算します。
+      </p>
+    </div>
+  );
 }
 
-export const TrainerGuide: React.FC<TrainerGuideProps> = ({ exercise }) => {
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  const steps = getExerciseSteps(exercise);
-  const currentStep = steps[currentStepIndex];
+function Wizard({
+  exercise, split, onClose,
+}: { exercise: Exercise; split: SplitType; onClose: () => void }) {
+  const inc = effectiveIncrement(exercise, 10);
+  const [weight, setWeight] = useState<number>(
+    exercise.increment === 0 ? 0 : guessInitial(exercise)
+  );
+  const [reps, setReps] = useState<number>(targetRepsOf(exercise));
+  const [rir, setRir] = useState<number>(2);
+  const [attempts, setAttempts] = useState<Attempt[]>([]);
+  const [suggestions, setSuggestions] = useState<number[]>([]);
+  const [saving, setSaving] = useState(false);
 
-  const handleNextStep = () => {
-    setCurrentStepIndex((prev) => (prev + 1) % steps.length);
+  const credits = useLiveQuery(() => db.muscleCredits.where('exerciseId').equals(exercise.id).toArray(), [exercise.id]);
+  const primaryMuscles = credits?.filter((c) => c.credit >= 0.8).map((c) => c.muscle) ?? [];
+  const secondaryMuscles = credits?.filter((c) => c.credit < 0.8).map((c) => c.muscle) ?? [];
+
+  const setNo = attempts.length + 1;
+  const isLast = setNo === CALIB.setsPerExercise;
+
+  const lastSuggestion = useMemo(() => {
+    if (attempts.length === 0) return null;
+    return suggestNext(exercise, attempts[attempts.length - 1]);
+  }, [attempts, exercise]);
+
+  const step = exercise.increment === 0 ? 0 : effectiveIncrement(exercise, weight);
+
+  const handleNext = async () => {
+    const attempt: Attempt = { setNo, weight, reps, rir };
+    const next = [...attempts, attempt];
+    setAttempts(next);
+    setSuggestions([...suggestions, weight]);
+
+    if (next.length < CALIB.setsPerExercise) {
+      const s = suggestNext(exercise, attempt);
+      setWeight(s.weight);
+      setReps(s.targetReps);
+      setRir(2);
+      return;
+    }
+
+    setSaving(true);
+    const baseline = finalizeBaseline(exercise, next);
+    const sessionId = await getOrCreateCalibrationSession(split);
+    await saveCalibrationResult({
+      sessionId,
+      exercise,
+      attempts: next,
+      suggestions: [...suggestions, weight],
+      baseline,
+    });
+    setSaving(false);
+    onClose();
   };
 
   return (
-    <div className="umamusume-trainer-card" onClick={handleNextStep}>
-      {/* 上部：トレーナー立ち絵キャラ */}
-      <div className="umamusume-character-area">
-        <img
-          src="/trainer.png"
-          alt="AI Trainer RIO"
-          className="umamusume-trainer-img"
-          onError={(e) => {
-            (e.target as HTMLElement).style.display = 'none';
-          }}
-        />
-        <div className="umamusume-fallback-icon">👩‍🏫</div>
-      </div>
+    <div className="page wizard">
+      <header className="hdr">
+        <button className="back" onClick={onClose}>‹ 戻る</button>
+        <h2>{exercise.name}</h2>
+        <p className="sub">
+          Set {setNo} / {CALIB.setsPerExercise} ・ 目標 {exercise.repRange[0]}–{exercise.repRange[1]} reps
+        </p>
+      </header>
 
-      {/* 右側：ウマ娘風 横長大型話者吹き出し */}
-      <div className="umamusume-speech-box">
-        <div className="umamusume-header">
-          <span className="trainer-title">AI TRAINER RIO</span>
-          <span className="step-badge">{currentStep.title} ({currentStepIndex + 1}/4)</span>
+      {/* 🤖 AIトレーナー4ステップ解説ガイド */}
+      <TrainerGuide exercise={exercise} />
+
+      {/* 筋肉発光ネオンアナトミーマップ */}
+      <BodyAnatomy primaryMuscles={primaryMuscles} secondaryMuscles={secondaryMuscles} />
+
+      {lastSuggestion && (
+        <div className={`hint ${lastSuggestion.verdict}`}>
+          <p>{lastSuggestion.message}</p>
+          <p className="mono">推定1RM {lastSuggestion.est1rm} kg</p>
+          {lastSuggestion.repProgressionOnly && exercise.increment > 0 && (
+            <p className="mono warn">
+              ▲ 刻み {inc}kg が重量比4%超。以降はレップ漸進で管理します
+            </p>
+          )}
         </div>
-        <p className="umamusume-speech-text">{currentStep.text}</p>
-        <div className="tap-prompt">TAP TO NEXT ›</div>
-      </div>
+      )}
+
+      {exercise.increment > 0 && (
+        <section className="field">
+          <label>重量</label>
+          <div className="stepper">
+            <button onClick={() => setWeight((w) => Math.max(step, w - step))}>−</button>
+            <span className="value">{formatWeight(weight, exercise)}</span>
+            <button onClick={() => setWeight((w) => w + step)}>＋</button>
+          </div>
+          <p className="mono sub">刻み {step} kg</p>
+        </section>
+      )}
+
+      <section className="field">
+        <label>実施レップ数</label>
+        <div className="stepper">
+          <button onClick={() => setReps((r) => Math.max(1, r - 1))}>−</button>
+          <span className="value">{reps} reps</span>
+          <button onClick={() => setReps((r) => r + 1)}>＋</button>
+        </div>
+      </section>
+
+      <section className="field">
+        <label>RIR（あと何回挙がったか）</label>
+        <div className="rir">
+          {[0, 1, 2, 3, 4].map((v) => (
+            <button
+              key={v}
+              className={`rir-btn ${rir === v ? 'on' : ''}`}
+              onClick={() => setRir(v)}
+            >
+              {v === 4 ? '4+' : v}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {attempts.length > 0 && (
+        <section className="log">
+          <h3>記録済み</h3>
+          {attempts.map((a) => (
+            <p key={a.setNo} className="mono">
+              Set{a.setNo}: {a.weight}kg × {a.reps} (RIR {a.rir >= 4 ? '4+' : a.rir})
+            </p>
+          ))}
+        </section>
+      )}
+
+      <button className="btn primary big" onClick={handleNext} disabled={saving}>
+        {saving ? '保存中…' : isLast ? 'ベースラインを確定' : `Set ${setNo} を記録して次へ`}
+      </button>
     </div>
   );
-};
+}
+
+function guessInitial(ex: Exercise): number {
+  switch (ex.equipment) {
+    case 'dumbbell': return ex.type === 'isolation' ? 8 : 12;
+    case 'cable': return ex.type === 'isolation' ? 10 : 30;
+    case 'machine': return ex.type === 'isolation' ? 20 : 35;
+    case 'plate': return 20;
+    case 'barbell': return 40;
+    case 'smith': return 20;
+    default: return 0;
+  }
+}
 </file>
 
 <file path="src/App.tsx">
@@ -2647,6 +2674,41 @@ code {
 </html>
 </file>
 
+<file path="package.json">
+{
+  "name": "hypertrophy-navigator",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist",
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "oxlint",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "canvas-confetti": "^1.9.4",
+    "dexie": "^4.4.5",
+    "dexie-react-hooks": "^4.4.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@types/canvas-confetti": "^1.9.0",
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.4",
+    "gh-pages": "^6.3.0",
+    "oxlint": "^1.75.0",
+    "typescript": "~6.0.2",
+    "vite": "^8.2.0"
+  }
+}
+</file>
+
 <file path="vite.config.ts">
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
@@ -2661,6 +2723,53 @@ export default defineConfig({
 });
 </file>
 
+<file path="src/components/TrainerGuide.tsx">
+import React, { useState } from 'react';
+import type { Exercise } from '../db/types';
+import { getExerciseSteps } from '../engine/exerciseGuides';
+
+interface TrainerGuideProps {
+  exercise: Exercise;
+}
+
+export const TrainerGuide: React.FC<TrainerGuideProps> = ({ exercise }) => {
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const steps = getExerciseSteps(exercise);
+  const currentStep = steps[currentStepIndex];
+
+  const handleNextStep = () => {
+    setCurrentStepIndex((prev) => (prev + 1) % steps.length);
+  };
+
+  return (
+    <div className="trainer-dialog-card" onClick={handleNextStep}>
+      {/* キャラクター立ち絵領域 */}
+      <div className="trainer-character-area">
+        <img
+          src="/trainer.png"
+          alt="AI Trainer RIO"
+          className="trainer-character-img"
+          onError={(e) => {
+            (e.target as HTMLElement).style.display = 'none';
+          }}
+        />
+        <div className="trainer-fallback-icon">👩‍🏫</div>
+      </div>
+
+      {/* 横長大型話者吹き出し */}
+      <div className="trainer-speech-box">
+        <div className="trainer-header">
+          <span className="trainer-title">AI TRAINER RIO</span>
+          <span className="step-badge">{currentStep.title} ({currentStepIndex + 1}/4)</span>
+        </div>
+        <p className="trainer-speech-text">{currentStep.text}</p>
+        <div className="tap-prompt">TAP TO NEXT ›</div>
+      </div>
+    </div>
+  );
+};
+</file>
+
 <file path="src/pages/Workout.tsx">
 import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -2672,12 +2781,13 @@ import { getExerciseRecommendation } from '../engine/generator';
 import { BodyAnatomy } from '../components/BodyAnatomy';
 import { TrainerGuide } from '../components/TrainerGuide';
 import { CALIBRATION_PLAN } from '../db/queries/calibration';
+import { fireNeonConfetti, ACHIEVEMENTS, type Achievement } from '../engine/achievements';
+import { LevelUpModal } from '../components/LevelUpModal';
 
 export default function Workout() {
   const [split, setSplit] = useState<SplitType>('upper_A');
   const [exerciseIndex, setExerciseIndex] = useState(0);
 
-  // 選択された分割（split）に対応する種目のみを取得するように修正
   const exercises = useLiveQuery(async () => {
     const ids = CALIBRATION_PLAN[split] ?? [];
     const list = await db.exercises.bulkGet(ids);
@@ -2743,6 +2853,7 @@ function LoggerSection({ exercise, onNextExercise }: { exercise: Exercise; onNex
   const [reps, setReps] = useState(defaultReps);
   const [rir, setRir] = useState(2);
   const [timerSec, setTimerSec] = useState<number | null>(null);
+  const [unlockedAchievement, setUnlockedAchievement] = useState<Achievement | null>(null);
 
   useEffect(() => {
     if (lastSet) {
@@ -2766,6 +2877,7 @@ function LoggerSection({ exercise, onNextExercise }: { exercise: Exercise; onNex
     const date = new Date().toISOString().slice(0, 10);
     const setOrder = (historySets?.length ?? 0) + 1;
     const presc = prescribeNextLoad({ weight, reps, rir }, exercise);
+    const addedVolume = Number((weight * reps).toFixed(1));
 
     await db.sets.add({
       sessionId: 1,
@@ -2778,18 +2890,41 @@ function LoggerSection({ exercise, onNextExercise }: { exercise: Exercise; onNex
       actualReps: reps,
       targetRir: 2,
       actualRir: rir,
-      volumeLoad: Number((weight * reps).toFixed(1)),
+      volumeLoad: addedVolume,
       est1rm: Number((weight * (1 + (reps + rir) / 30)).toFixed(1)),
       isWarmup: 0,
       mode: presc.mode,
     });
+
+    // 🌟 サプライズ演出1: ネオン・スパークの爆発
+    fireNeonConfetti();
+
+    // 🌟 サプライズ演出2: 累計ボリューム計算とレベルアップチェック
+    const allSets = await db.sets.toArray();
+    const totalVol = allSets.reduce((sum, s) => sum + (s.volumeLoad || 0), 0);
+    
+    // 直前までの累計ボリュームで未解放だった最大の称号を探す
+    const prevVol = totalVol - addedVolume;
+    const newUnlocked = ACHIEVEMENTS.find(
+      (a) => prevVol < a.requiredVolumeKg && totalVol >= a.requiredVolumeKg
+    );
+
+    if (newUnlocked) {
+      setUnlockedAchievement(newUnlocked);
+    }
 
     setTimerSec(exercise.type === 'compound' ? 150 : 75);
   };
 
   return (
     <div className="card">
-      {/* 🤖 ウマ娘風 AIトレーナー4ステップタップ解説 */}
+      {/* 🌟 サプライズ・レベルアップダイアログ */}
+      <LevelUpModal
+        achievement={unlockedAchievement}
+        onClose={() => setUnlockedAchievement(null)}
+      />
+
+      {/* 🤖 AIトレーナー4ステップタップ解説 */}
       <TrainerGuide exercise={exercise} />
 
       {/* 筋肉発光ネオンアナトミーマップ */}
@@ -3097,86 +3232,8 @@ table.grid th, table.grid td { padding: 10px 6px; border-bottom: 1px solid var(-
   }
 }
 
-
-/* --- AIトレーナー＆吹き出しUI --- */
-.trainer-card {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  background: rgba(19, 21, 31, 0.7);
-  border: 1px solid rgba(0, 242, 254, 0.3);
-  border-radius: 16px;
-  padding: 12px 14px;
-  margin-bottom: 16px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(8px);
-}
-
-.trainer-avatar-wrap {
-  position: relative;
-  width: 54px;
-  height: 54px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  border: 2px solid var(--accent);
-  box-shadow: 0 0 10px var(--accent-glow);
-  overflow: hidden;
-  background: #1a1d2b;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.trainer-avatar {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  position: relative;
-  z-index: 2;
-}
-
-.avatar-fallback {
-  position: absolute;
-  font-size: 28px;
-  z-index: 1;
-}
-
-.speech-bubble {
-  position: relative;
-  flex: 1;
-  background: rgba(35, 39, 56, 0.9);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 10px 12px;
-}
-
-.speech-bubble::before {
-  content: '';
-  position: absolute;
-  left: -8px;
-  top: 16px;
-  border-top: 6px solid transparent;
-  border-bottom: 6px solid transparent;
-  border-right: 8px solid rgba(35, 39, 56, 0.9);
-}
-
-.trainer-name {
-  font-size: 10px;
-  font-weight: 800;
-  color: var(--accent);
-  letter-spacing: 1px;
-  margin-bottom: 4px;
-}
-
-.speech-text {
-  font-size: 13px;
-  line-height: 1.4;
-  color: #fff;
-  margin: 0;
-}
-
-/* --- AIトレーナー＆対話吹き出しUI (立ち絵デザイン) --- */
-.umamusume-trainer-card {
+/* --- AIトレーナー＆対話吹き出しUI (キャラ立ち絵デザイン) --- */
+.trainer-dialog-card {
   display: flex;
   align-items: flex-end;
   gap: 12px;
@@ -3193,13 +3250,13 @@ table.grid th, table.grid td { padding: 10px 6px; border-bottom: 1px solid var(-
   min-height: 140px;
 }
 
-.umamusume-trainer-card:active {
+.trainer-dialog-card:active {
   transform: scale(0.98);
   border-color: var(--accent);
 }
 
-/* 左側：キャラ立ち絵領域（枠線を排除して立ち絵を大きく配置） */
-.umamusume-character-area {
+/* 左側：キャラ立ち絵領域 */
+.trainer-character-area {
   position: relative;
   width: 120px;
   height: 140px;
@@ -3210,7 +3267,7 @@ table.grid th, table.grid td { padding: 10px 6px; border-bottom: 1px solid var(-
   margin-bottom: -12px;
 }
 
-.umamusume-trainer-img {
+.trainer-character-img {
   width: 100%;
   height: 100%;
   object-fit: contain;
@@ -3220,19 +3277,19 @@ table.grid th, table.grid td { padding: 10px 6px; border-bottom: 1px solid var(-
   transition: transform 0.2s ease;
 }
 
-.umamusume-trainer-card:hover .umamusume-trainer-img {
+.trainer-dialog-card:hover .trainer-character-img {
   transform: scale(1.03);
 }
 
-.umamusume-fallback-icon {
+.trainer-fallback-icon {
   position: absolute;
   bottom: 16px;
   font-size: 56px;
   z-index: 1;
 }
 
-/* 右側： 横長大型白吹き出し */
-.umamusume-speech-box {
+/* 右側：横長大型白吹き出し */
+.trainer-speech-box {
   position: relative;
   flex: 1;
   background: #ffffff;
@@ -3247,7 +3304,7 @@ table.grid th, table.grid td { padding: 10px 6px; border-bottom: 1px solid var(-
 }
 
 /* 吹き出しのシッポ */
-.umamusume-speech-box::before {
+.trainer-speech-box::before {
   content: '';
   position: absolute;
   left: -10px;
@@ -3257,7 +3314,7 @@ table.grid th, table.grid td { padding: 10px 6px; border-bottom: 1px solid var(-
   border-right: 11px solid #ffffff;
 }
 
-.umamusume-header {
+.trainer-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -3281,7 +3338,7 @@ table.grid th, table.grid td { padding: 10px 6px; border-bottom: 1px solid var(-
   border: 1px solid rgba(170, 59, 255, 0.3);
 }
 
-.umamusume-speech-text {
+.trainer-speech-text {
   font-size: 13px;
   font-weight: 700;
   line-height: 1.5;
@@ -3303,6 +3360,74 @@ table.grid th, table.grid td { padding: 10px 6px; border-bottom: 1px solid var(-
 @keyframes tapBlink {
   0% { opacity: 0.4; transform: translateX(0); }
   100% { opacity: 1; transform: translateX(3px); }
+}
+
+
+/* --- サプライズ・レベルアップ全画面ダイアログ --- */
+.levelup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 7, 15, 0.88);
+  backdrop-filter: blur(12px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.3s ease;
+}
+
+.levelup-card {
+  background: linear-gradient(135deg, #131522 0%, #090a10 100%);
+  border: 2px solid var(--accent);
+  border-radius: 24px;
+  padding: 32px 24px;
+  text-align: center;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 0 40px var(--accent-glow), inset 0 0 15px var(--accent-glow);
+  animation: popUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.levelup-header {
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--accent);
+  letter-spacing: 3px;
+  text-shadow: 0 0 10px var(--accent-glow);
+}
+
+.levelup-level {
+  font-size: 48px;
+  font-weight: 900;
+  color: #fff;
+  margin: 10px 0;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+}
+
+.levelup-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #00e676;
+  text-shadow: 0 0 12px var(--good-glow);
+  margin-bottom: 16px;
+}
+
+.levelup-message {
+  font-size: 14px;
+  color: var(--sub);
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes popUp {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }
 </file>
 
