@@ -1,19 +1,24 @@
 import type { Food } from '../types';
 
 export const FOODS: Food[] = [
-  { id: 1,  name: '鶏むね肉(皮なし)',       unitLabel: '100g',  unitG: 100, kcal: 108, p: 22.3, f: 1.5,  c: 0.1,  tag: 'protein', note: '主力。冷凍作り置き可' },
-  { id: 2,  name: 'ゆで卵',                 unitLabel: '1個',   unitG: 50,  kcal: 68,  p: 6.1,  f: 4.7,  c: 0.2,  tag: 'protein', note: '脂質確保も兼ねる' },
-  { id: 3,  name: 'ホエイプロテイン',        unitLabel: '1杯',   unitG: 30,  kcal: 117, p: 24.0, f: 1.5,  c: 2.0,  tag: 'protein', note: '不足分の最終調整用' },
-  { id: 4,  name: 'ギリシャヨーグルト(無脂肪)', unitLabel: '1個', unitG: 100, kcal: 59, p: 10.2, f: 0.2,  c: 3.9,  tag: 'protein', note: 'カゼイン。就寝前推奨' },
-  { id: 5,  name: 'ツナ水煮缶',             unitLabel: '1缶',   unitG: 70,  kcal: 50,  p: 11.2, f: 0.5,  c: 0.1,  tag: 'protein', note: '調理不要' },
-  { id: 6,  name: '絹豆腐',                 unitLabel: '1丁',   unitG: 300, kcal: 168, p: 15.9, f: 10.5, c: 5.1,  tag: 'protein' },
-  { id: 7,  name: '鮭(生)',                 unitLabel: '1切',   unitG: 80,  kcal: 106, p: 17.8, f: 3.3,  c: 0.1,  tag: 'protein', note: '脂質の質が良い' },
-  { id: 8,  name: '白米(炊飯)',             unitLabel: '150g',  unitG: 150, kcal: 234, p: 3.8,  f: 0.5,  c: 53.4, tag: 'carb',    note: '主力炭水化物' },
-  { id: 9,  name: 'オートミール',            unitLabel: '40g',   unitG: 40,  kcal: 152, p: 5.5,  f: 2.8,  c: 27.6, tag: 'carb',    note: '朝食向き' },
-  { id: 10, name: 'バナナ',                 unitLabel: '1本',   unitG: 100, kcal: 86,  p: 1.1,  f: 0.2,  c: 22.5, tag: 'carb',    note: 'トレ前' },
-  { id: 11, name: 'さつまいも',             unitLabel: '150g',  unitG: 150, kcal: 197, p: 1.8,  f: 0.3,  c: 47.0, tag: 'carb' },
-  { id: 12, name: 'アーモンド',             unitLabel: '20g',   unitG: 20,  kcal: 120, p: 3.9,  f: 10.9, c: 2.1,  tag: 'fat',     note: '脂質枠の確保' },
-  { id: 13, name: 'オリーブオイル',         unitLabel: '大さじ1', unitG: 12, kcal: 111, p: 0,    f: 12.0, c: 0,    tag: 'fat',     note: '調理油' },
-  { id: 14, name: '冷凍ブロッコリー',        unitLabel: '150g',  unitG: 150, kcal: 50,  p: 6.5,  f: 0.8,  c: 3.0,  tag: 'veg',     note: '現行食に追加想定' },
-  { id: 15, name: '冷凍ほうれん草',          unitLabel: '150g',  unitG: 150, kcal: 30,  p: 3.3,  f: 0.6,  c: 0.5,  tag: 'veg' },
+  // --- 業務スーパー 冷凍野菜（冷凍時100g状態での実測栄養価換算） ---
+  { id: 1,  name: '冷凍白菜 (業スー)',          unitLabel: '100g(冷凍)', unitG: 100, kcal: 13,  p: 0.8,  f: 0.1, c: 2.8,  tag: 'veg',     note: '冷凍時計量・水分込み' },
+  { id: 2,  name: '冷凍揚げなす (業スー)',      unitLabel: '100g(冷凍)', unitG: 100, kcal: 160, p: 1.1,  f: 13.5,c: 7.0,  tag: 'veg',     note: '油調済み・冷凍時計量' },
+  { id: 3,  name: '冷凍ほうれん草 (業スー)',    unitLabel: '100g(冷凍)', unitG: 100, kcal: 20,  p: 2.2,  f: 0.4, c: 3.1,  tag: 'veg',     note: 'カット済み・冷凍時計量' },
+  { id: 4,  name: '冷凍刻みタマネギ (業スー)',  unitLabel: '100g(冷凍)', unitG: 100, kcal: 30,  p: 1.0,  f: 0.1, c: 7.2,  tag: 'veg',     note: 'みじん切り・冷凍時計量' },
+  { id: 5,  name: '冷凍ブロッコリー (業スー)',  unitLabel: '100g(冷凍)', unitG: 100, kcal: 27,  p: 3.5,  f: 0.4, c: 4.5,  tag: 'veg',     note: '小房・冷凍時計量' },
+  { id: 6,  name: '冷凍小松菜 (業スー)',        unitLabel: '100g(冷凍)', unitG: 100, kcal: 14,  p: 1.5,  f: 0.2, c: 2.4,  tag: 'veg',     note: 'カット済み・冷凍時計量' },
+
+  // --- 肉・卵・プロテイン ---
+  { id: 7,  name: '全卵 (生/ゆで)',             unitLabel: '1個(M)',    unitG: 50,  kcal: 74,  p: 6.2,  f: 5.2, c: 0.2,  tag: 'protein', note: 'Mサイズ1個（約50g）' },
+  { id: 8,  name: '豚バラ肉 (ロピア)',          unitLabel: '100g(生)',  unitG: 100, kcal: 386, p: 14.2, f: 35.0,c: 0.1,  tag: 'protein', note: '生肉の重量で計算' },
+  { id: 9,  name: '牛豚ひき肉 (ロピア)',        unitLabel: '100g(生)',  unitG: 100, kcal: 250, p: 17.0, f: 18.0,c: 0.5,  tag: 'protein', note: '標準合い挽き肉' },
+  { id: 10, name: 'マイプロテイン (Impactホエイ)', unitLabel: '1食(30g)', unitG: 30,  kcal: 114, p: 22.0, f: 1.8, c: 1.8,  tag: 'protein', note: '付属スプーン1杯' },
+
+  // --- 軽食・フルーツ・炭水化物 ---
+  { id: 11, name: 'ドライデーツ',               unitLabel: '3個(約30g)', unitG: 30,  kcal: 80,  p: 0.7,  f: 0.1, c: 21.0, tag: 'carb',    note: '手軽な急速糖分補給' },
+  { id: 12, name: '冷凍たこ焼き',              unitLabel: '5個(冷凍100g)', unitG: 100, kcal: 150, p: 5.2, f: 5.0, c: 21.0, tag: 'carb',    note: '冷凍時計量（5個分）' },
+  { id: 13, name: 'プレーンヨーグルト',        unitLabel: '100g',      unitG: 100, kcal: 62,  p: 3.6,  f: 3.0, c: 4.9,  tag: 'protein', note: '全脂無糖タイプ' },
+  { id: 14, name: '冷凍ブルーベリー(ミックス)', unitLabel: '100g(冷凍)', unitG: 100, kcal: 50,  p: 0.8,  f: 0.3, c: 12.0, tag: 'carb',    note: '冷凍時計量・抗酸化' },
+  { id: 15, name: 'パックご飯 (白米)',         unitLabel: '1パック(200g)', unitG: 200, kcal: 290, p: 5.0, f: 0.8, c: 66.0, tag: 'carb',    note: '標準200g1パック' },
 ];

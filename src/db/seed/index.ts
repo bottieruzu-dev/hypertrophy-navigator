@@ -5,7 +5,7 @@ import { MUSCLE_CREDITS } from './muscleCredits';
 import { FOODS } from './foods';
 import type { MuscleCode } from '../types';
 
-export const SEED_VERSION = '1.0.1';
+export const SEED_VERSION = '1.0.2';
 export const WEEKLY_SET_BUDGET_MAX = 94;
 
 export interface ValidationResult {
