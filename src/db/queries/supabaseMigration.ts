@@ -1,122 +1,122 @@
-import { useEffect, useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db/db';
-import { validateSeed, nukeDatabase, SEED_VERSION, WEEKLY_SET_BUDGET_MAX } from '../db/seed';
-import { migrateLocalDataToSupabase } from '../db/queries/supabaseMigration';
+import { db } from '../db';
+import { supabase } from '../../lib/supabase';
+import type {
+  ExerciseBaseline,
+  SessionRecord,
+  SetRecord,
+  BodyMetric,
+  NutritionLog,
+} from '../types';
 
-export default function DebugSeed() {
-  const [report, setReport] = useState(() => validateSeed());
-  const [busy, setBusy] = useState(false);
-  const [migrating, setMigrating] = useState(false);
-  const [migMsg, setMigMsg] = useState<string | null>(null);
+export async function migrateLocalDataToSupabase(): Promise<{ success: boolean; message: string }> {
+  try {
+    // 1. ベースラインデータの移行
+    const baselines: ExerciseBaseline[] = await db.baselines.toArray();
+    if (baselines.length > 0) {
+      const payload = baselines.map((b: ExerciseBaseline) => ({
+        exercise_id: b.exerciseId,
+        weight_kg: b.weightKg,
+        reps: b.reps,
+        rir: b.rir,
+        est1rm: b.est1rm,
+        calibrated_at: b.calibratedAt,
+      }));
+      const { error } = await supabase.from('baselines').upsert(payload, { onConflict: 'exercise_id' });
+      if (error) throw error;
+    }
 
-  const counts = useLiveQuery(async () => ({
-    muscles: await db.muscles.count(),
-    exercises: await db.exercises.count(),
-    available: await db.exercises.where('isAvailable').equals(1).count(),
-    credits: await db.muscleCredits.count(),
-    foods: await db.foods.count(),
-    baselines: await db.baselines.count(),
-    sessions: await db.sessions.count(),
-    sets: await db.sets.count(),
-  }), []);
+    // 2. セッション記録の移行
+    const sessions: SessionRecord[] = await db.sessions.toArray();
+    if (sessions.length > 0) {
+      const payload = sessions.map((s: SessionRecord) => ({
+        id: s.id,
+        date: s.date,
+        started_at: s.startedAt,
+        finished_at: s.finishedAt,
+        split_type: s.splitType,
+        prs_score: s.prsScore,
+        sleep_hours: s.sleepHours,
+        mesocycle_week: s.mesocycleWeek,
+        is_deload: s.isDeload,
+        est_minutes: s.estMinutes,
+        note: s.note,
+      }));
+      const { error } = await supabase.from('sessions').upsert(payload, { onConflict: 'id' });
+      if (error) throw error;
+    }
 
-  const muscles = useLiveQuery(() => db.muscles.orderBy('priorityRank').toArray(), []);
+    // 3. セット記録の移行
+    const sets: SetRecord[] = await db.sets.toArray();
+    if (sets.length > 0) {
+      const payload = sets.map((s: SetRecord) => ({
+        id: s.id,
+        session_id: s.sessionId,
+        exercise_id: s.exerciseId,
+        date: s.date,
+        set_order: s.setOrder,
+        target_weight: s.targetWeight,
+        actual_weight: s.actualWeight,
+        target_reps: s.targetReps,
+        actual_reps: s.actualReps,
+        target_rir: s.targetRir,
+        actual_rir: s.actualRir,
+        volume_load: s.volumeLoad,
+        est1rm: s.est1rm,
+        is_warmup: s.isWarmup,
+        mode: s.mode,
+      }));
+      const { error } = await supabase.from('sets').upsert(payload, { onConflict: 'id' });
+      if (error) throw error;
+    }
 
-  useEffect(() => { setReport(validateSeed()); }, []);
+    // 4. 体組成記録の移行
+    const bodyMetrics: BodyMetric[] = await db.bodyMetrics.toArray();
+    if (bodyMetrics.length > 0) {
+      const payload = bodyMetrics.map((b: BodyMetric) => ({
+        date: b.date,
+        weight_kg: b.weightKg,
+        body_fat_pct: b.bodyFatPct,
+        ffm_kg: b.ffmKg,
+        weight_ma7: b.weightMa7,
+        ffm_ma30: b.ffmMa30,
+        waist_cm: b.waistCm,
+        shoulder_cm: b.shoulderCm,
+        chest_cm: b.chestCm,
+        arm_cm: b.armCm,
+        thigh_cm: b.thighCm,
+        v_taper_ratio: b.vTaperRatio,
+        v_taper_ma7: b.vTaperMa7,
+        sleep_hours: b.sleepHours,
+        prs_score: b.prsScore,
+        is_interpolated: b.isInterpolated,
+      }));
+      const { error } = await supabase.from('body_metrics').upsert(payload, { onConflict: 'date' });
+      if (error) throw error;
+    }
 
-  const handleNuke = async () => {
-    if (!confirm('全データを削除して再投入します。よろしいですか？')) return;
-    setBusy(true);
-    await nukeDatabase();
-    setReport(validateSeed());
-    setBusy(false);
-  };
+    // 5. 栄養ログの移行
+    const nutritionLogs: NutritionLog[] = await db.nutritionLogs.toArray();
+    if (nutritionLogs.length > 0) {
+      const payload = nutritionLogs.map((n: NutritionLog) => ({
+        date: n.date,
+        estimated_tdee: n.estimatedTdee,
+        target_kcal: n.targetKcal,
+        target_p: n.targetP,
+        target_f: n.targetF,
+        target_c: n.targetC,
+        protein_coef: n.proteinCoef,
+        is_refeed: n.isRefeed,
+        is_diet_break: n.isDietBreak,
+        protein_checked_g: n.proteinCheckedG,
+      }));
+      const { error } = await supabase.from('nutrition_logs').upsert(payload, { onConflict: 'date' });
+      if (error) throw error;
+    }
 
-  const handleMigrate = async () => {
-    setMigrating(true);
-    setMigMsg('Supabaseへデータ同期中…');
-    const res = await migrateLocalDataToSupabase();
-    setMigMsg(res.message);
-    setMigrating(false);
-  };
-
-  const ok = report.errors.length === 0;
-
-  return (
-    <div className="page">
-      <h1>Seed 動作確認 & Supabase移行</h1>
-
-      <section className="card">
-        <h2>Supabase 統合データ移行</h2>
-        <p className="sub">現在ローカル（Week 0 等）に保存されているデータを my-kakeibo プロジェクトへアップロードします。</p>
-        <button 
-          className="btn primary" 
-          onClick={handleMigrate} 
-          disabled={migrating}
-          style={{ marginTop: '12px' }}
-        >
-          {migrating ? '送信中…' : '現在のデータを Supabase へ移行'}
-        </button>
-        {migMsg && <p className="mono good" style={{ marginTop: '12px' }}>{migMsg}</p>}
-      </section>
-
-      <section className={`card ${ok ? 'ok' : 'ng'}`}>
-        <h2>{ok ? '✓ 整合性チェック PASS' : `✗ エラー ${report.errors.length} 件`}</h2>
-        <p className="mono">seedVersion: {SEED_VERSION}</p>
-        {report.errors.map((e, i) => <p key={i} className="err">{e}</p>)}
-        {report.warnings.map((w, i) => <p key={i} className="warn">{w}</p>)}
-      </section>
-
-      <section className="card">
-        <h2>ボリューム予算</h2>
-        <table className="kv">
-          <tbody>
-            <tr><th>部位別下限 合計</th><td>{report.stats.totalMinSets} セット</td></tr>
-            <tr><th>週間予算 上限</th><td>{WEEKLY_SET_BUDGET_MAX} セット</td></tr>
-            <tr>
-              <th>余裕</th>
-              <td className={report.stats.budgetHeadroom >= 5 ? 'good' : 'warn'}>
-                {report.stats.budgetHeadroom} セット
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
-
-      <section className="card">
-        <h2>DB レコード数</h2>
-        <table className="kv">
-          <tbody>
-            {counts && Object.entries(counts).map(([k, v]) => (
-              <tr key={k}><th>{k}</th><td>{v}</td></tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
-
-      <section className="card">
-        <h2>部位マスタ（下限 / 上限）</h2>
-        <table className="grid">
-          <thead>
-            <tr><th>部位</th><th>下限</th><th>上限</th><th>tag</th></tr>
-          </thead>
-          <tbody>
-            {muscles?.map((m) => (
-              <tr key={m.code} className={`tag-${m.tag}`}>
-                <td>{m.nameJa}</td>
-                <td>{m.weeklySetsMin}</td>
-                <td>{m.weeklySetsMax}</td>
-                <td className="mono">{m.tag}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
-
-      <button className="btn danger" onClick={handleNuke} disabled={busy}>
-        {busy ? '処理中…' : 'DB完全削除 → 再投入'}
-      </button>
-    </div>
-  );
+    return { success: true, message: 'ローカルデータをSupabaseへ無事移行しました！' };
+  } catch (err: unknown) {
+    console.error('Supabase移行エラー:', err);
+    const msg = err instanceof Error ? err.message : String(err);
+    return { success: false, message: `移行失敗: ${msg}` };
+  }
 }
