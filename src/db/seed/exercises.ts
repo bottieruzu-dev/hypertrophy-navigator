@@ -37,4 +37,5 @@ export const EXERCISES: Exercise[] = [
   { id: 34, name: 'ローワーバック',                    equipment: 'machine',    type: 'isolation', increment: 5.0,  restSec: 90,  silhouetteTag: 'neutral',   repRange: [12, 15], isAvailable: 1 },
   { id: 35, name: 'アブダクター',                     equipment: 'machine',    type: 'isolation', increment: 5.0,  restSec: 60,  silhouetteTag: 'optional',  repRange: [12, 20], isAvailable: 1, note: '中臀筋' },
   { id: 36, name: 'カーフレイズ(スミス)',              equipment: 'smith',      type: 'isolation', increment: 2.5,  restSec: 60,  silhouetteTag: 'optional',  repRange: [12, 20], isAvailable: 1, note: '予算余剰時のみ' },
+  { id: 37, name: 'バーベルベンチプレス',              equipment: 'barbell',    type: 'compound',  increment: 2.5,  restSec: 180, silhouetteTag: 'neutral',   repRange: [6, 10],  isAvailable: 1, note: '胸・肩前部・三頭コンパウンド基本種目' },
 ];

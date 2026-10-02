@@ -12,6 +12,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.117.2",
     "canvas-confetti": "^1.9.4",
     "dayjs": "^1.11.23",
     "dexie": "^4.4.5",

@@ -60,6 +60,7 @@ src/
       bodyMetrics.ts
       calibration.ts
       nutrition.ts
+      supabaseMigration.ts
       weeklyCredit.ts
     seed/
       exercises.ts
@@ -76,6 +77,8 @@ src/
     generator.ts
     progression.ts
     units.ts
+  lib/
+    supabase.ts
   pages/
     BodyTracking.tsx
     Calibration.tsx
@@ -94,6 +97,7 @@ index.html
 package.json
 README.md
 repomix実行.bat
+supabaseMigration.ts
 tsconfig.app.json
 tsconfig.json
 tsconfig.node.json
@@ -105,11 +109,262 @@ vite.config.ts
 <files>
 This section contains the contents of the repository's files.
 
+<file path="src/db/queries/supabaseMigration.ts">
+import { db } from '../db';
+import { supabase } from '../../lib/supabase';
+import type {
+  ExerciseBaseline,
+  SessionRecord,
+  SetRecord,
+  BodyMetric,
+  NutritionLog,
+} from '../types';
+
+export async function migrateLocalDataToSupabase(): Promise<{ success: boolean; message: string }> {
+  try {
+    // 1. ベースラインデータの移行
+    const baselines: ExerciseBaseline[] = await db.baselines.toArray();
+    if (baselines.length > 0) {
+      const payload = baselines.map((b: ExerciseBaseline) => ({
+        exercise_id: b.exerciseId,
+        weight_kg: b.weightKg,
+        reps: b.reps,
+        rir: b.rir,
+        est1rm: b.est1rm,
+        calibrated_at: b.calibratedAt,
+      }));
+      const { error } = await supabase.from('baselines').upsert(payload, { onConflict: 'exercise_id' });
+      if (error) throw error;
+    }
+
+    // 2. セッション記録の移行
+    const sessions: SessionRecord[] = await db.sessions.toArray();
+    if (sessions.length > 0) {
+      const payload = sessions.map((s: SessionRecord) => ({
+        id: s.id,
+        date: s.date,
+        started_at: s.startedAt,
+        finished_at: s.finishedAt,
+        split_type: s.splitType,
+        prs_score: s.prsScore,
+        sleep_hours: s.sleepHours,
+        mesocycle_week: s.mesocycleWeek,
+        is_deload: s.isDeload,
+        est_minutes: s.estMinutes,
+        note: s.note,
+      }));
+      const { error } = await supabase.from('sessions').upsert(payload, { onConflict: 'id' });
+      if (error) throw error;
+    }
+
+    // 3. セット記録の移行
+    const sets: SetRecord[] = await db.sets.toArray();
+    if (sets.length > 0) {
+      const payload = sets.map((s: SetRecord) => ({
+        id: s.id,
+        session_id: s.sessionId,
+        exercise_id: s.exerciseId,
+        date: s.date,
+        set_order: s.setOrder,
+        target_weight: s.targetWeight,
+        actual_weight: s.actualWeight,
+        target_reps: s.targetReps,
+        actual_reps: s.actualReps,
+        target_rir: s.targetRir,
+        actual_rir: s.actualRir,
+        volume_load: s.volumeLoad,
+        est1rm: s.est1rm,
+        is_warmup: s.isWarmup,
+        mode: s.mode,
+      }));
+      const { error } = await supabase.from('sets').upsert(payload, { onConflict: 'id' });
+      if (error) throw error;
+    }
+
+    // 4. 体組成記録の移行
+    const bodyMetrics: BodyMetric[] = await db.bodyMetrics.toArray();
+    if (bodyMetrics.length > 0) {
+      const payload = bodyMetrics.map((b: BodyMetric) => ({
+        date: b.date,
+        weight_kg: b.weightKg,
+        body_fat_pct: b.bodyFatPct,
+        ffm_kg: b.ffmKg,
+        weight_ma7: b.weightMa7,
+        ffm_ma30: b.ffmMa30,
+        waist_cm: b.waistCm,
+        shoulder_cm: b.shoulderCm,
+        chest_cm: b.chestCm,
+        arm_cm: b.armCm,
+        thigh_cm: b.thighCm,
+        v_taper_ratio: b.vTaperRatio,
+        v_taper_ma7: b.vTaperMa7,
+        sleep_hours: b.sleepHours,
+        prs_score: b.prsScore,
+        is_interpolated: b.isInterpolated,
+      }));
+      const { error } = await supabase.from('body_metrics').upsert(payload, { onConflict: 'date' });
+      if (error) throw error;
+    }
+
+    // 5. 栄養ログの移行
+    const nutritionLogs: NutritionLog[] = await db.nutritionLogs.toArray();
+    if (nutritionLogs.length > 0) {
+      const payload = nutritionLogs.map((n: NutritionLog) => ({
+        date: n.date,
+        estimated_tdee: n.estimatedTdee,
+        target_kcal: n.targetKcal,
+        target_p: n.targetP,
+        target_f: n.targetF,
+        target_c: n.targetC,
+        protein_coef: n.proteinCoef,
+        is_refeed: n.isRefeed,
+        is_diet_break: n.isDietBreak,
+        protein_checked_g: n.proteinCheckedG,
+      }));
+      const { error } = await supabase.from('nutrition_logs').upsert(payload, { onConflict: 'date' });
+      if (error) throw error;
+    }
+
+    return { success: true, message: 'ローカルデータをSupabaseへ無事移行しました！' };
+  } catch (err: unknown) {
+    console.error('Supabase移行エラー:', err);
+    const msg = err instanceof Error ? err.message : String(err);
+    return { success: false, message: `移行失敗: ${msg}` };
+  }
+}
+</file>
+
+<file path="src/lib/supabase.ts">
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+</file>
+
 <file path="repomix実行.bat">
 @echo off
 cd /d "%~dp0"
 npx repomix
 pause
+</file>
+
+<file path="supabaseMigration.ts">
+import { db } from '../db';
+import { supabase } from '../../lib/supabase';
+
+export async function migrateLocalDataToSupabase(): Promise<{ success: boolean; message: string }> {
+  try {
+    // 1. ベースラインデータの移行
+    const baselines = await db.baselines.toArray();
+    if (baselines.length > 0) {
+      const payload = baselines.map((b) => ({
+        exercise_id: b.exerciseId,
+        weight_kg: b.weightKg,
+        reps: b.reps,
+        rir: b.rir,
+        est1rm: b.est1rm,
+        calibrated_at: b.calibratedAt,
+      }));
+      const { error } = await supabase.from('baselines').upsert(payload, { onConflict: 'exercise_id' });
+      if (error) throw error;
+    }
+
+    // 2. セッション記録の移行
+    const sessions = await db.sessions.toArray();
+    if (sessions.length > 0) {
+      const payload = sessions.map((s) => ({
+        id: s.id,
+        date: s.date,
+        started_at: s.startedAt,
+        finished_at: s.finishedAt,
+        split_type: s.splitType,
+        prs_score: s.prsScore,
+        sleep_hours: s.sleepHours,
+        mesocycle_week: s.mesocycleWeek,
+        is_deload: s.isDeload,
+        est_minutes: s.estMinutes,
+        note: s.note,
+      }));
+      const { error } = await supabase.from('sessions').upsert(payload, { onConflict: 'id' });
+      if (error) throw error;
+    }
+
+    // 3. セット記録の移行
+    const sets = await db.sets.toArray();
+    if (sets.length > 0) {
+      const payload = sets.map((s) => ({
+        id: s.id,
+        session_id: s.sessionId,
+        exercise_id: s.exerciseId,
+        date: s.date,
+        set_order: s.setOrder,
+        target_weight: s.targetWeight,
+        actual_weight: s.actualWeight,
+        target_reps: s.targetReps,
+        actual_reps: s.actualReps,
+        target_rir: s.targetRir,
+        actual_rir: s.actualRir,
+        volume_load: s.volumeLoad,
+        est1rm: s.est1rm,
+        is_warmup: s.isWarmup,
+        mode: s.mode,
+      }));
+      const { error } = await supabase.from('sets').upsert(payload, { onConflict: 'id' });
+      if (error) throw error;
+    }
+
+    // 4. 体組成記録の移行
+    const bodyMetrics = await db.bodyMetrics.toArray();
+    if (bodyMetrics.length > 0) {
+      const payload = bodyMetrics.map((b) => ({
+        date: b.date,
+        weight_kg: b.weightKg,
+        body_fat_pct: b.bodyFatPct,
+        ffm_kg: b.ffmKg,
+        weight_ma7: b.weightMa7,
+        ffm_ma30: b.ffmMa30,
+        waist_cm: b.waistCm,
+        shoulder_cm: b.shoulderCm,
+        chest_cm: b.chestCm,
+        arm_cm: b.armCm,
+        thigh_cm: b.thighCm,
+        v_taper_ratio: b.vTaperRatio,
+        v_taper_ma7: b.vTaperMa7,
+        sleep_hours: b.sleepHours,
+        prs_score: b.prsScore,
+        is_interpolated: b.isInterpolated,
+      }));
+      const { error } = await supabase.from('body_metrics').upsert(payload, { onConflict: 'date' });
+      if (error) throw error;
+    }
+
+    // 5. 栄養ログの移行
+    const nutritionLogs = await db.nutritionLogs.toArray();
+    if (nutritionLogs.length > 0) {
+      const payload = nutritionLogs.map((n) => ({
+        date: n.date,
+        estimated_tdee: n.estimatedTdee,
+        target_kcal: n.targetKcal,
+        target_p: n.targetP,
+        target_f: n.targetF,
+        target_c: n.targetC,
+        protein_coef: n.proteinCoef,
+        is_refeed: n.isRefeed,
+        is_diet_break: n.isDietBreak,
+        protein_checked_g: n.proteinCheckedG,
+      }));
+      const { error } = await supabase.from('nutrition_logs').upsert(payload, { onConflict: 'date' });
+      if (error) throw error;
+    }
+
+    return { success: true, message: 'ローカルデータをSupabaseへ無事移行しました！' };
+  } catch (err: any) {
+    console.error('Supabase移行エラー:', err);
+    return { success: false, message: `移行失敗: ${err.message || String(err)}` };
+  }
+}
 </file>
 
 <file path="ローカル起動.bat">
@@ -163,103 +418,6 @@ pause
 
 <file path="src/assets/vite.svg">
 <svg xmlns="http://www.w3.org/2000/svg" width="77" height="47" fill="none" aria-labelledby="vite-logo-title" viewBox="0 0 77 47"><title id="vite-logo-title">Vite</title><style>.parenthesis{fill:#000}@media (prefers-color-scheme:dark){.parenthesis{fill:#fff}}</style><path fill="#9135ff" d="M40.151 45.71c-.663.844-2.02.374-2.02-.699V34.708a2.26 2.26 0 0 0-2.262-2.262H24.493c-.92 0-1.457-1.04-.92-1.788l7.479-10.471c1.07-1.498 0-3.578-1.842-3.578H15.443c-.92 0-1.456-1.04-.92-1.788l9.696-13.576c.213-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.472c-1.07 1.497 0 3.578 1.842 3.578h11.376c.944 0 1.474 1.087.89 1.83L40.153 45.712z"/><mask id="a" width="48" height="47" x="14" y="0" maskUnits="userSpaceOnUse" style="mask-type:alpha"><path fill="#000" d="M40.047 45.71c-.663.843-2.02.374-2.02-.699V34.708a2.26 2.26 0 0 0-2.262-2.262H24.389c-.92 0-1.457-1.04-.92-1.788l7.479-10.472c1.07-1.497 0-3.578-1.842-3.578H15.34c-.92 0-1.456-1.04-.92-1.788l9.696-13.575c.213-.297.556-.474.92-.474H53.93c.92 0 1.456 1.04.92 1.788L47.37 13.03c-1.07 1.498 0 3.578 1.842 3.578h11.376c.944 0 1.474 1.088.89 1.831L40.049 45.712z"/></mask><g mask="url(#a)"><g filter="url(#b)"><ellipse cx="5.508" cy="14.704" fill="#eee6ff" rx="5.508" ry="14.704" transform="rotate(269.814 20.96 11.29)scale(-1 1)"/></g><g filter="url(#c)"><ellipse cx="10.399" cy="29.851" fill="#eee6ff" rx="10.399" ry="29.851" transform="rotate(89.814 -16.902 -8.275)scale(1 -1)"/></g><g filter="url(#d)"><ellipse cx="5.508" cy="30.487" fill="#8900ff" rx="5.508" ry="30.487" transform="rotate(89.814 -19.197 -7.127)scale(1 -1)"/></g><g filter="url(#e)"><ellipse cx="5.508" cy="30.599" fill="#8900ff" rx="5.508" ry="30.599" transform="rotate(89.814 -25.928 4.177)scale(1 -1)"/></g><g filter="url(#f)"><ellipse cx="5.508" cy="30.599" fill="#8900ff" rx="5.508" ry="30.599" transform="rotate(89.814 -25.738 5.52)scale(1 -1)"/></g><g filter="url(#g)"><ellipse cx="14.072" cy="22.078" fill="#eee6ff" rx="14.072" ry="22.078" transform="rotate(93.35 31.245 55.578)scale(-1 1)"/></g><g filter="url(#h)"><ellipse cx="3.47" cy="21.501" fill="#8900ff" rx="3.47" ry="21.501" transform="rotate(89.009 35.419 55.202)scale(-1 1)"/></g><g filter="url(#i)"><ellipse cx="3.47" cy="21.501" fill="#8900ff" rx="3.47" ry="21.501" transform="rotate(89.009 35.419 55.202)scale(-1 1)"/></g><g filter="url(#j)"><ellipse cx="14.592" cy="9.743" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(39.51 14.592 9.743)"/></g><g filter="url(#k)"><ellipse cx="61.728" cy="-5.321" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(37.892 61.728 -5.32)"/></g><g filter="url(#l)"><ellipse cx="55.618" cy="7.104" fill="#00c2ff" rx="5.971" ry="9.665" transform="rotate(37.892 55.618 7.104)"/></g><g filter="url(#m)"><ellipse cx="12.326" cy="39.103" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(37.892 12.326 39.103)"/></g><g filter="url(#n)"><ellipse cx="12.326" cy="39.103" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(37.892 12.326 39.103)"/></g><g filter="url(#o)"><ellipse cx="49.857" cy="30.678" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(37.892 49.857 30.678)"/></g><g filter="url(#p)"><ellipse cx="52.623" cy="33.171" fill="#00c2ff" rx="5.971" ry="15.297" transform="rotate(37.892 52.623 33.17)"/></g></g><path d="M6.919 0c-9.198 13.166-9.252 33.575 0 46.789h6.215c-9.25-13.214-9.196-33.623 0-46.789zm62.424 0h-6.215c9.198 13.166 9.252 33.575 0 46.789h6.215c9.25-13.214 9.196-33.623 0-46.789" class="parenthesis"/><defs><filter id="b" width="60.045" height="41.654" x="-5.564" y="16.92" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="7.659"/></filter><filter id="c" width="90.34" height="51.437" x="-40.407" y="-6.762" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="7.659"/></filter><filter id="d" width="79.355" height="29.4" x="-35.435" y="2.801" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="e" width="79.579" height="29.4" x="-30.84" y="20.8" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="f" width="79.579" height="29.4" x="-29.307" y="21.949" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="g" width="74.749" height="58.852" x="29.961" y="-17.13" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="7.659"/></filter><filter id="h" width="61.377" height="25.362" x="37.754" y="3.055" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="i" width="61.377" height="25.362" x="37.754" y="3.055" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="j" width="56.045" height="63.649" x="-13.43" y="-22.082" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="k" width="54.814" height="64.646" x="34.321" y="-37.644" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="l" width="33.541" height="35.313" x="38.847" y="-10.552" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="m" width="54.814" height="64.646" x="-15.081" y="6.78" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="n" width="54.814" height="64.646" x="-15.081" y="6.78" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="o" width="54.814" height="64.646" x="22.45" y="-1.645" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="p" width="39.409" height="43.623" x="32.919" y="11.36" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter></defs></svg>
-</file>
-
-<file path="src/components/HeaderLevelBadge.tsx">
-import React, { useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db/db';
-import { calculateUserLevel } from '../engine/achievements';
-import { motion, AnimatePresence } from 'framer-motion';
-
-export const HeaderLevelBadge: React.FC = () => {
-  const [showDetail, setShowDetail] = useState(false);
-
-  const stats = useLiveQuery(async () => {
-    const allSets = await db.sets.toArray();
-    const totalSets = allSets.length;
-    const totalVolume = allSets.reduce((sum, s) => sum + (s.volumeLoad || 0), 0);
-    return { totalSets, totalVolume };
-  }, []);
-
-  const totalSets = stats?.totalSets ?? 0;
-  const totalVolume = stats?.totalVolume ?? 0;
-  const levelInfo = calculateUserLevel(totalSets, totalVolume);
-
-  return (
-    <>
-      <div className="game-level-badge" onClick={() => setShowDetail(true)}>
-        <div className="badge-level-box">
-          <span className="badge-lv-label">LV</span>
-          <span className="badge-lv-num">{levelInfo.level}</span>
-        </div>
-        <div className="badge-info-box">
-          <div className="badge-title">{levelInfo.title}</div>
-          <div className="badge-exp-bar">
-            <div
-              className="badge-exp-fill"
-              style={{ width: `${levelInfo.progressPct}%` }}
-            />
-          </div>
-        </div>
-      </div>
-
-      <AnimatePresence>
-        {showDetail && (
-          <motion.div
-            className="levelup-overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setShowDetail(false)}
-          >
-            <motion.div
-              className="level-status-modal"
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="status-modal-header">PLAYER STATUS</div>
-              <div className="status-modal-avatar">
-                <span className="status-lv-badge">LV.{levelInfo.level}</span>
-              </div>
-              <div className="status-modal-title">{levelInfo.title}</div>
-
-              <div className="status-modal-exp-section">
-                <div className="status-exp-label">
-                  <span>EXP</span>
-                  <span>{levelInfo.currentLevelExp} / {levelInfo.nextLevelExp} ({levelInfo.progressPct}%)</span>
-                </div>
-                <div className="badge-exp-bar big">
-                  <div
-                    className="badge-exp-fill"
-                    style={{ width: `${levelInfo.progressPct}%` }}
-                  />
-                </div>
-              </div>
-
-              <div className="status-stats-grid">
-                <div className="status-stat-card">
-                  <div className="stat-label">総完了セット数</div>
-                  <div className="stat-value">{totalSets} <span className="stat-unit">SET</span></div>
-                </div>
-                <div className="status-stat-card">
-                  <div className="stat-label">累計挙上ボリューム</div>
-                  <div className="stat-value">{Math.floor(totalVolume).toLocaleString()} <span className="stat-unit">KG</span></div>
-                </div>
-              </div>
-
-              <button className="btn primary big" onClick={() => setShowDetail(false)}>
-                閉じる
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
-  );
-};
 </file>
 
 <file path="src/components/LevelUpModal.tsx">
@@ -392,19 +550,40 @@ import { db } from '../db';
 import type { SplitType, Exercise, ExerciseBaseline } from '../types';
 import { finalizeBaseline } from '../../engine/calibration';
 
+/** 
+ * CALIBRATION_PLAN 
+ * 同一器具（ケーブル等）を連続して使用できるようID配置を整理[cite: 1]
+ * upper_B に 37(バーベルベンチプレス) を追加[cite: 1]
+ */
 export const CALIBRATION_PLAN: Record<SplitType, number[]> = {
-  upper_A: [1, 12, 14, 6, 8, 9, 11, 25],
-  lower: [31, 32, 29, 33, 34, 27],
-  upper_B: [2, 4, 18, 21, 23, 24, 10, 26],
+  upper_A: [12, 10, 2, 6, 1, 8, 9, 11, 25, 14],
+  lower: [29, 30, 33, 34, 31, 32, 27],
+  upper_B: [37, 18, 5, 4, 21, 23, 24, 26, 7],
 };
 
 export const CALIBRATION_TOTAL = Object.values(CALIBRATION_PLAN)
   .reduce((s, arr) => s + arr.length, 0);
 
+/** 器具(equipment)順にソートして返却する[cite: 1] */
 export async function getCalibrationExercises(split: SplitType): Promise<Exercise[]> {
   const ids = CALIBRATION_PLAN[split];
   const list = await db.exercises.bulkGet(ids);
-  return list.filter((e): e is Exercise => !!e && e.isAvailable === 1);
+  const available = list.filter((e): e is Exercise => !!e && e.isAvailable === 1);
+
+  // 器具の優先並び順マップ (cable -> dumbbell -> machine -> barbell -> plate -> bodyweight)[cite: 1]
+  const equipmentOrder: Record<string, number> = {
+    cable: 1,
+    dumbbell: 2,
+    machine: 3,
+    barbell: 4,
+    plate: 5,
+    smith: 6,
+    bodyweight: 7,
+  };
+
+  return available.sort((a, b) => 
+    (equipmentOrder[a.equipment] ?? 99) - (equipmentOrder[b.equipment] ?? 99)
+  );
 }
 
 export async function getBaselineMap(): Promise<Map<number, ExerciseBaseline>> {
@@ -645,6 +824,7 @@ export const EXERCISES: Exercise[] = [
   { id: 34, name: 'ローワーバック',                    equipment: 'machine',    type: 'isolation', increment: 5.0,  restSec: 90,  silhouetteTag: 'neutral',   repRange: [12, 15], isAvailable: 1 },
   { id: 35, name: 'アブダクター',                     equipment: 'machine',    type: 'isolation', increment: 5.0,  restSec: 60,  silhouetteTag: 'optional',  repRange: [12, 20], isAvailable: 1, note: '中臀筋' },
   { id: 36, name: 'カーフレイズ(スミス)',              equipment: 'smith',      type: 'isolation', increment: 2.5,  restSec: 60,  silhouetteTag: 'optional',  repRange: [12, 20], isAvailable: 1, note: '予算余剰時のみ' },
+  { id: 37, name: 'バーベルベンチプレス',              equipment: 'barbell',    type: 'compound',  increment: 2.5,  restSec: 180, silhouetteTag: 'neutral',   repRange: [6, 10],  isAvailable: 1, note: '胸・肩前部・三頭コンパウンド基本種目' },
 ];
 </file>
 
@@ -690,6 +870,7 @@ const SPEC: CreditSpec = {
   34: { erector: 1.0, glutes: 0.3, hams: 0.3 },
   35: { abductor: 1.0, glutes: 0.3 },
   36: { calves: 1.0 },
+  37: { chest_mid: 1.0, delt_front: 0.5, triceps: 0.5, chest_upper: 0.3 },
 };
 
 export const MUSCLE_CREDITS: MuscleCredit[] = Object.entries(SPEC).flatMap(
@@ -967,6 +1148,18 @@ export interface Suggestion {
   message: string;
   est1rm: number;
   repProgressionOnly: boolean;
+}
+
+/** 種目タイプとRIR(追い込み度)から最適なインターバルタイマー秒数を精度高く自動算定 */
+export function calculateOptimalRestSec(exercise: Exercise, lastRir?: number): number {
+  let baseRest = exercise.restSec || (exercise.type === 'compound' ? 150 : 75);
+
+  // 限界付近（RIR 0〜1）まで追い込んだ場合は神経系・ATPの全回復のため+30秒延長
+  if (lastRir !== undefined && lastRir <= 1) {
+    baseRest += 30;
+  }
+
+  return baseRest;
 }
 
 export function epley1RM(weight: number, reps: number, rir = 0): number {
@@ -1335,167 +1528,18 @@ export function formatWeight(w: number, exercise: Exercise): string {
 }
 </file>
 
-<file path="src/pages/BodyTracking.tsx">
-import { useEffect, useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db/db';
-import { getTodayBodyMetric, saveBodyMetric } from '../db/queries/bodyMetrics';
-
-export default function BodyTracking() {
-  const todayData = useLiveQuery(() => getTodayBodyMetric(), []);
-  const historyList = useLiveQuery(() => db.bodyMetrics.orderBy('date').reverse().limit(14).toArray(), []);
-
-  const [weight, setWeight] = useState<string>('');
-  const [fat, setFat] = useState<string>('');
-  const [waist, setWaist] = useState<string>('');
-  const [shoulder, setShoulder] = useState<string>('');
-  const [savedMessage, setSavedMessage] = useState<boolean>(false);
-
-  useEffect(() => {
-    if (todayData) {
-      setWeight(todayData.weightKg !== null ? String(todayData.weightKg) : '');
-      setFat(todayData.bodyFatPct !== null ? String(todayData.bodyFatPct) : '');
-      setWaist(todayData.waistCm !== null ? String(todayData.waistCm) : '');
-      setShoulder(todayData.shoulderCm !== null ? String(todayData.shoulderCm) : '');
-    }
-  }, [todayData]);
-
-  const handleSave = async () => {
-    await saveBodyMetric({
-      weightKg: weight !== '' ? Number(weight) : null,
-      bodyFatPct: fat !== '' ? Number(fat) : null,
-      waistCm: waist !== '' ? Number(waist) : null,
-      shoulderCm: shoulder !== '' ? Number(shoulder) : null,
-    });
-    setSavedMessage(true);
-    setTimeout(() => setSavedMessage(false), 3000);
-  };
-
-  return (
-    <div className="page">
-      <header className="hdr">
-        <h1>体組成・トレンド記録</h1>
-        <p className="sub">毎朝のコンディションを入力してください</p>
-      </header>
-
-      {savedMessage && (
-        <div className="hint converged" style={{ textAlign: 'center' }}>
-          ✓ 本日のコンディションを保存しました！
-        </div>
-      )}
-
-      <section className="card">
-        <h2>本日 ({todayData?.date}) の入力</h2>
-
-        <div className="field">
-          <label>体重 (kg)</label>
-          <input
-            type="number"
-            step="0.1"
-            className="btn"
-            style={{ textAlign: 'left', paddingLeft: '16px', background: 'var(--bg)' }}
-            placeholder="例: 71.2"
-            value={weight}
-            onChange={(e) => setWeight(e.target.value)}
-          />
-        </div>
-
-        <div className="field">
-          <label>体脂肪率 (%)</label>
-          <input
-            type="number"
-            step="0.1"
-            className="btn"
-            style={{ textAlign: 'left', paddingLeft: '16px', background: 'var(--bg)' }}
-            placeholder="例: 18.4"
-            value={fat}
-            onChange={(e) => setFat(e.target.value)}
-          />
-        </div>
-
-        <div className="field">
-          <label>ウエストサイズ (cm)</label>
-          <input
-            type="number"
-            step="0.5"
-            className="btn"
-            style={{ textAlign: 'left', paddingLeft: '16px', background: 'var(--bg)' }}
-            placeholder="例: 80.0"
-            value={waist}
-            onChange={(e) => setWaist(e.target.value)}
-          />
-        </div>
-
-        <div className="field">
-          <label>肩囲 (cm)</label>
-          <input
-            type="number"
-            step="0.5"
-            className="btn"
-            style={{ textAlign: 'left', paddingLeft: '16px', background: 'var(--bg)' }}
-            placeholder="例: 115.0"
-            value={shoulder}
-            onChange={(e) => setShoulder(e.target.value)}
-          />
-        </div>
-
-        <button className="btn primary big" onClick={handleSave}>
-          記録を保存
-        </button>
-      </section>
-
-      <section className="card">
-        <h2>分析トレンド指標</h2>
-        <table className="kv">
-          <tbody>
-            <tr>
-              <th>体重 7日移動平均 (MA7)</th>
-              <td className="mono good">
-                {todayData?.weightMa7 ? `${todayData.weightMa7} kg` : '7日間のデータ蓄積中'}
-              </td>
-            </tr>
-            <tr>
-              <th>除脂肪体重 (FFM)</th>
-              <td className="mono">
-                {todayData?.ffmKg ? `${todayData.ffmKg} kg` : '未計算'}
-              </td>
-            </tr>
-            <tr>
-              <th>V-Taper比率 (肩囲 ÷ ウエスト)</th>
-              <td className="mono good">
-                {todayData?.vTaperRatio ? `${todayData.vTaperRatio}` : '未計算'}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
-
-      <section className="card">
-        <h2>直近14日間の履歴</h2>
-        <div className="list">
-          {historyList?.map((h) => (
-            <div key={h.date} className="row" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
-              <span className="mono">{h.date.slice(5)}</span>
-              <span className="mono">{h.weightKg ? `${h.weightKg}kg` : '-'}</span>
-              <span className="mono sub">{h.vTaperRatio ? `V:${h.vTaperRatio}` : '-'}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-    </div>
-  );
-}
-</file>
-
 <file path="src/pages/DebugSeed.tsx">
 import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/db';
 import { validateSeed, nukeDatabase, SEED_VERSION, WEEKLY_SET_BUDGET_MAX } from '../db/seed';
+import { migrateLocalDataToSupabase } from '../db/queries/supabaseMigration';
 
 export default function DebugSeed() {
   const [report, setReport] = useState(() => validateSeed());
   const [busy, setBusy] = useState(false);
+  const [migrating, setMigrating] = useState(false);
+  const [migMsg, setMigMsg] = useState<string | null>(null);
 
   const counts = useLiveQuery(async () => ({
     muscles: await db.muscles.count(),
@@ -1520,11 +1564,33 @@ export default function DebugSeed() {
     setBusy(false);
   };
 
+  const handleMigrate = async () => {
+    setMigrating(true);
+    setMigMsg('Supabaseへデータ同期中…');
+    const res = await migrateLocalDataToSupabase();
+    setMigMsg(res.message);
+    setMigrating(false);
+  };
+
   const ok = report.errors.length === 0;
 
   return (
     <div className="page">
-      <h1>Seed 動作確認</h1>
+      <h1>Seed 動作確認 & Supabase移行</h1>
+
+      <section className="card">
+        <h2>Supabase 統合データ移行</h2>
+        <p className="sub">現在ローカル（Week 0 等）に保存されているデータを my-kakeibo プロジェクトへアップロードします。</p>
+        <button 
+          className="btn primary" 
+          onClick={handleMigrate} 
+          disabled={migrating}
+          style={{ marginTop: '12px' }}
+        >
+          {migrating ? '送信中…' : '現在のデータを Supabase へ移行'}
+        </button>
+        {migMsg && <p className="mono good" style={{ marginTop: '12px' }}>{migMsg}</p>}
+      </section>
 
       <section className={`card ${ok ? 'ok' : 'ng'}`}>
         <h2>{ok ? '✓ 整合性チェック PASS' : `✗ エラー ${report.errors.length} 件`}</h2>
@@ -2060,6 +2126,151 @@ export const BodyAnatomy: React.FC<BodyAnatomyProps> = ({ primaryMuscles, second
 };
 </file>
 
+<file path="src/components/HeaderLevelBadge.tsx">
+import React, { useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../db/db';
+import { calculateUserLevel, type IconName } from '../engine/achievements';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Egg, Milk, Dumbbell, Flame, UtensilsCrossed,
+  Wand2, Footprints, Bot, Zap, Crown, Award
+} from 'lucide-react';
+
+/** Lucideベクターアイコンのレンダラー */
+const TitleIcon: React.FC<{ iconName: IconName; size?: number }> = ({ iconName, size = 14 }) => {
+  const props = { size, className: "title-lucide-icon" };
+  switch (iconName) {
+    case 'Egg': return <Egg {...props} />;
+    case 'Milk': return <Milk {...props} />;
+    case 'Dumbbell': return <Dumbbell {...props} />;
+    case 'Flame': return <Flame {...props} />;
+    case 'UtensilsCrossed': return <UtensilsCrossed {...props} />;
+    case 'Wand2': return <Wand2 {...props} />;
+    case 'Footprints': return <Footprints {...props} />;
+    case 'Bot': return <Bot {...props} />;
+    case 'Zap': return <Zap {...props} />;
+    case 'Crown': return <Crown {...props} />;
+    default: return <Award {...props} />;
+  }
+};
+
+export const HeaderLevelBadge: React.FC = () => {
+  const [showDetail, setShowDetail] = useState(false);
+
+  // 筋トレ・Week0・体組成・栄養ログの全実績をリアルタイム集計
+  const stats = useLiveQuery(async () => {
+    const allSets = await db.sets.toArray();
+    const totalSets = allSets.length;
+    const totalVolumeKg = allSets.reduce((sum, s) => sum + (s.volumeLoad || 0), 0);
+
+    const bodyMetrics = await db.bodyMetrics.toArray();
+    const bodyMetricDays = bodyMetrics.length;
+
+    const nutritionLogs = await db.nutritionLogs.toArray();
+    const totalProteinCheckedG = nutritionLogs.reduce((sum, n) => sum + (n.proteinCheckedG || 0), 0);
+
+    return { totalSets, totalVolumeKg, bodyMetricDays, totalProteinCheckedG };
+  }, []);
+
+  const levelInfo = calculateUserLevel({
+    totalSets: stats?.totalSets ?? 0,
+    totalVolumeKg: stats?.totalVolumeKg ?? 0,
+    bodyMetricDays: stats?.bodyMetricDays ?? 0,
+    totalProteinCheckedG: stats?.totalProteinCheckedG ?? 0,
+  });
+
+  return (
+    <>
+      <div className="game-level-badge" onClick={() => setShowDetail(true)}>
+        <div className="badge-level-box">
+          <span className="badge-lv-label">LV</span>
+          <span className="badge-lv-num">{levelInfo.level}</span>
+        </div>
+        <div className="badge-info-box">
+          <div className="badge-title-wrap">
+            <span className="badge-title">{levelInfo.title}</span>
+            <TitleIcon iconName={levelInfo.iconName} size={13} />
+          </div>
+          <div className="badge-exp-bar">
+            <div
+              className="badge-exp-fill"
+              style={{ width: `${levelInfo.progressPct}%` }}
+            />
+          </div>
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {showDetail && (
+          <motion.div
+            className="levelup-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowDetail(false)}
+          >
+            <motion.div
+              className="level-status-modal"
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="status-modal-header">PLAYER STATUS</div>
+              <div className="status-modal-avatar">
+                <span className="status-lv-badge">LV.{levelInfo.level}</span>
+              </div>
+              
+              <div className="status-modal-title-wrap">
+                <TitleIcon iconName={levelInfo.iconName} size={22} />
+                <span className="status-modal-title">{levelInfo.title}</span>
+              </div>
+
+              <div className="status-modal-exp-section">
+                <div className="status-exp-label">
+                  <span>EXP</span>
+                  <span>{levelInfo.currentLevelExp} / {levelInfo.nextLevelExp} ({levelInfo.progressPct}%)</span>
+                </div>
+                <div className="badge-exp-bar big">
+                  <div
+                    className="badge-exp-fill"
+                    style={{ width: `${levelInfo.progressPct}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="status-stats-grid">
+                <div className="status-stat-card">
+                  <div className="stat-label">総完了セット数</div>
+                  <div className="stat-value">{stats?.totalSets ?? 0} <span className="stat-unit">SET</span></div>
+                </div>
+                <div className="status-stat-card">
+                  <div className="stat-label">累計挙上量</div>
+                  <div className="stat-value">{Math.floor(stats?.totalVolumeKg ?? 0).toLocaleString()} <span className="stat-unit">KG</span></div>
+                </div>
+                <div className="status-stat-card">
+                  <div className="stat-label">体組成記録日数</div>
+                  <div className="stat-value">{stats?.bodyMetricDays ?? 0} <span className="stat-unit">日</span></div>
+                </div>
+                <div className="status-stat-card">
+                  <div className="stat-label">累計タンパク質</div>
+                  <div className="stat-value">{Math.floor(stats?.totalProteinCheckedG ?? 0).toLocaleString()} <span className="stat-unit">G</span></div>
+                </div>
+              </div>
+
+              <button className="btn primary big" onClick={() => setShowDetail(false)}>
+                閉じる
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+};
+</file>
+
 <file path="src/db/seed/foods.ts">
 import type { Food } from '../types';
 
@@ -2248,352 +2459,157 @@ export async function nukeDatabase(): Promise<void> {
 }
 </file>
 
-<file path="src/engine/achievements.ts">
-import confetti from 'canvas-confetti';
-
-export interface LevelTitle {
-  minLevel: number;
-  title: string;
-}
-
-/** ユーモアあふれるレベル別称号リスト */
-export const HUMOR_TITLES: LevelTitle[] = [
-  { minLevel: 1, title: '筋肉の生まれたてひよこ 🐣' },
-  { minLevel: 2, title: 'プロテインビギナー 🥛' },
-  { minLevel: 3, title: 'ダンベルと初対面 🏋️' },
-  { minLevel: 5, title: '筋肉痛を愛し始めた者 💥' },
-  { minLevel: 8, title: '鶏むね肉の調理マスター 🍗' },
-  { minLevel: 10, title: 'プロテインシェイカーの魔術師 🧙‍♂️' },
-  { minLevel: 15, title: '階段を下りるのが恐怖の漢 😰' },
-  { minLevel: 20, title: 'プロテイン錬金術師 ⚗️' },
-  { minLevel: 25, title: 'ジムの地縛霊 👻' },
-  { minLevel: 30, title: '人間ベンチプレス機 🤖' },
-  { minLevel: 40, title: '重力の法則を無視する者 🌌' },
-  { minLevel: 50, title: '歩く人間兵器 💣' },
-  { minLevel: 75, title: '超サイヤ筋 ⚡' },
-  { minLevel: 99, title: '筋神 (Hypertrophy God) 👑' },
-];
-
-export interface UserLevelInfo {
-  level: number;
-  title: string;
-  totalExp: number;
-  currentLevelExp: number;
-  nextLevelExp: number;
-  progressPct: number;
-}
-
-/** 累計セット数とボリュームからレベル・称号・EXPを即座に計算 */
-export function calculateUserLevel(totalSets: number, totalVolumeKg: number): UserLevelInfo {
-  // 1セット = 50 EXP, 10kg挙上 = 1 EXP
-  const totalExp = Math.floor(totalSets * 50 + totalVolumeKg / 10);
-
-  let level = 1;
-  let expAccumulated = 0;
-
-  while (level < 99) {
-    const requiredForNext = Math.floor(Math.pow(level, 1.7) * 60);
-    if (totalExp < expAccumulated + requiredForNext) {
-      const currentLevelExp = totalExp - expAccumulated;
-      const progressPct = Math.min(100, Math.floor((currentLevelExp / requiredForNext) * 100));
-      
-      const titleObj = [...HUMOR_TITLES].reverse().find((t) => level >= t.minLevel) ?? HUMOR_TITLES[0];
-
-      return {
-        level,
-        title: titleObj.title,
-        totalExp,
-        currentLevelExp,
-        nextLevelExp: requiredForNext,
-        progressPct,
-      };
-    }
-    expAccumulated += requiredForNext;
-    level++;
-  }
-
-  return {
-    level: 99,
-    title: '筋神 (Hypertrophy God) 👑',
-    totalExp,
-    currentLevelExp: 0,
-    nextLevelExp: 0,
-    progressPct: 100,
-  };
-}
-
-export interface Achievement {
-  level: number;
-  title: string;
-  requiredVolumeKg: number;
-  message: string;
-}
-
-export const ACHIEVEMENTS: Achievement[] = [
-  { level: 1, title: '鉄の目覚め', requiredVolumeKg: 100, message: '筋肥大への第一歩を踏み出しました！' },
-  { level: 2, title: '重力の挑戦者', requiredVolumeKg: 1000, message: '累計1トン突破！体に変化が表れ始めています！' },
-  { level: 3, title: '鋼鉄の肉体', requiredVolumeKg: 5000, message: '累計5トン到達！ジムの常連の仲間入りです！' },
-  { level: 4, title: '肥大の支配者', requiredVolumeKg: 10000, message: '累計10トン突破！圧倒的なバルクを手に入れました！' },
-  { level: 5, title: '筋神 (Hypertrophy God)', requiredVolumeKg: 50000, message: '累計50トン到達！誰もあなたを止められません！' },
-];
-
-export function fireNeonConfetti() {
-  const count = 200;
-  const defaults = { origin: { y: 0.7 } };
-
-  function fire(particleRatio: number, opts: confetti.Options) {
-    confetti({
-      ...defaults,
-      ...opts,
-      particleCount: Math.floor(count * particleRatio)
-    });
-  }
-
-  fire(0.25, { spread: 26, startVelocity: 55, colors: ['#00f2fe', '#4facfe'] });
-  fire(0.2, { spread: 60, colors: ['#b537ff', '#ffffff'] });
-  fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8, colors: ['#00f2fe', '#b537ff', '#00e676'] });
-  fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, colors: ['#ffffff', '#00f2fe'] });
-  fire(0.1, { spread: 120, startVelocity: 45, colors: ['#b537ff', '#4facfe'] });
-}
-</file>
-
-<file path="src/pages/Calibration.tsx">
-import { useMemo, useState } from 'react';
+<file path="src/pages/BodyTracking.tsx">
+import { fireNeonConfetti } from '../engine/achievements';
+import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/db';
-import type { Exercise, SplitType } from '../db/types';
-import {
-  CALIBRATION_PLAN, CALIBRATION_TOTAL, getCalibrationExercises,
-  getBaselineMap, getOrCreateCalibrationSession, saveCalibrationResult,
-} from '../db/queries/calibration';
-import {
-  CALIB, suggestNext, finalizeBaseline, targetRepsOf, type Attempt,
-} from '../engine/calibration';
-import { effectiveIncrement, formatWeight } from '../engine/units';
-import { TrainerGuide } from '../components/TrainerGuide';
-import { BodyAnatomy } from '../components/BodyAnatomy';
+import { getTodayBodyMetric, saveBodyMetric } from '../db/queries/bodyMetrics';
 
-const SPLIT_LABEL: Record<SplitType, string> = {
-  upper_A: '上半身 A（背中・肩中部・二頭）',
-  lower: '下半身',
-  upper_B: '上半身 B（胸上部・肩・三頭）',
-};
+export default function BodyTracking() {
+  const todayData = useLiveQuery(() => getTodayBodyMetric(), []);
+  const historyList = useLiveQuery(() => db.bodyMetrics.orderBy('date').reverse().limit(14).toArray(), []);
 
-export default function Calibration() {
-  const [split, setSplit] = useState<SplitType>('upper_A');
-  const [active, setActive] = useState<Exercise | null>(null);
+  const [weight, setWeight] = useState<string>('');
+  const [fat, setFat] = useState<string>('');
+  const [waist, setWaist] = useState<string>('');
+  const [shoulder, setShoulder] = useState<string>('');
+  const [savedMessage, setSavedMessage] = useState<boolean>(false);
 
-  const exercises = useLiveQuery(() => getCalibrationExercises(split), [split]);
-  const baselines = useLiveQuery(() => getBaselineMap(), []);
-  const doneCount = baselines?.size ?? 0;
+  useEffect(() => {
+    if (todayData) {
+      setWeight(todayData.weightKg !== null ? String(todayData.weightKg) : '');
+      setFat(todayData.bodyFatPct !== null ? String(todayData.bodyFatPct) : '');
+      setWaist(todayData.waistCm !== null ? String(todayData.waistCm) : '');
+      setShoulder(todayData.shoulderCm !== null ? String(todayData.shoulderCm) : '');
+    }
+  }, [todayData]);
 
-  if (active) {
-    return (
-      <Wizard
-        exercise={active}
-        split={split}
-        onClose={() => setActive(null)}
-      />
-    );
-  }
+  const handleSave = async () => {
+    await saveBodyMetric({
+      weightKg: weight !== '' ? Number(weight) : null,
+      bodyFatPct: fat !== '' ? Number(fat) : null,
+      waistCm: waist !== '' ? Number(waist) : null,
+      shoulderCm: shoulder !== '' ? Number(shoulder) : null,
+    });
+    fireNeonConfetti(); // 🌟 EXP加算＆スパーク演出
+    setSavedMessage(true);
+    setTimeout(() => setSavedMessage(false), 3000);
+  };
 
   return (
     <div className="page">
       <header className="hdr">
-        <h1>Week 0 キャリブレーション</h1>
-        <div className="progress">
-          <div className="bar" style={{ width: `${(doneCount / CALIBRATION_TOTAL) * 100}%` }} />
-        </div>
-        <p className="sub">{doneCount} / {CALIBRATION_TOTAL} 種目 完了</p>
+        <h1>体組成・トレンド記録</h1>
+        <p className="sub">毎朝のコンディションを入力してください</p>
       </header>
 
-      <div className="tabs">
-        {(Object.keys(CALIBRATION_PLAN) as SplitType[]).map((s) => (
-          <button
-            key={s}
-            className={`tab ${s === split ? 'on' : ''}`}
-            onClick={() => setSplit(s)}
-          >
-            {s.replace('upper_', 'Upper ').replace('lower', 'Lower')}
-          </button>
-        ))}
-      </div>
-      <p className="sub">{SPLIT_LABEL[split]}</p>
-
-      <ul className="list">
-        {exercises?.map((ex) => {
-          const b = baselines?.get(ex.id);
-          return (
-            <li key={ex.id}>
-              <button className={`row ${b ? 'done' : ''}`} onClick={() => setActive(ex)}>
-                <span className="name">{ex.name}</span>
-                <span className="meta">
-                  {b
-                    ? `${formatWeight(b.weightKg, ex)} × ${b.reps}`
-                    : `${ex.repRange[0]}–${ex.repRange[1]} reps`}
-                </span>
-                <span className="mark">{b ? '✓' : '›'}</span>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-
-      <p className="note">
-        各種目3セット。1セット目は「これくらいかな」で構いません。
-        RIRの入力から2・3セット目の重量を自動計算します。
-      </p>
-    </div>
-  );
-}
-
-function Wizard({
-  exercise, split, onClose,
-}: { exercise: Exercise; split: SplitType; onClose: () => void }) {
-  const inc = effectiveIncrement(exercise, 10);
-  const [weight, setWeight] = useState<number>(
-    exercise.increment === 0 ? 0 : guessInitial(exercise)
-  );
-  const [reps, setReps] = useState<number>(targetRepsOf(exercise));
-  const [rir, setRir] = useState<number>(2);
-  const [attempts, setAttempts] = useState<Attempt[]>([]);
-  const [suggestions, setSuggestions] = useState<number[]>([]);
-  const [saving, setSaving] = useState(false);
-
-  const credits = useLiveQuery(() => db.muscleCredits.where('exerciseId').equals(exercise.id).toArray(), [exercise.id]);
-  const primaryMuscles = credits?.filter((c) => c.credit >= 0.8).map((c) => c.muscle) ?? [];
-  const secondaryMuscles = credits?.filter((c) => c.credit < 0.8).map((c) => c.muscle) ?? [];
-
-  const setNo = attempts.length + 1;
-  const isLast = setNo === CALIB.setsPerExercise;
-
-  const lastSuggestion = useMemo(() => {
-    if (attempts.length === 0) return null;
-    return suggestNext(exercise, attempts[attempts.length - 1]);
-  }, [attempts, exercise]);
-
-  const step = exercise.increment === 0 ? 0 : effectiveIncrement(exercise, weight);
-
-  const handleNext = async () => {
-    const attempt: Attempt = { setNo, weight, reps, rir };
-    const next = [...attempts, attempt];
-    setAttempts(next);
-    setSuggestions([...suggestions, weight]);
-
-    if (next.length < CALIB.setsPerExercise) {
-      const s = suggestNext(exercise, attempt);
-      setWeight(s.weight);
-      setReps(s.targetReps);
-      setRir(2);
-      return;
-    }
-
-    setSaving(true);
-    const baseline = finalizeBaseline(exercise, next);
-    const sessionId = await getOrCreateCalibrationSession(split);
-    await saveCalibrationResult({
-      sessionId,
-      exercise,
-      attempts: next,
-      suggestions: [...suggestions, weight],
-      baseline,
-    });
-    setSaving(false);
-    onClose();
-  };
-
-  return (
-    <div className="page wizard">
-      <header className="hdr">
-        <button className="back" onClick={onClose}>‹ 戻る</button>
-        <h2>{exercise.name}</h2>
-        <p className="sub">
-          Set {setNo} / {CALIB.setsPerExercise} ・ 目標 {exercise.repRange[0]}–{exercise.repRange[1]} reps
-        </p>
-      </header>
-
-      {/* 🤖 AIトレーナー4ステップ解説ガイド */}
-      <TrainerGuide exercise={exercise} />
-
-      {/* 筋肉発光ネオンアナトミーマップ */}
-      <BodyAnatomy primaryMuscles={primaryMuscles} secondaryMuscles={secondaryMuscles} />
-
-      {lastSuggestion && (
-        <div className={`hint ${lastSuggestion.verdict}`}>
-          <p>{lastSuggestion.message}</p>
-          <p className="mono">推定1RM {lastSuggestion.est1rm} kg</p>
-          {lastSuggestion.repProgressionOnly && exercise.increment > 0 && (
-            <p className="mono warn">
-              ▲ 刻み {inc}kg が重量比4%超。以降はレップ漸進で管理します
-            </p>
-          )}
+      {savedMessage && (
+        <div className="hint converged" style={{ textAlign: 'center' }}>
+          ✓ 本日のコンディションを保存しました！
         </div>
       )}
 
-      {exercise.increment > 0 && (
-        <section className="field">
-          <label>重量</label>
-          <div className="stepper">
-            <button onClick={() => setWeight((w) => Math.max(step, w - step))}>−</button>
-            <span className="value">{formatWeight(weight, exercise)}</span>
-            <button onClick={() => setWeight((w) => w + step)}>＋</button>
-          </div>
-          <p className="mono sub">刻み {step} kg</p>
-        </section>
-      )}
+      <section className="card">
+        <h2>本日 ({todayData?.date}) の入力</h2>
 
-      <section className="field">
-        <label>実施レップ数</label>
-        <div className="stepper">
-          <button onClick={() => setReps((r) => Math.max(1, r - 1))}>−</button>
-          <span className="value">{reps} reps</span>
-          <button onClick={() => setReps((r) => r + 1)}>＋</button>
+        <div className="field">
+          <label>体重 (kg)</label>
+          <input
+            type="number"
+            step="0.1"
+            className="btn"
+            style={{ textAlign: 'left', paddingLeft: '16px', background: 'var(--bg)' }}
+            placeholder="例: 71.2"
+            value={weight}
+            onChange={(e) => setWeight(e.target.value)}
+          />
         </div>
+
+        <div className="field">
+          <label>体脂肪率 (%)</label>
+          <input
+            type="number"
+            step="0.1"
+            className="btn"
+            style={{ textAlign: 'left', paddingLeft: '16px', background: 'var(--bg)' }}
+            placeholder="例: 18.4"
+            value={fat}
+            onChange={(e) => setFat(e.target.value)}
+          />
+        </div>
+
+        <div className="field">
+          <label>ウエストサイズ (cm)</label>
+          <input
+            type="number"
+            step="0.5"
+            className="btn"
+            style={{ textAlign: 'left', paddingLeft: '16px', background: 'var(--bg)' }}
+            placeholder="例: 80.0"
+            value={waist}
+            onChange={(e) => setWaist(e.target.value)}
+          />
+        </div>
+
+        <div className="field">
+          <label>肩囲 (cm)</label>
+          <input
+            type="number"
+            step="0.5"
+            className="btn"
+            style={{ textAlign: 'left', paddingLeft: '16px', background: 'var(--bg)' }}
+            placeholder="例: 115.0"
+            value={shoulder}
+            onChange={(e) => setShoulder(e.target.value)}
+          />
+        </div>
+
+        <button className="btn primary big" onClick={handleSave}>
+          記録を保存
+        </button>
       </section>
 
-      <section className="field">
-        <label>RIR（あと何回挙がったか）</label>
-        <div className="rir">
-          {[0, 1, 2, 3, 4].map((v) => (
-            <button
-              key={v}
-              className={`rir-btn ${rir === v ? 'on' : ''}`}
-              onClick={() => setRir(v)}
-            >
-              {v === 4 ? '4+' : v}
-            </button>
+      <section className="card">
+        <h2>分析トレンド指標</h2>
+        <table className="kv">
+          <tbody>
+            <tr>
+              <th>体重 7日移動平均 (MA7)</th>
+              <td className="mono good">
+                {todayData?.weightMa7 ? `${todayData.weightMa7} kg` : '7日間のデータ蓄積中'}
+              </td>
+            </tr>
+            <tr>
+              <th>除脂肪体重 (FFM)</th>
+              <td className="mono">
+                {todayData?.ffmKg ? `${todayData.ffmKg} kg` : '未計算'}
+              </td>
+            </tr>
+            <tr>
+              <th>V-Taper比率 (肩囲 ÷ ウエスト)</th>
+              <td className="mono good">
+                {todayData?.vTaperRatio ? `${todayData.vTaperRatio}` : '未計算'}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section className="card">
+        <h2>直近14日間の履歴</h2>
+        <div className="list">
+          {historyList?.map((h) => (
+            <div key={h.date} className="row" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
+              <span className="mono">{h.date.slice(5)}</span>
+              <span className="mono">{h.weightKg ? `${h.weightKg}kg` : '-'}</span>
+              <span className="mono sub">{h.vTaperRatio ? `V:${h.vTaperRatio}` : '-'}</span>
+            </div>
           ))}
         </div>
       </section>
-
-      {attempts.length > 0 && (
-        <section className="log">
-          <h3>記録済み</h3>
-          {attempts.map((a) => (
-            <p key={a.setNo} className="mono">
-              Set{a.setNo}: {a.weight}kg × {a.reps} (RIR {a.rir >= 4 ? '4+' : a.rir})
-            </p>
-          ))}
-        </section>
-      )}
-
-      <button className="btn primary big" onClick={handleNext} disabled={saving}>
-        {saving ? '保存中…' : isLast ? 'ベースラインを確定' : `Set ${setNo} を記録して次へ`}
-      </button>
     </div>
   );
-}
-
-function guessInitial(ex: Exercise): number {
-  switch (ex.equipment) {
-    case 'dumbbell': return ex.type === 'isolation' ? 8 : 12;
-    case 'cable': return ex.type === 'isolation' ? 10 : 30;
-    case 'machine': return ex.type === 'isolation' ? 20 : 35;
-    case 'plate': return 20;
-    case 'barbell': return 40;
-    case 'smith': return 20;
-    default: return 0;
-  }
 }
 </file>
 
@@ -2794,6 +2810,397 @@ export const TrainerGuide: React.FC<TrainerGuideProps> = ({ exercise }) => {
 };
 </file>
 
+<file path="src/engine/achievements.ts">
+import confetti from 'canvas-confetti';
+
+export type IconName =
+  | 'Egg' | 'Milk' | 'Dumbbell' | 'Flame' | 'UtensilsCrossed'
+  | 'Wand2' | 'Footprints' | 'Bot' | 'Zap' | 'Crown' | 'Award';
+
+export interface LevelTitle {
+  minLevel: number;
+  title: string;
+  iconName: IconName;
+}
+
+/** 洗練されたベクターアイコン指定付きのレベル別称号マスタ */
+export const HUMOR_TITLES: LevelTitle[] = [
+  { minLevel: 1,  title: '筋肉の生まれたてひよこ', iconName: 'Egg' },
+  { minLevel: 2,  title: 'プロテインビギナー',     iconName: 'Milk' },
+  { minLevel: 3,  title: 'ダンベルと初対面',       iconName: 'Dumbbell' },
+  { minLevel: 5,  title: '筋肉痛を愛し始めた者',   iconName: 'Flame' },
+  { minLevel: 8,  title: '鶏むね肉の調理マスター', iconName: 'UtensilsCrossed' },
+  { minLevel: 10, title: 'プロテインシェイカーの魔術師', iconName: 'Wand2' },
+  { minLevel: 15, title: '階段を下りるのが恐怖の漢', iconName: 'Footprints' },
+  { minLevel: 20, title: 'プロテイン錬金術師',     iconName: 'Wand2' },
+  { minLevel: 25, title: 'ジムの地縛霊',           iconName: 'Award' },
+  { minLevel: 30, title: '人間ベンチプレス機',     iconName: 'Bot' },
+  { minLevel: 40, title: '重力の法則を無視する者', iconName: 'Zap' },
+  { minLevel: 50, title: '歩く人間兵器',           iconName: 'Flame' },
+  { minLevel: 75, title: '超サイヤ筋',             iconName: 'Zap' },
+  { minLevel: 99, title: '筋神 (Hypertrophy God)', iconName: 'Crown' },
+];
+
+export interface UserLevelInfo {
+  level: number;
+  title: string;
+  iconName: IconName;
+  totalExp: number;
+  currentLevelExp: number;
+  nextLevelExp: number;
+  progressPct: number;
+}
+
+/** 筋トレ・Week0・体組成・栄養すべての実績から総合EXPとレベルを計算 */
+export function calculateUserLevel(params: {
+  totalSets: number;         // 本番・Week0のセット数 (1セット = 50 EXP)
+  totalVolumeKg: number;     // 挙上重量 (10kg = 1 EXP)
+  bodyMetricDays: number;    // 体組成の記録日数 (1日 = 100 EXP)
+  totalProteinCheckedG: number; // 摂取タンパク質 (1g = 2 EXP)
+}): UserLevelInfo {
+  const { totalSets, totalVolumeKg, bodyMetricDays, totalProteinCheckedG } = params;
+
+  const totalExp = Math.floor(
+    totalSets * 50 +
+    totalVolumeKg / 10 +
+    bodyMetricDays * 100 +
+    totalProteinCheckedG * 2
+  );
+
+  let level = 1;
+  let expAccumulated = 0;
+
+  while (level < 99) {
+    const requiredForNext = Math.floor(Math.pow(level, 1.7) * 60);
+    if (totalExp < expAccumulated + requiredForNext) {
+      const currentLevelExp = totalExp - expAccumulated;
+      const progressPct = Math.min(100, Math.floor((currentLevelExp / requiredForNext) * 100));
+      
+      const titleObj = [...HUMOR_TITLES].reverse().find((t) => level >= t.minLevel) ?? HUMOR_TITLES[0];
+
+      return {
+        level,
+        title: titleObj.title,
+        iconName: titleObj.iconName,
+        totalExp,
+        currentLevelExp,
+        nextLevelExp: requiredForNext,
+        progressPct,
+      };
+    }
+    expAccumulated += requiredForNext;
+    level++;
+  }
+
+  return {
+    level: 99,
+    title: '筋神 (Hypertrophy God)',
+    iconName: 'Crown',
+    totalExp,
+    currentLevelExp: 0,
+    nextLevelExp: 0,
+    progressPct: 100,
+  };
+}
+
+export interface Achievement {
+  level: number;
+  title: string;
+  requiredVolumeKg: number;
+  message: string;
+}
+
+export const ACHIEVEMENTS: Achievement[] = [
+  { level: 1, title: '鉄の目覚め', requiredVolumeKg: 100, message: '筋肥大への第一歩を踏み出しました！' },
+  { level: 2, title: '重力の挑戦者', requiredVolumeKg: 1000, message: '累計1トン突破！体に変化が表れ始めています！' },
+  { level: 3, title: '鋼鉄の肉体', requiredVolumeKg: 5000, message: '累計5トン到達！ジムの常連の仲間入りです！' },
+  { level: 4, title: '肥大の支配者', requiredVolumeKg: 10000, message: '累計10トン突破！圧倒的なバルクを手に入れました！' },
+  { level: 5, title: '筋神 (Hypertrophy God)', requiredVolumeKg: 50000, message: '累計50トン到達！誰もあなたを止められません！' },
+];
+
+export function fireNeonConfetti() {
+  const count = 200;
+  const defaults = { origin: { y: 0.7 } };
+
+  function fire(particleRatio: number, opts: confetti.Options) {
+    confetti({
+      ...defaults,
+      ...opts,
+      particleCount: Math.floor(count * particleRatio)
+    });
+  }
+
+  fire(0.25, { spread: 26, startVelocity: 55, colors: ['#00f2fe', '#4facfe'] });
+  fire(0.2, { spread: 60, colors: ['#b537ff', '#ffffff'] });
+  fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8, colors: ['#00f2fe', '#b537ff', '#00e676'] });
+  fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, colors: ['#ffffff', '#00f2fe'] });
+  fire(0.1, { spread: 120, startVelocity: 45, colors: ['#b537ff', '#4facfe'] });
+}
+</file>
+
+<file path="src/pages/Calibration.tsx">
+import { fireNeonConfetti } from '../engine/achievements';
+import { useMemo, useState, useEffect } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../db/db';
+import type { Exercise, SplitType } from '../db/types';
+import {
+  CALIBRATION_PLAN, CALIBRATION_TOTAL, getCalibrationExercises,
+  getBaselineMap, getOrCreateCalibrationSession, saveCalibrationResult,
+} from '../db/queries/calibration';
+import {
+  CALIB, suggestNext, finalizeBaseline, targetRepsOf, calculateOptimalRestSec, type Attempt,
+} from '../engine/calibration';
+import { effectiveIncrement, formatWeight } from '../engine/units';
+import { TrainerGuide } from '../components/TrainerGuide';
+import { BodyAnatomy } from '../components/BodyAnatomy';
+
+const SPLIT_LABEL: Record<SplitType, string> = {
+  upper_A: '上半身 A（背中・肩中部・二頭）',
+  lower: '下半身',
+  upper_B: '上半身 B（胸上部・胸中部・肩・三頭）',
+};
+
+export default function Calibration() {
+  const [split, setSplit] = useState<SplitType>('upper_A');
+  const [active, setActive] = useState<Exercise | null>(null);
+
+  const exercises = useLiveQuery(() => getCalibrationExercises(split), [split]);
+  const baselines = useLiveQuery(() => getBaselineMap(), []);
+  const doneCount = baselines?.size ?? 0;
+
+  if (active) {
+    return (
+      <Wizard
+        exercise={active}
+        split={split}
+        onClose={() => setActive(null)}
+      />
+    );
+  }
+
+  return (
+    <div className="page">
+      <header className="hdr">
+        <h1>Week 0 キャリブレーション</h1>
+        <div className="progress">
+          <div className="bar" style={{ width: `${(doneCount / CALIBRATION_TOTAL) * 100}%` }} />
+        </div>
+        <p className="sub">{doneCount} / {CALIBRATION_TOTAL} 種目 完了</p>
+      </header>
+
+      <div className="tabs">
+        {(Object.keys(CALIBRATION_PLAN) as SplitType[]).map((s) => (
+          <button
+            key={s}
+            className={`tab ${s === split ? 'on' : ''}`}
+            onClick={() => setSplit(s)}
+          >
+            {s.replace('upper_', 'Upper ').replace('lower', 'Lower')}
+          </button>
+        ))}
+      </div>
+      <p className="sub">{SPLIT_LABEL[split]}</p>
+
+      <ul className="list">
+        {exercises?.map((ex) => {
+          const b = baselines?.get(ex.id);
+          return (
+            <li key={ex.id}>
+              <button className={`row ${b ? 'done' : ''}`} onClick={() => setActive(ex)}>
+                <span className="name">{ex.name}</span>
+                <span className="meta">
+                  {b
+                    ? `${formatWeight(b.weightKg, ex)} × ${b.reps}`
+                    : `${ex.repRange[0]}–${ex.repRange[1]} reps`}
+                </span>
+                <span className="mark">{b ? '✓' : '›'}</span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+
+      <p className="note">
+        各種目3セット。1セット目は「これくらいかな」で構いません。
+        RIRの入力から2・3セット目の重量を自動計算します。
+      </p>
+    </div>
+  );
+}
+
+function Wizard({
+  exercise, split, onClose,
+}: { exercise: Exercise; split: SplitType; onClose: () => void }) {
+  const inc = effectiveIncrement(exercise, 10);
+  const [weight, setWeight] = useState<number>(
+    exercise.increment === 0 ? 0 : guessInitial(exercise)
+  );
+  const [reps, setReps] = useState<number>(targetRepsOf(exercise));
+  const [rir, setRir] = useState<number>(2);
+  const [attempts, setAttempts] = useState<Attempt[]>([]);
+  const [suggestions, setSuggestions] = useState<number[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [timerSec, setTimerSec] = useState<number | null>(null);
+
+  const credits = useLiveQuery(() => db.muscleCredits.where('exerciseId').equals(exercise.id).toArray(), [exercise.id]);
+  const primaryMuscles = credits?.filter((c) => c.credit >= 0.8).map((c) => c.muscle) ?? [];
+  const secondaryMuscles = credits?.filter((c) => c.credit < 0.8).map((c) => c.muscle) ?? [];
+
+  const setNo = attempts.length + 1;
+  const isLast = setNo === CALIB.setsPerExercise;
+
+  // カウントダウンタイマー処理
+  useEffect(() => {
+    if (timerSec === null || timerSec <= 0) return;
+    const interval = setInterval(() => {
+      setTimerSec((prev) => (prev && prev > 1 ? prev - 1 : null));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [timerSec]);
+
+  const lastSuggestion = useMemo(() => {
+    if (attempts.length === 0) return null;
+    return suggestNext(exercise, attempts[attempts.length - 1]);
+  }, [attempts, exercise]);
+
+  const step = exercise.increment === 0 ? 0 : effectiveIncrement(exercise, weight);
+
+  const handleNext = async () => {
+    const attempt: Attempt = { setNo, weight, reps, rir };
+    const next = [...attempts, attempt];
+    setAttempts(next);
+    setSuggestions([...suggestions, weight]);
+
+    if (next.length < CALIB.setsPerExercise) {
+      const s = suggestNext(exercise, attempt);
+      setWeight(s.weight);
+      setReps(s.targetReps);
+      setRir(2);
+
+      // セット1・セット2完了時に動的インターバルタイマーを起動[cite: 1]
+      const optimalRest = calculateOptimalRestSec(exercise, rir);
+      setTimerSec(optimalRest);
+      return;
+    }
+
+    setSaving(true);
+    const baseline = finalizeBaseline(exercise, next);
+    const sessionId = await getOrCreateCalibrationSession(split);
+    await saveCalibrationResult({
+      sessionId,
+      exercise,
+      attempts: next,
+      suggestions: [...suggestions, weight],
+      baseline,
+    });
+    fireNeonConfetti();
+    setSaving(false);
+    onClose();
+  };
+
+  return (
+    <div className="page wizard">
+      <header className="hdr">
+        <button className="back" onClick={onClose}>‹ 戻る</button>
+        <h2>{exercise.name}</h2>
+        <p className="sub">
+          Set {setNo} / {CALIB.setsPerExercise} ・ 目標 {exercise.repRange[0]}–{exercise.repRange[1]} reps
+        </p>
+      </header>
+
+      {/* 🤖 AIトレーナー4ステップ解説ガイド */}
+      <TrainerGuide exercise={exercise} />
+
+      {/* 筋肉発光ネオンアナトミーマップ */}
+      <BodyAnatomy primaryMuscles={primaryMuscles} secondaryMuscles={secondaryMuscles} />
+
+      {/* インターバルカウントダウンタイマー表示エリア[cite: 1] */}
+      {timerSec !== null && (
+        <div className="hint converged" style={{ textAlign: 'center', fontSize: '20px', fontWeight: 'bold', margin: '12px 0' }}>
+          ⏱ 推奨インターバル: {Math.floor(timerSec / 60)}分 {String(timerSec % 60).padStart(2, '0')}秒
+        </div>
+      )}
+
+      {lastSuggestion && (
+        <div className={`hint ${lastSuggestion.verdict}`}>
+          <p>{lastSuggestion.message}</p>
+          <p className="mono">推定1RM {lastSuggestion.est1rm} kg</p>
+          {lastSuggestion.repProgressionOnly && exercise.increment > 0 && (
+            <p className="mono warn">
+              ▲ 刻み {inc}kg が重量比4%超。以降はレップ漸進で管理します
+            </p>
+          )}
+        </div>
+      )}
+
+      {exercise.increment > 0 && (
+        <section className="field">
+          <label>重量</label>
+          <div className="stepper">
+            <button onClick={() => setWeight((w) => Math.max(step, w - step))}>−</button>
+            <span className="value">{formatWeight(weight, exercise)}</span>
+            <button onClick={() => setWeight((w) => w + step)}>＋</button>
+          </div>
+          <p className="mono sub">刻み {step} kg</p>
+        </section>
+      )}
+
+      <section className="field">
+        <label>実施レップ数</label>
+        <div className="stepper">
+          <button onClick={() => setReps((r) => Math.max(1, r - 1))}>−</button>
+          <span className="value">{reps} reps</span>
+          <button onClick={() => setReps((r) => r + 1)}>＋</button>
+        </div>
+      </section>
+
+      <section className="field">
+        <label>RIR（あと何回挙がったか）</label>
+        <div className="rir">
+          {[0, 1, 2, 3, 4].map((v) => (
+            <button
+              key={v}
+              className={`rir-btn ${rir === v ? 'on' : ''}`}
+              onClick={() => setRir(v)}
+            >
+              {v === 4 ? '4+' : v}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {attempts.length > 0 && (
+        <section className="log">
+          <h3>記録済み</h3>
+          {attempts.map((a) => (
+            <p key={a.setNo} className="mono">
+              Set{a.setNo}: {a.weight}kg × {a.reps} (RIR {a.rir >= 4 ? '4+' : a.rir})
+            </p>
+          ))}
+        </section>
+      )}
+
+      <button className="btn primary big" onClick={handleNext} disabled={saving}>
+        {saving ? '保存中…' : isLast ? 'ベースラインを確定' : `Set ${setNo} を記録して次へ`}
+      </button>
+    </div>
+  );
+}
+
+function guessInitial(ex: Exercise): number {
+  switch (ex.equipment) {
+    case 'dumbbell': return ex.type === 'isolation' ? 8 : 12;
+    case 'cable': return ex.type === 'isolation' ? 10 : 30;
+    case 'machine': return ex.type === 'isolation' ? 20 : 35;
+    case 'plate': return 20;
+    case 'barbell': return 40;
+    case 'smith': return 20;
+    default: return 0;
+  }
+}
+</file>
+
 <file path="src/pages/Nutrition.tsx">
 import { useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -2986,11 +3393,13 @@ export default function App() {
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.117.2",
     "canvas-confetti": "^1.9.4",
     "dayjs": "^1.11.23",
     "dexie": "^4.4.5",
     "dexie-react-hooks": "^4.4.0",
     "framer-motion": "^13.2.0",
+    "lucide-react": "^1.45.0",
     "react": "^19.2.8",
     "react-activity-calendar": "^3.2.1",
     "react-circular-progressbar": "^2.2.0",
@@ -3732,6 +4141,42 @@ button.row.done .mark { color: var(--good); text-shadow: 0 0 8px var(--good-glow
 .status-stat-card .stat-unit {
   font-size: 10px;
   color: var(--accent);
+}
+
+
+/* --- Lucideネオンアイコンスタイル --- */
+.badge-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 140px;
+}
+
+.title-lucide-icon {
+  color: var(--accent);
+  filter: drop-shadow(0 0 6px var(--accent-glow));
+  flex-shrink: 0;
+}
+
+.status-modal-title-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  color: var(--good);
+}
+
+.status-modal-title-wrap .title-lucide-icon {
+  color: var(--good);
+  filter: drop-shadow(0 0 8px var(--good-glow));
+}
+
+.status-modal-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--good);
+  text-shadow: 0 0 10px var(--good-glow);
 }
 </file>
 

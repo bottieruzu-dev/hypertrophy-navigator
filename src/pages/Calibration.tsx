@@ -1,5 +1,5 @@
 import { fireNeonConfetti } from '../engine/achievements';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/db';
 import type { Exercise, SplitType } from '../db/types';
@@ -8,7 +8,7 @@ import {
   getBaselineMap, getOrCreateCalibrationSession, saveCalibrationResult,
 } from '../db/queries/calibration';
 import {
-  CALIB, suggestNext, finalizeBaseline, targetRepsOf, type Attempt,
+  CALIB, suggestNext, finalizeBaseline, targetRepsOf, calculateOptimalRestSec, type Attempt,
 } from '../engine/calibration';
 import { effectiveIncrement, formatWeight } from '../engine/units';
 import { TrainerGuide } from '../components/TrainerGuide';
@@ -17,7 +17,7 @@ import { BodyAnatomy } from '../components/BodyAnatomy';
 const SPLIT_LABEL: Record<SplitType, string> = {
   upper_A: '上半身 A（背中・肩中部・二頭）',
   lower: '下半身',
-  upper_B: '上半身 B（胸上部・肩・三頭）',
+  upper_B: '上半身 B（胸上部・胸中部・肩・三頭）',
 };
 
 export default function Calibration() {
@@ -100,6 +100,7 @@ function Wizard({
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [suggestions, setSuggestions] = useState<number[]>([]);
   const [saving, setSaving] = useState(false);
+  const [timerSec, setTimerSec] = useState<number | null>(null);
 
   const credits = useLiveQuery(() => db.muscleCredits.where('exerciseId').equals(exercise.id).toArray(), [exercise.id]);
   const primaryMuscles = credits?.filter((c) => c.credit >= 0.8).map((c) => c.muscle) ?? [];
@@ -107,6 +108,15 @@ function Wizard({
 
   const setNo = attempts.length + 1;
   const isLast = setNo === CALIB.setsPerExercise;
+
+  // カウントダウンタイマー処理
+  useEffect(() => {
+    if (timerSec === null || timerSec <= 0) return;
+    const interval = setInterval(() => {
+      setTimerSec((prev) => (prev && prev > 1 ? prev - 1 : null));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [timerSec]);
 
   const lastSuggestion = useMemo(() => {
     if (attempts.length === 0) return null;
@@ -126,6 +136,10 @@ function Wizard({
       setWeight(s.weight);
       setReps(s.targetReps);
       setRir(2);
+
+      // セット1・セット2完了時に動的インターバルタイマーを起動[cite: 1]
+      const optimalRest = calculateOptimalRestSec(exercise, rir);
+      setTimerSec(optimalRest);
       return;
     }
 
@@ -139,7 +153,7 @@ function Wizard({
       suggestions: [...suggestions, weight],
       baseline,
     });
-    fireNeonConfetti(); // 🌟 EXP加算＆スパーク演出
+    fireNeonConfetti();
     setSaving(false);
     onClose();
   };
@@ -159,6 +173,13 @@ function Wizard({
 
       {/* 筋肉発光ネオンアナトミーマップ */}
       <BodyAnatomy primaryMuscles={primaryMuscles} secondaryMuscles={secondaryMuscles} />
+
+      {/* インターバルカウントダウンタイマー表示エリア[cite: 1] */}
+      {timerSec !== null && (
+        <div className="hint converged" style={{ textAlign: 'center', fontSize: '20px', fontWeight: 'bold', margin: '12px 0' }}>
+          ⏱ 推奨インターバル: {Math.floor(timerSec / 60)}分 {String(timerSec % 60).padStart(2, '0')}秒
+        </div>
+      )}
 
       {lastSuggestion && (
         <div className={`hint ${lastSuggestion.verdict}`}>

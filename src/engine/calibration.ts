@@ -31,6 +31,18 @@ export interface Suggestion {
   repProgressionOnly: boolean;
 }
 
+/** 種目タイプとRIR(追い込み度)から最適なインターバルタイマー秒数を精度高く自動算定 */
+export function calculateOptimalRestSec(exercise: Exercise, lastRir?: number): number {
+  let baseRest = exercise.restSec || (exercise.type === 'compound' ? 150 : 75);
+
+  // 限界付近（RIR 0〜1）まで追い込んだ場合は神経系・ATPの全回復のため+30秒延長
+  if (lastRir !== undefined && lastRir <= 1) {
+    baseRest += 30;
+  }
+
+  return baseRest;
+}
+
 export function epley1RM(weight: number, reps: number, rir = 0): number {
   const effectiveRir = rir >= CALIB.rirTooEasy ? CALIB.rirPlusValue : rir;
   return weight * (1 + (reps + effectiveRir) / 30);

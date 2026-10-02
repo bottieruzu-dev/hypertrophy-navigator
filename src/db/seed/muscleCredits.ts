@@ -39,6 +39,7 @@ const SPEC: CreditSpec = {
   34: { erector: 1.0, glutes: 0.3, hams: 0.3 },
   35: { abductor: 1.0, glutes: 0.3 },
   36: { calves: 1.0 },
+  37: { chest_mid: 1.0, delt_front: 0.5, triceps: 0.5, chest_upper: 0.3 },
 };
 
 export const MUSCLE_CREDITS: MuscleCredit[] = Object.entries(SPEC).flatMap(

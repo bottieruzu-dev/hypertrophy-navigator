@@ -2,19 +2,40 @@ import { db } from '../db';
 import type { SplitType, Exercise, ExerciseBaseline } from '../types';
 import { finalizeBaseline } from '../../engine/calibration';
 
+/** 
+ * CALIBRATION_PLAN 
+ * 同一器具（ケーブル等）を連続して使用できるようID配置を整理[cite: 1]
+ * upper_B に 37(バーベルベンチプレス) を追加[cite: 1]
+ */
 export const CALIBRATION_PLAN: Record<SplitType, number[]> = {
-  upper_A: [1, 12, 14, 6, 8, 9, 11, 25],
-  lower: [31, 32, 29, 33, 34, 27],
-  upper_B: [2, 4, 18, 21, 23, 24, 10, 26],
+  upper_A: [12, 10, 2, 6, 1, 8, 9, 11, 25, 14],
+  lower: [29, 30, 33, 34, 31, 32, 27],
+  upper_B: [37, 18, 5, 4, 21, 23, 24, 26, 7],
 };
 
 export const CALIBRATION_TOTAL = Object.values(CALIBRATION_PLAN)
   .reduce((s, arr) => s + arr.length, 0);
 
+/** 器具(equipment)順にソートして返却する[cite: 1] */
 export async function getCalibrationExercises(split: SplitType): Promise<Exercise[]> {
   const ids = CALIBRATION_PLAN[split];
   const list = await db.exercises.bulkGet(ids);
-  return list.filter((e): e is Exercise => !!e && e.isAvailable === 1);
+  const available = list.filter((e): e is Exercise => !!e && e.isAvailable === 1);
+
+  // 器具の優先並び順マップ (cable -> dumbbell -> machine -> barbell -> plate -> bodyweight)[cite: 1]
+  const equipmentOrder: Record<string, number> = {
+    cable: 1,
+    dumbbell: 2,
+    machine: 3,
+    barbell: 4,
+    plate: 5,
+    smith: 6,
+    bodyweight: 7,
+  };
+
+  return available.sort((a, b) => 
+    (equipmentOrder[a.equipment] ?? 99) - (equipmentOrder[b.equipment] ?? 99)
+  );
 }
 
 export async function getBaselineMap(): Promise<Map<number, ExerciseBaseline>> {
