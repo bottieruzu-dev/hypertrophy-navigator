@@ -1,260 +1,133 @@
-import { fireNeonConfetti } from '../engine/achievements';
-import { useMemo, useState, useEffect } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
+import { useEffect, useState } from 'react';
 import { db } from '../db/db';
-import type { Exercise, SplitType } from '../db/types';
-import {
-  CALIBRATION_PLAN, CALIBRATION_TOTAL, getCalibrationExercises,
-  getBaselineMap, getOrCreateCalibrationSession, saveCalibrationResult,
-} from '../db/queries/calibration';
-import {
-  CALIB, suggestNext, finalizeBaseline, targetRepsOf, calculateOptimalRestSec, type Attempt,
-} from '../engine/calibration';
-import { effectiveIncrement, formatWeight } from '../engine/units';
-import { TrainerGuide } from '../components/TrainerGuide';
-import { BodyAnatomy } from '../components/BodyAnatomy';
-
-const SPLIT_LABEL: Record<SplitType, string> = {
-  upper_A: '上半身 A（背中・肩中部・二頭）',
-  lower: '下半身',
-  upper_B: '上半身 B（胸上部・胸中部・肩・三頭）',
-};
+import { fetchBaselines, saveBaseline } from '../db/queries/workout';
+import type { ExerciseBaseline, Exercise } from '../db/types';
 
 export default function Calibration() {
-  const [split, setSplit] = useState<SplitType>('upper_A');
-  const [active, setActive] = useState<Exercise | null>(null);
+  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [baselines, setBaselines] = useState<Record<string, ExerciseBaseline>>({});
+  const [loading, setLoading] = useState(true);
+  const [savingId, setSavingId] = useState<string | null>(null);
 
-  const exercises = useLiveQuery(() => getCalibrationExercises(split), [split]);
-  const baselines = useLiveQuery(() => getBaselineMap(), []);
-  const doneCount = baselines?.size ?? 0;
+  // 初回ロード：種目マスタと Supabase からのベースラインを取得
+  useEffect(() => {
+    async function loadData() {
+      setLoading(true);
+      try {
+        const exList = await db.exercises.toArray();
+        setExercises(exList);
 
-  if (active) {
-    return (
-      <Wizard
-        exercise={active}
-        split={split}
-        onClose={() => setActive(null)}
-      />
-    );
-  }
+        // Supabase から最新の基準重量を取得
+        const remoteBaselines = await fetchBaselines();
+        const map: Record<string, ExerciseBaseline> = {};
+        
+        remoteBaselines.forEach((b) => {
+          map[b.exerciseId] = b;
+        });
+
+        setBaselines(map);
+      } catch (err) {
+        console.error('データ読み込みエラー:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
+  // 重量・回数・RIR の入力変更
+  const handleChange = (exerciseId: string, field: keyof ExerciseBaseline, value: number) => {
+    setBaselines((prev) => {
+      const current = prev[exerciseId] || {
+        exerciseId,
+        weightKg: 0,
+        reps: 0,
+        rir: 0,
+        est1rm: 0,
+        calibratedAt: new Date().toISOString(),
+      };
+      const updated = { ...current, [field]: value };
+      // 簡易 1RM 計算 (Epleyの式)
+      if (updated.weightKg > 0 && updated.reps > 0) {
+        updated.est1rm = Math.round(updated.weightKg * (1 + updated.reps / 30));
+      }
+      return { ...prev, [exerciseId]: updated };
+    });
+  };
+
+  // 1種目の保存（Supabase へ即時同期）
+  const handleSave = async (exerciseId: string) => {
+    const target = baselines[exerciseId];
+    if (!target) return;
+
+    setSavingId(exerciseId);
+    target.calibratedAt = new Date().toISOString();
+
+    const success = await saveBaseline(target);
+    if (success) {
+      // ローカルの IndexedDB にもキャッシュとして保存
+      await db.baselines.put(target);
+      alert('Supabase へ正常に保存されました！');
+    } else {
+      alert('保存に失敗しました。接続を確認してください。');
+    }
+    setSavingId(null);
+  };
+
+  if (loading) return <div className="page"><p>Supabase からデータを読み込み中…</p></div>;
 
   return (
     <div className="page">
-      <header className="hdr">
-        <h1>Week 0 キャリブレーション</h1>
-        <div className="progress">
-          <div className="bar" style={{ width: `${(doneCount / CALIBRATION_TOTAL) * 100}%` }} />
-        </div>
-        <p className="sub">{doneCount} / {CALIBRATION_TOTAL} 種目 完了</p>
-      </header>
+      <h1>基準重量（キャリブレーション）</h1>
+      <p className="sub">記録したデータは自動的に Supabase へ保存・復元されます。</p>
 
-      <div className="tabs">
-        {(Object.keys(CALIBRATION_PLAN) as SplitType[]).map((s) => (
-          <button
-            key={s}
-            className={`tab ${s === split ? 'on' : ''}`}
-            onClick={() => setSplit(s)}
-          >
-            {s.replace('upper_', 'Upper ').replace('lower', 'Lower')}
-          </button>
-        ))}
-      </div>
-      <p className="sub">{SPLIT_LABEL[split]}</p>
+      <div className="card-list">
+        {exercises.map((ex) => {
+          const b = baselines[ex.id] || { exerciseId: ex.id, weightKg: 0, reps: 0, rir: 0, est1rm: 0 };
+          const isSaving = savingId === ex.id;
 
-      <ul className="list">
-        {exercises?.map((ex) => {
-          const b = baselines?.get(ex.id);
           return (
-            <li key={ex.id}>
-              <button className={`row ${b ? 'done' : ''}`} onClick={() => setActive(ex)}>
-                <span className="name">{ex.name}</span>
-                <span className="meta">
-                  {b
-                    ? `${formatWeight(b.weightKg, ex)} × ${b.reps}`
-                    : `${ex.repRange[0]}–${ex.repRange[1]} reps`}
-                </span>
-                <span className="mark">{b ? '✓' : '›'}</span>
+            <div key={ex.id} className="card">
+              <h3>{ex.nameJa}</h3>
+              <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', margin: '12px 0' }}>
+                <div>
+                  <label>重量 (kg)</label>
+                  <input
+                    type="number"
+                    value={b.weightKg || ''}
+                    onChange={(e) => handleChange(ex.id, 'weightKg', Number(e.target.value))}
+                  />
+                </div>
+                <div>
+                  <label>回数</label>
+                  <input
+                    type="number"
+                    value={b.reps || ''}
+                    onChange={(e) => handleChange(ex.id, 'reps', Number(e.target.value))}
+                  />
+                </div>
+                <div>
+                  <label>RIR</label>
+                  <input
+                    type="number"
+                    value={b.rir ?? ''}
+                    onChange={(e) => handleChange(ex.id, 'rir', Number(e.target.value))}
+                  />
+                </div>
+              </div>
+              <p className="mono">推定 1RM: <strong>{b.est1rm || 0} kg</strong></p>
+              <button
+                className="btn primary"
+                onClick={() => handleSave(ex.id)}
+                disabled={isSaving}
+                style={{ marginTop: '8px', width: '100%' }}
+              >
+                {isSaving ? '保存中…' : 'Supabase へ保存'}
               </button>
-            </li>
+            </div>
           );
         })}
-      </ul>
-
-      <p className="note">
-        各種目3セット。1セット目は「これくらいかな」で構いません。
-        RIRの入力から2・3セット目の重量を自動計算します。
-      </p>
+      </div>
     </div>
   );
-}
-
-function Wizard({
-  exercise, split, onClose,
-}: { exercise: Exercise; split: SplitType; onClose: () => void }) {
-  const inc = effectiveIncrement(exercise, 10);
-  const [weight, setWeight] = useState<number>(
-    exercise.increment === 0 ? 0 : guessInitial(exercise)
-  );
-  const [reps, setReps] = useState<number>(targetRepsOf(exercise));
-  const [rir, setRir] = useState<number>(2);
-  const [attempts, setAttempts] = useState<Attempt[]>([]);
-  const [suggestions, setSuggestions] = useState<number[]>([]);
-  const [saving, setSaving] = useState(false);
-  const [timerSec, setTimerSec] = useState<number | null>(null);
-
-  const credits = useLiveQuery(() => db.muscleCredits.where('exerciseId').equals(exercise.id).toArray(), [exercise.id]);
-  const primaryMuscles = credits?.filter((c) => c.credit >= 0.8).map((c) => c.muscle) ?? [];
-  const secondaryMuscles = credits?.filter((c) => c.credit < 0.8).map((c) => c.muscle) ?? [];
-
-  const setNo = attempts.length + 1;
-  const isLast = setNo === CALIB.setsPerExercise;
-
-  // カウントダウンタイマー処理
-  useEffect(() => {
-    if (timerSec === null || timerSec <= 0) return;
-    const interval = setInterval(() => {
-      setTimerSec((prev) => (prev && prev > 1 ? prev - 1 : null));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [timerSec]);
-
-  const lastSuggestion = useMemo(() => {
-    if (attempts.length === 0) return null;
-    return suggestNext(exercise, attempts[attempts.length - 1]);
-  }, [attempts, exercise]);
-
-  const step = exercise.increment === 0 ? 0 : effectiveIncrement(exercise, weight);
-
-  const handleNext = async () => {
-    const attempt: Attempt = { setNo, weight, reps, rir };
-    const next = [...attempts, attempt];
-    setAttempts(next);
-    setSuggestions([...suggestions, weight]);
-
-    if (next.length < CALIB.setsPerExercise) {
-      const s = suggestNext(exercise, attempt);
-      setWeight(s.weight);
-      setReps(s.targetReps);
-      setRir(2);
-
-      // セット1・セット2完了時に動的インターバルタイマーを起動[cite: 1]
-      const optimalRest = calculateOptimalRestSec(exercise, rir);
-      setTimerSec(optimalRest);
-      return;
-    }
-
-    setSaving(true);
-    const baseline = finalizeBaseline(exercise, next);
-    const sessionId = await getOrCreateCalibrationSession(split);
-    await saveCalibrationResult({
-      sessionId,
-      exercise,
-      attempts: next,
-      suggestions: [...suggestions, weight],
-      baseline,
-    });
-    fireNeonConfetti();
-    setSaving(false);
-    onClose();
-  };
-
-  return (
-    <div className="page wizard">
-      <header className="hdr">
-        <button className="back" onClick={onClose}>‹ 戻る</button>
-        <h2>{exercise.name}</h2>
-        <p className="sub">
-          Set {setNo} / {CALIB.setsPerExercise} ・ 目標 {exercise.repRange[0]}–{exercise.repRange[1]} reps
-        </p>
-      </header>
-
-      {/* 🤖 AIトレーナー4ステップ解説ガイド */}
-      <TrainerGuide exercise={exercise} />
-
-      {/* 筋肉発光ネオンアナトミーマップ */}
-      <BodyAnatomy primaryMuscles={primaryMuscles} secondaryMuscles={secondaryMuscles} />
-
-      {/* インターバルカウントダウンタイマー表示エリア[cite: 1] */}
-      {timerSec !== null && (
-        <div className="hint converged" style={{ textAlign: 'center', fontSize: '20px', fontWeight: 'bold', margin: '12px 0' }}>
-          ⏱ 推奨インターバル: {Math.floor(timerSec / 60)}分 {String(timerSec % 60).padStart(2, '0')}秒
-        </div>
-      )}
-
-      {lastSuggestion && (
-        <div className={`hint ${lastSuggestion.verdict}`}>
-          <p>{lastSuggestion.message}</p>
-          <p className="mono">推定1RM {lastSuggestion.est1rm} kg</p>
-          {lastSuggestion.repProgressionOnly && exercise.increment > 0 && (
-            <p className="mono warn">
-              ▲ 刻み {inc}kg が重量比4%超。以降はレップ漸進で管理します
-            </p>
-          )}
-        </div>
-      )}
-
-      {exercise.increment > 0 && (
-        <section className="field">
-          <label>重量</label>
-          <div className="stepper">
-            <button onClick={() => setWeight((w) => Math.max(step, w - step))}>−</button>
-            <span className="value">{formatWeight(weight, exercise)}</span>
-            <button onClick={() => setWeight((w) => w + step)}>＋</button>
-          </div>
-          <p className="mono sub">刻み {step} kg</p>
-        </section>
-      )}
-
-      <section className="field">
-        <label>実施レップ数</label>
-        <div className="stepper">
-          <button onClick={() => setReps((r) => Math.max(1, r - 1))}>−</button>
-          <span className="value">{reps} reps</span>
-          <button onClick={() => setReps((r) => r + 1)}>＋</button>
-        </div>
-      </section>
-
-      <section className="field">
-        <label>RIR（あと何回挙がったか）</label>
-        <div className="rir">
-          {[0, 1, 2, 3, 4].map((v) => (
-            <button
-              key={v}
-              className={`rir-btn ${rir === v ? 'on' : ''}`}
-              onClick={() => setRir(v)}
-            >
-              {v === 4 ? '4+' : v}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {attempts.length > 0 && (
-        <section className="log">
-          <h3>記録済み</h3>
-          {attempts.map((a) => (
-            <p key={a.setNo} className="mono">
-              Set{a.setNo}: {a.weight}kg × {a.reps} (RIR {a.rir >= 4 ? '4+' : a.rir})
-            </p>
-          ))}
-        </section>
-      )}
-
-      <button className="btn primary big" onClick={handleNext} disabled={saving}>
-        {saving ? '保存中…' : isLast ? 'ベースラインを確定' : `Set ${setNo} を記録して次へ`}
-      </button>
-    </div>
-  );
-}
-
-function guessInitial(ex: Exercise): number {
-  switch (ex.equipment) {
-    case 'dumbbell': return ex.type === 'isolation' ? 8 : 12;
-    case 'cable': return ex.type === 'isolation' ? 10 : 30;
-    case 'machine': return ex.type === 'isolation' ? 20 : 35;
-    case 'plate': return 20;
-    case 'barbell': return 40;
-    case 'smith': return 20;
-    default: return 0;
-  }
 }

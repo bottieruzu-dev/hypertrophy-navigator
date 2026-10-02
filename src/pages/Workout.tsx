@@ -10,6 +10,7 @@ import { TrainerGuide } from '../components/TrainerGuide';
 import { CALIBRATION_PLAN } from '../db/queries/calibration';
 import { fireNeonConfetti, ACHIEVEMENTS, type Achievement } from '../engine/achievements';
 import { LevelUpModal } from '../components/LevelUpModal';
+import { saveWorkoutSession } from '../db/queries/workout';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
 import { motion } from 'framer-motion';
@@ -66,7 +67,7 @@ export default function Workout() {
         >
           {exercises.map((ex) => (
             <SwiperSlide key={ex.id}>
-              <LoggerSection exercise={ex} />
+              <LoggerSection exercise={ex} split={split} />
             </SwiperSlide>
           ))}
         </Swiper>
@@ -75,7 +76,7 @@ export default function Workout() {
   );
 }
 
-function LoggerSection({ exercise }: { exercise: Exercise }) {
+function LoggerSection({ exercise, split }: { exercise: Exercise; split: SplitType }) {
   const baseline = useLiveQuery(() => db.baselines.get(exercise.id), [exercise.id]);
   const historySets = useLiveQuery(
     () => db.sets.where('exerciseId').equals(exercise.id).reverse().toArray(),
@@ -121,7 +122,7 @@ function LoggerSection({ exercise }: { exercise: Exercise }) {
     const presc = prescribeNextLoad({ weight, reps, rir }, exercise);
     const addedVolume = Number((weight * reps).toFixed(1));
 
-    await db.sets.add({
+    const setData = {
       sessionId: 1,
       exerciseId: exercise.id,
       date,
@@ -134,9 +135,27 @@ function LoggerSection({ exercise }: { exercise: Exercise }) {
       actualRir: rir,
       volumeLoad: addedVolume,
       est1rm: Number((weight * (1 + (reps + rir) / 30)).toFixed(1)),
-      isWarmup: 0,
+      isWarmup: 0 as const,
       mode: presc.mode,
-    });
+    };
+
+    // 1. ローカル DB (IndexedDB) に追加
+    const setId = await db.sets.add(setData);
+
+    // 2. Supabase へ自動同期（バックグラウンド保存）
+    saveWorkoutSession(
+      {
+        id: 1,
+        date,
+        startedAt: Date.now(),
+        splitType: split,
+        prsScore: null,
+        sleepHours: null,
+        mesocycleWeek: 1,
+        isDeload: 0,
+      },
+      [{ ...setData, id: Number(setId) }]
+    ).catch((err) => console.error('Supabase自動同期失敗:', err));
 
     fireNeonConfetti();
 

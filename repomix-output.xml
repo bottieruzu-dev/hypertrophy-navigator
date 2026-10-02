@@ -62,6 +62,7 @@ src/
       nutrition.ts
       supabaseMigration.ts
       weeklyCredit.ts
+      workout.ts
     seed/
       exercises.ts
       foods.ts
@@ -97,7 +98,6 @@ index.html
 package.json
 README.md
 repomix実行.bat
-supabaseMigration.ts
 tsconfig.app.json
 tsconfig.json
 tsconfig.node.json
@@ -109,138 +109,150 @@ vite.config.ts
 <files>
 This section contains the contents of the repository's files.
 
-<file path="src/db/queries/supabaseMigration.ts">
-import { db } from '../db';
+<file path="src/db/queries/workout.ts">
 import { supabase } from '../../lib/supabase';
-import type {
-  ExerciseBaseline,
-  SessionRecord,
-  SetRecord,
-  BodyMetric,
-  NutritionLog,
-} from '../types';
+import type { ExerciseBaseline, SessionRecord, SetRecord } from '../types';
 
-export async function migrateLocalDataToSupabase(): Promise<{ success: boolean; message: string }> {
-  try {
-    // 1. ベースラインデータの移行
-    const baselines: ExerciseBaseline[] = await db.baselines.toArray();
-    if (baselines.length > 0) {
-      const payload = baselines.map((b: ExerciseBaseline) => ({
-        exercise_id: b.exerciseId,
-        weight_kg: b.weightKg,
-        reps: b.reps,
-        rir: b.rir,
-        est1rm: b.est1rm,
-        calibrated_at: b.calibratedAt,
-      }));
-      const { error } = await supabase.from('baselines').upsert(payload, { onConflict: 'exercise_id' });
-      if (error) throw error;
-    }
+// ==========================================
+// 1. ベースライン（キャリブレーション記録）
+// ==========================================
 
-    // 2. セッション記録の移行
-    const sessions: SessionRecord[] = await db.sessions.toArray();
-    if (sessions.length > 0) {
-      const payload = sessions.map((s: SessionRecord) => ({
-        id: s.id,
-        date: s.date,
-        started_at: s.startedAt,
-        finished_at: s.finishedAt,
-        split_type: s.splitType,
-        prs_score: s.prsScore,
-        sleep_hours: s.sleepHours,
-        mesocycle_week: s.mesocycleWeek,
-        is_deload: s.isDeload,
-        est_minutes: s.estMinutes,
-        note: s.note,
-      }));
-      const { error } = await supabase.from('sessions').upsert(payload, { onConflict: 'id' });
-      if (error) throw error;
-    }
+/** Supabase から全ベースラインを取得 */
+export async function fetchBaselines(): Promise<ExerciseBaseline[]> {
+  const { data, error } = await supabase
+    .from('baselines')
+    .select('*');
 
-    // 3. セット記録の移行
-    const sets: SetRecord[] = await db.sets.toArray();
-    if (sets.length > 0) {
-      const payload = sets.map((s: SetRecord) => ({
-        id: s.id,
-        session_id: s.sessionId,
-        exercise_id: s.exerciseId,
-        date: s.date,
-        set_order: s.setOrder,
-        target_weight: s.targetWeight,
-        actual_weight: s.actualWeight,
-        target_reps: s.targetReps,
-        actual_reps: s.actualReps,
-        target_rir: s.targetRir,
-        actual_rir: s.actualRir,
-        volume_load: s.volumeLoad,
-        est1rm: s.est1rm,
-        is_warmup: s.isWarmup,
-        mode: s.mode,
-      }));
-      const { error } = await supabase.from('sets').upsert(payload, { onConflict: 'id' });
-      if (error) throw error;
-    }
-
-    // 4. 体組成記録の移行
-    const bodyMetrics: BodyMetric[] = await db.bodyMetrics.toArray();
-    if (bodyMetrics.length > 0) {
-      const payload = bodyMetrics.map((b: BodyMetric) => ({
-        date: b.date,
-        weight_kg: b.weightKg,
-        body_fat_pct: b.bodyFatPct,
-        ffm_kg: b.ffmKg,
-        weight_ma7: b.weightMa7,
-        ffm_ma30: b.ffmMa30,
-        waist_cm: b.waistCm,
-        shoulder_cm: b.shoulderCm,
-        chest_cm: b.chestCm,
-        arm_cm: b.armCm,
-        thigh_cm: b.thighCm,
-        v_taper_ratio: b.vTaperRatio,
-        v_taper_ma7: b.vTaperMa7,
-        sleep_hours: b.sleepHours,
-        prs_score: b.prsScore,
-        is_interpolated: b.isInterpolated,
-      }));
-      const { error } = await supabase.from('body_metrics').upsert(payload, { onConflict: 'date' });
-      if (error) throw error;
-    }
-
-    // 5. 栄養ログの移行
-    const nutritionLogs: NutritionLog[] = await db.nutritionLogs.toArray();
-    if (nutritionLogs.length > 0) {
-      const payload = nutritionLogs.map((n: NutritionLog) => ({
-        date: n.date,
-        estimated_tdee: n.estimatedTdee,
-        target_kcal: n.targetKcal,
-        target_p: n.targetP,
-        target_f: n.targetF,
-        target_c: n.targetC,
-        protein_coef: n.proteinCoef,
-        is_refeed: n.isRefeed,
-        is_diet_break: n.isDietBreak,
-        protein_checked_g: n.proteinCheckedG,
-      }));
-      const { error } = await supabase.from('nutrition_logs').upsert(payload, { onConflict: 'date' });
-      if (error) throw error;
-    }
-
-    return { success: true, message: 'ローカルデータをSupabaseへ無事移行しました！' };
-  } catch (err: unknown) {
-    console.error('Supabase移行エラー:', err);
-    const msg = err instanceof Error ? err.message : String(err);
-    return { success: false, message: `移行失敗: ${msg}` };
+  if (error) {
+    console.error('ベースライン取得エラー:', error);
+    return [];
   }
+
+  return (data || []).map((row) => ({
+    exerciseId: row.exercise_id,
+    weightKg: Number(row.weight_kg),
+    reps: Number(row.reps),
+    rir: Number(row.rir),
+    est1rm: Number(row.est1rm),
+    calibratedAt: row.calibrated_at,
+  }));
 }
-</file>
 
-<file path="src/lib/supabase.ts">
-import { createClient } from '@supabase/supabase-js';
+/** ベースラインを 1 件保存・更新 */
+export async function saveBaseline(baseline: ExerciseBaseline): Promise<boolean> {
+  const payload = {
+    exercise_id: baseline.exerciseId,
+    weight_kg: baseline.weightKg,
+    reps: baseline.reps,
+    rir: baseline.rir,
+    est1rm: baseline.est1rm,
+    calibrated_at: baseline.calibratedAt || new Date().toISOString(),
+  };
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+  const { error } = await supabase
+    .from('baselines')
+    .upsert(payload, { onConflict: 'exercise_id' });
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  if (error) {
+    console.error('ベースライン保存エラー:', error);
+    return false;
+  }
+  return true;
+}
+
+// ==========================================
+// 2. ワークアウト（セッション & セット記録）
+// ==========================================
+
+/** ワークアウト（セッションと全セット）を自動保存 */
+export async function saveWorkoutSession(
+  session: SessionRecord,
+  sets: SetRecord[]
+): Promise<boolean> {
+  // 1. セッション本体の保存
+  const sessionPayload = {
+    id: session.id,
+    date: session.date,
+    started_at: session.startedAt,
+    finished_at: session.finishedAt,
+    split_type: session.splitType,
+    prs_score: session.prsScore,
+    sleep_hours: session.sleepHours,
+    mesocycle_week: session.mesocycleWeek,
+    is_deload: session.isDeload,
+    est_minutes: session.estMinutes,
+    note: session.note,
+  };
+
+  const { error: sessionError } = await supabase
+    .from('sessions')
+    .upsert(sessionPayload, { onConflict: 'id' });
+
+  if (sessionError) {
+    console.error('セッション保存エラー:', sessionError);
+    return false;
+  }
+
+  // 2. セット記録の保存
+  if (sets.length > 0) {
+    const setsPayload = sets.map((s) => ({
+      id: s.id,
+      session_id: s.sessionId,
+      exercise_id: s.exerciseId,
+      date: s.date,
+      set_order: s.setOrder,
+      target_weight: s.targetWeight,
+      actual_weight: s.actualWeight,
+      target_reps: s.targetReps,
+      actual_reps: s.actualReps,
+      target_rir: s.targetRir,
+      actual_rir: s.actualRir,
+      volume_load: s.volumeLoad,
+      est1rm: s.est1rm,
+      is_warmup: s.isWarmup,
+      mode: s.mode,
+    }));
+
+    const { error: setsError } = await supabase
+      .from('sets')
+      .upsert(setsPayload, { onConflict: 'id' });
+
+    if (setsError) {
+      console.error('セット保存エラー:', setsError);
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/** 最近のセッション履歴を取得 */
+export async function fetchRecentSessions(limit = 20): Promise<SessionRecord[]> {
+  const { data, error } = await supabase
+    .from('sessions')
+    .select('*')
+    .order('date', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('セッション取得エラー:', error);
+    return [];
+  }
+
+  return (data || []).map((row) => ({
+    id: row.id,
+    date: row.date,
+    startedAt: row.started_at,
+    finishedAt: row.finished_at,
+    splitType: row.split_type,
+    prsScore: row.prs_score,
+    sleepHours: row.sleep_hours,
+    mesocycleWeek: row.mesocycle_week,
+    isDeload: row.is_deload,
+    estMinutes: row.est_minutes,
+    note: row.note,
+  }));
+}
 </file>
 
 <file path="repomix実行.bat">
@@ -248,123 +260,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 cd /d "%~dp0"
 npx repomix
 pause
-</file>
-
-<file path="supabaseMigration.ts">
-import { db } from '../db';
-import { supabase } from '../../lib/supabase';
-
-export async function migrateLocalDataToSupabase(): Promise<{ success: boolean; message: string }> {
-  try {
-    // 1. ベースラインデータの移行
-    const baselines = await db.baselines.toArray();
-    if (baselines.length > 0) {
-      const payload = baselines.map((b) => ({
-        exercise_id: b.exerciseId,
-        weight_kg: b.weightKg,
-        reps: b.reps,
-        rir: b.rir,
-        est1rm: b.est1rm,
-        calibrated_at: b.calibratedAt,
-      }));
-      const { error } = await supabase.from('baselines').upsert(payload, { onConflict: 'exercise_id' });
-      if (error) throw error;
-    }
-
-    // 2. セッション記録の移行
-    const sessions = await db.sessions.toArray();
-    if (sessions.length > 0) {
-      const payload = sessions.map((s) => ({
-        id: s.id,
-        date: s.date,
-        started_at: s.startedAt,
-        finished_at: s.finishedAt,
-        split_type: s.splitType,
-        prs_score: s.prsScore,
-        sleep_hours: s.sleepHours,
-        mesocycle_week: s.mesocycleWeek,
-        is_deload: s.isDeload,
-        est_minutes: s.estMinutes,
-        note: s.note,
-      }));
-      const { error } = await supabase.from('sessions').upsert(payload, { onConflict: 'id' });
-      if (error) throw error;
-    }
-
-    // 3. セット記録の移行
-    const sets = await db.sets.toArray();
-    if (sets.length > 0) {
-      const payload = sets.map((s) => ({
-        id: s.id,
-        session_id: s.sessionId,
-        exercise_id: s.exerciseId,
-        date: s.date,
-        set_order: s.setOrder,
-        target_weight: s.targetWeight,
-        actual_weight: s.actualWeight,
-        target_reps: s.targetReps,
-        actual_reps: s.actualReps,
-        target_rir: s.targetRir,
-        actual_rir: s.actualRir,
-        volume_load: s.volumeLoad,
-        est1rm: s.est1rm,
-        is_warmup: s.isWarmup,
-        mode: s.mode,
-      }));
-      const { error } = await supabase.from('sets').upsert(payload, { onConflict: 'id' });
-      if (error) throw error;
-    }
-
-    // 4. 体組成記録の移行
-    const bodyMetrics = await db.bodyMetrics.toArray();
-    if (bodyMetrics.length > 0) {
-      const payload = bodyMetrics.map((b) => ({
-        date: b.date,
-        weight_kg: b.weightKg,
-        body_fat_pct: b.bodyFatPct,
-        ffm_kg: b.ffmKg,
-        weight_ma7: b.weightMa7,
-        ffm_ma30: b.ffmMa30,
-        waist_cm: b.waistCm,
-        shoulder_cm: b.shoulderCm,
-        chest_cm: b.chestCm,
-        arm_cm: b.armCm,
-        thigh_cm: b.thighCm,
-        v_taper_ratio: b.vTaperRatio,
-        v_taper_ma7: b.vTaperMa7,
-        sleep_hours: b.sleepHours,
-        prs_score: b.prsScore,
-        is_interpolated: b.isInterpolated,
-      }));
-      const { error } = await supabase.from('body_metrics').upsert(payload, { onConflict: 'date' });
-      if (error) throw error;
-    }
-
-    // 5. 栄養ログの移行
-    const nutritionLogs = await db.nutritionLogs.toArray();
-    if (nutritionLogs.length > 0) {
-      const payload = nutritionLogs.map((n) => ({
-        date: n.date,
-        estimated_tdee: n.estimatedTdee,
-        target_kcal: n.targetKcal,
-        target_p: n.targetP,
-        target_f: n.targetF,
-        target_c: n.targetC,
-        protein_coef: n.proteinCoef,
-        is_refeed: n.isRefeed,
-        is_diet_break: n.isDietBreak,
-        protein_checked_g: n.proteinCheckedG,
-      }));
-      const { error } = await supabase.from('nutrition_logs').upsert(payload, { onConflict: 'date' });
-      if (error) throw error;
-    }
-
-    return { success: true, message: 'ローカルデータをSupabaseへ無事移行しました！' };
-  } catch (err: any) {
-    console.error('Supabase移行エラー:', err);
-    return { success: false, message: `移行失敗: ${err.message || String(err)}` };
-  }
-}
 </file>
 
 <file path="ローカル起動.bat">
@@ -545,134 +440,6 @@ export async function saveBodyMetric(input: {
 }
 </file>
 
-<file path="src/db/queries/calibration.ts">
-import { db } from '../db';
-import type { SplitType, Exercise, ExerciseBaseline } from '../types';
-import { finalizeBaseline } from '../../engine/calibration';
-
-/** 
- * CALIBRATION_PLAN 
- * 同一器具（ケーブル等）を連続して使用できるようID配置を整理[cite: 1]
- * upper_B に 37(バーベルベンチプレス) を追加[cite: 1]
- */
-export const CALIBRATION_PLAN: Record<SplitType, number[]> = {
-  upper_A: [12, 10, 2, 6, 1, 8, 9, 11, 25, 14],
-  lower: [29, 30, 33, 34, 31, 32, 27],
-  upper_B: [37, 18, 5, 4, 21, 23, 24, 26, 7],
-};
-
-export const CALIBRATION_TOTAL = Object.values(CALIBRATION_PLAN)
-  .reduce((s, arr) => s + arr.length, 0);
-
-/** 器具(equipment)順にソートして返却する[cite: 1] */
-export async function getCalibrationExercises(split: SplitType): Promise<Exercise[]> {
-  const ids = CALIBRATION_PLAN[split];
-  const list = await db.exercises.bulkGet(ids);
-  const available = list.filter((e): e is Exercise => !!e && e.isAvailable === 1);
-
-  // 器具の優先並び順マップ (cable -> dumbbell -> machine -> barbell -> plate -> bodyweight)[cite: 1]
-  const equipmentOrder: Record<string, number> = {
-    cable: 1,
-    dumbbell: 2,
-    machine: 3,
-    barbell: 4,
-    plate: 5,
-    smith: 6,
-    bodyweight: 7,
-  };
-
-  return available.sort((a, b) => 
-    (equipmentOrder[a.equipment] ?? 99) - (equipmentOrder[b.equipment] ?? 99)
-  );
-}
-
-export async function getBaselineMap(): Promise<Map<number, ExerciseBaseline>> {
-  const all = await db.baselines.toArray();
-  return new Map(all.map((b) => [b.exerciseId, b]));
-}
-
-export async function getOrCreateCalibrationSession(split: SplitType): Promise<number> {
-  const date = new Date().toISOString().slice(0, 10);
-  const existing = await db.sessions
-    .where('date').equals(date)
-    .filter((s) => s.splitType === split && s.mesocycleWeek === 0)
-    .first();
-  if (existing?.id) return existing.id;
-
-  return db.sessions.add({
-    date,
-    startedAt: Date.now(),
-    splitType: split,
-    prsScore: null,
-    sleepHours: null,
-    mesocycleWeek: 0,
-    isDeload: 0,
-    note: 'Week 0 calibration',
-  });
-}
-
-export async function saveCalibrationResult(params: {
-  sessionId: number;
-  exercise: Exercise;
-  attempts: { setNo: number; weight: number; reps: number; rir: number }[];
-  suggestions: number[];
-  baseline: ReturnType<typeof finalizeBaseline>;
-}) {
-  const { sessionId, exercise, attempts, suggestions, baseline } = params;
-  const date = new Date().toISOString().slice(0, 10);
-
-  await db.transaction('rw', [db.sets, db.baselines, db.events, db.settings], async () => {
-    await db.sets.bulkAdd(
-      attempts.map((a, i) => ({
-        sessionId,
-        exerciseId: exercise.id,
-        date,
-        setOrder: a.setNo,
-        targetWeight: suggestions[i] ?? a.weight,
-        actualWeight: a.weight,
-        targetReps: baseline.reps,
-        actualReps: a.reps,
-        targetRir: 2,
-        actualRir: a.rir,
-        volumeLoad: Number((a.weight * a.reps).toFixed(1)),
-        est1rm: Number(
-          (a.weight * (1 + (a.reps + (a.rir >= 4 ? 5 : a.rir)) / 30)).toFixed(1)
-        ),
-        isWarmup: 0 as const,
-        mode: 'calibration' as const,
-      }))
-    );
-
-    await db.baselines.put({
-      exerciseId: exercise.id,
-      weightKg: baseline.weightKg,
-      reps: baseline.reps,
-      rir: baseline.rir,
-      est1rm: baseline.est1rm,
-      calibratedAt: baseline.calibratedAt,
-    });
-
-    await db.events.add({
-      date,
-      createdAt: Date.now(),
-      eventType: 'calibration_done',
-      triggerReason: `${exercise.name} baseline確定`,
-      payload: { ...baseline },
-      acknowledged: 0,
-    });
-  });
-
-  const done = await db.baselines.count();
-  if (done >= CALIBRATION_TOTAL) {
-    await db.settings.bulkPut([
-      { key: 'calibrationDone', value: true },
-      { key: 'programStartDate', value: date },
-      { key: 'currentMesocycleWeek', value: 1 },
-    ]);
-  }
-}
-</file>
-
 <file path="src/db/queries/nutrition.ts">
 import { db } from '../db';
 import type { NutritionLog } from '../types';
@@ -782,105 +549,6 @@ function toISODate(d: Date): string {
 function round1(n: number): number {
   return Math.round(n * 10) / 10;
 }
-</file>
-
-<file path="src/db/seed/exercises.ts">
-import type { Exercise } from '../types';
-
-export const EXERCISES: Exercise[] = [
-  { id: 1,  name: 'ダンベルラテラルレイズ',            equipment: 'dumbbell',   type: 'isolation', increment: 1.0,  restSec: 75,  silhouetteTag: 'priority',  repRange: [10, 15], isAvailable: 1, note: '最優先。1kg刻みで微増可' },
-  { id: 2,  name: 'ケーブルラテラルレイズ(DAP)',        equipment: 'cable',      type: 'isolation', increment: 2.5,  restSec: 75,  silhouetteTag: 'priority',  repRange: [10, 15], isAvailable: 1, note: '張力一定。片側ずつ' },
-  { id: 3,  name: 'マシンラテラルレイズ(デルツ)',        equipment: 'machine',    type: 'isolation', increment: 5.0,  restSec: 75,  silhouetteTag: 'priority',  repRange: [10, 15], isAvailable: 1, note: '追い込み用' },
-  { id: 4,  name: 'ショルダープレス(マシン)',           equipment: 'machine',    type: 'compound',  increment: 5.0,  restSec: 150, silhouetteTag: 'neutral',   repRange: [6, 10],  isAvailable: 1, note: '前部主働' },
-  { id: 5,  name: 'ダンベルショルダープレス',           equipment: 'dumbbell',   type: 'compound',  increment: 2.5,  restSec: 150, silhouetteTag: 'neutral',   repRange: [6, 10],  isAvailable: 1 },
-  { id: 6,  name: 'リバースフライ(マシン)',            equipment: 'machine',    type: 'isolation', increment: 5.0,  restSec: 75,  silhouetteTag: 'neutral',   repRange: [12, 15], isAvailable: 1, note: '後部' },
-  { id: 7,  name: 'ケーブルリアデルト(DAP)',           equipment: 'cable',      type: 'isolation', increment: 2.5,  restSec: 75,  silhouetteTag: 'neutral',   repRange: [12, 15], isAvailable: 1 },
-  { id: 8,  name: 'インクラインダンベルカール',         equipment: 'dumbbell',   type: 'isolation', increment: 1.0,  restSec: 75,  silhouetteTag: 'priority',  repRange: [10, 14], isAvailable: 1, note: '長頭ストレッチ位' },
-  { id: 9,  name: 'プリーチャーカール',                equipment: 'dumbbell',   type: 'isolation', increment: 1.0,  restSec: 75,  silhouetteTag: 'priority',  repRange: [10, 14], isAvailable: 1, note: '短頭収縮位' },
-  { id: 10, name: 'ケーブルカール(DAP)',              equipment: 'cable',      type: 'isolation', increment: 2.5,  restSec: 75,  silhouetteTag: 'priority',  repRange: [10, 14], isAvailable: 1, note: '張力一定' },
-  { id: 11, name: 'ハンマーカール',                    equipment: 'dumbbell',   type: 'isolation', increment: 1.0,  restSec: 75,  silhouetteTag: 'neutral',   repRange: [10, 14], isAvailable: 1, note: '上腕筋・前腕' },
-  { id: 12, name: 'ラットプルダウン',                  equipment: 'cable',      type: 'compound',  increment: 5.0,  restSec: 150, silhouetteTag: 'neutral',   repRange: [8, 12],  isAvailable: 1, note: 'V字の要' },
-  { id: 13, name: 'バーティカルトラクション',           equipment: 'machine',    type: 'compound',  increment: 5.0,  restSec: 150, silhouetteTag: 'neutral',   repRange: [8, 12],  isAvailable: 1, note: 'ラットプル代替' },
-  { id: 14, name: 'シーテッドロウ(プレートロード)',      equipment: 'plate',      type: 'compound',  increment: 1.25, restSec: 150, silhouetteTag: 'neutral',   repRange: [8, 12],  isAvailable: 1, note: '片側1.25kgプレート' },
-  { id: 15, name: 'ハイロウ(プレートロード)',          equipment: 'plate',      type: 'compound',  increment: 1.25, restSec: 150, silhouetteTag: 'neutral',   repRange: [8, 12],  isAvailable: 1, note: '上背部' },
-  { id: 16, name: 'ティーバーロウ(プレートロード)',      equipment: 'plate',      type: 'compound',  increment: 1.25, restSec: 150, silhouetteTag: 'neutral',   repRange: [8, 12],  isAvailable: 1, note: '僧帽中部' },
-  { id: 17, name: 'ストレートアームプルダウン',         equipment: 'cable',      type: 'isolation', increment: 2.5,  restSec: 75,  silhouetteTag: 'neutral',   repRange: [12, 15], isAvailable: 1, note: '広背筋アイソレート' },
-  { id: 18, name: 'インクラインダンベルプレス',         equipment: 'dumbbell',   type: 'compound',  increment: 2.5,  restSec: 150, silhouetteTag: 'neutral',   repRange: [8, 12],  isAvailable: 1, note: '30度固定。上部のみ' },
-  { id: 19, name: 'インクラインチェストプレス(PL)',     equipment: 'plate',      type: 'compound',  increment: 1.25, restSec: 150, silhouetteTag: 'neutral',   repRange: [8, 12],  isAvailable: 1 },
-  { id: 20, name: 'ケーブルローフライ(DAP)',          equipment: 'cable',      type: 'isolation', increment: 2.5,  restSec: 75,  silhouetteTag: 'neutral',   repRange: [12, 15], isAvailable: 1, note: '下から上への軌道で上部狙い' },
-  { id: 21, name: 'チェストプレス(マシン)',            equipment: 'machine',    type: 'compound',  increment: 5.0,  restSec: 150, silhouetteTag: 'suppress',  repRange: [8, 12],  isAvailable: 1, note: '中部維持。下限のみ' },
-  { id: 22, name: 'ディップス(チンディップ)',          equipment: 'bodyweight', type: 'compound',  increment: 2.5,  restSec: 150, silhouetteTag: 'suppress',  repRange: [8, 12],  isAvailable: 0, note: '下部関与大。既定では無効' },
-  { id: 23, name: 'ケーブルプレスダウン',              equipment: 'cable',      type: 'isolation', increment: 2.5,  restSec: 75,  silhouetteTag: 'neutral',   repRange: [10, 15], isAvailable: 1 },
-  { id: 24, name: 'オーバーヘッドエクステンション(DAP)', equipment: 'cable',      type: 'isolation', increment: 2.5,  restSec: 75,  silhouetteTag: 'neutral',   repRange: [10, 15], isAvailable: 1, note: '三頭長頭' },
-  { id: 25, name: 'アブドミナルクランチ(マシン)',       equipment: 'machine',    type: 'core',      increment: 5.0,  restSec: 60,  silhouetteTag: 'priority',  repRange: [12, 20], isAvailable: 1, note: '漸進負荷可' },
-  { id: 26, name: 'ケーブルクランチ',                  equipment: 'cable',      type: 'core',      increment: 2.5,  restSec: 60,  silhouetteTag: 'priority',  repRange: [12, 20], isAvailable: 1 },
-  { id: 27, name: 'ハンギングレッグレイズ',            equipment: 'bodyweight', type: 'core',      increment: 0,    restSec: 60,  silhouetteTag: 'priority',  repRange: [10, 20], isAvailable: 1, note: '下腹部。レップ漸進のみ' },
-  { id: 28, name: 'ロータリートルソー',               equipment: 'machine',    type: 'core',      increment: 5.0,  restSec: 60,  silhouetteTag: 'forbidden', repRange: [12, 20], isAvailable: 0, note: '腹斜筋肥大。使用禁止' },
-  { id: 29, name: 'レッグカール',                     equipment: 'machine',    type: 'isolation', increment: 5.0,  restSec: 90,  silhouetteTag: 'neutral',   repRange: [10, 15], isAvailable: 1 },
-  { id: 30, name: 'プローンレッグカール',              equipment: 'machine',    type: 'isolation', increment: 5.0,  restSec: 90,  silhouetteTag: 'neutral',   repRange: [10, 15], isAvailable: 1 },
-  { id: 31, name: 'ヒップスラスト',                    equipment: 'barbell',    type: 'compound',  increment: 2.5,  restSec: 150, silhouetteTag: 'neutral',   repRange: [8, 12],  isAvailable: 1, note: 'ウエスト無影響' },
-  { id: 32, name: 'レッグプレス(足位置ハイ)',          equipment: 'machine',    type: 'compound',  increment: 5.0,  restSec: 150, silhouetteTag: 'suppress',  repRange: [10, 15], isAvailable: 1, note: '四頭抑制・臀ハム寄り' },
-  { id: 33, name: 'レッグエクステンション',            equipment: 'machine',    type: 'isolation', increment: 5.0,  restSec: 90,  silhouetteTag: 'suppress',  repRange: [12, 15], isAvailable: 1, note: '四頭下限維持のみ' },
-  { id: 34, name: 'ローワーバック',                    equipment: 'machine',    type: 'isolation', increment: 5.0,  restSec: 90,  silhouetteTag: 'neutral',   repRange: [12, 15], isAvailable: 1 },
-  { id: 35, name: 'アブダクター',                     equipment: 'machine',    type: 'isolation', increment: 5.0,  restSec: 60,  silhouetteTag: 'optional',  repRange: [12, 20], isAvailable: 1, note: '中臀筋' },
-  { id: 36, name: 'カーフレイズ(スミス)',              equipment: 'smith',      type: 'isolation', increment: 2.5,  restSec: 60,  silhouetteTag: 'optional',  repRange: [12, 20], isAvailable: 1, note: '予算余剰時のみ' },
-  { id: 37, name: 'バーベルベンチプレス',              equipment: 'barbell',    type: 'compound',  increment: 2.5,  restSec: 180, silhouetteTag: 'neutral',   repRange: [6, 10],  isAvailable: 1, note: '胸・肩前部・三頭コンパウンド基本種目' },
-];
-</file>
-
-<file path="src/db/seed/muscleCredits.ts">
-import type { MuscleCredit, MuscleCode } from '../types';
-
-type CreditSpec = Record<number, Partial<Record<MuscleCode, 1.0 | 0.5 | 0.3>>>;
-
-const SPEC: CreditSpec = {
-  1:  { delt_lateral: 1.0, delt_front: 0.3, traps_upper: 0.3 },
-  2:  { delt_lateral: 1.0, traps_upper: 0.3 },
-  3:  { delt_lateral: 1.0, traps_upper: 0.3 },
-  4:  { delt_front: 1.0, delt_lateral: 0.5, triceps: 0.5, chest_upper: 0.3 },
-  5:  { delt_front: 1.0, delt_lateral: 0.5, triceps: 0.5, traps_upper: 0.3 },
-  6:  { delt_rear: 1.0, traps_mid: 0.5 },
-  7:  { delt_rear: 1.0, traps_mid: 0.3 },
-  8:  { biceps_long: 1.0, biceps_short: 0.5, brachialis: 0.3 },
-  9:  { biceps_short: 1.0, biceps_long: 0.5, brachialis: 0.3 },
-  10: { biceps_short: 1.0, biceps_long: 0.5, brachialis: 0.3 },
-  11: { brachialis: 1.0, biceps_long: 0.5, biceps_short: 0.3 },
-  12: { lat: 1.0, biceps_long: 0.5, traps_mid: 0.3, delt_rear: 0.3 },
-  13: { lat: 1.0, biceps_long: 0.5, traps_mid: 0.3 },
-  14: { lat: 1.0, traps_mid: 0.5, delt_rear: 0.3, biceps_long: 0.3, erector: 0.3 },
-  15: { traps_mid: 1.0, lat: 0.5, delt_rear: 0.5, biceps_long: 0.3 },
-  16: { traps_mid: 1.0, lat: 0.5, erector: 0.5, delt_rear: 0.3, biceps_long: 0.3 },
-  17: { lat: 1.0, triceps: 0.3, abs_rectus: 0.3 },
-  18: { chest_upper: 1.0, delt_front: 0.5, triceps: 0.5, chest_mid: 0.3 },
-  19: { chest_upper: 1.0, delt_front: 0.5, triceps: 0.5, chest_mid: 0.3 },
-  20: { chest_upper: 1.0, delt_front: 0.3 },
-  21: { chest_mid: 1.0, chest_lower: 0.5, triceps: 0.5, delt_front: 0.3 },
-  22: { chest_lower: 1.0, triceps: 1.0, chest_mid: 0.5, delt_front: 0.3 },
-  23: { triceps: 1.0 },
-  24: { triceps: 1.0 },
-  25: { abs_rectus: 1.0, obliques: 0.3 },
-  26: { abs_rectus: 1.0, obliques: 0.3 },
-  27: { abs_rectus: 1.0, obliques: 0.3, quads: 0.3 },
-  28: { obliques: 1.0 },
-  29: { hams: 1.0, calves: 0.3 },
-  30: { hams: 1.0, calves: 0.3 },
-  31: { glutes: 1.0, hams: 0.5, quads: 0.3, erector: 0.3 },
-  32: { glutes: 1.0, hams: 0.5, quads: 0.5, erector: 0.3 },
-  33: { quads: 1.0 },
-  34: { erector: 1.0, glutes: 0.3, hams: 0.3 },
-  35: { abductor: 1.0, glutes: 0.3 },
-  36: { calves: 1.0 },
-  37: { chest_mid: 1.0, delt_front: 0.5, triceps: 0.5, chest_upper: 0.3 },
-};
-
-export const MUSCLE_CREDITS: MuscleCredit[] = Object.entries(SPEC).flatMap(
-  ([exerciseId, credits]) =>
-    Object.entries(credits).map(([muscle, credit]) => ({
-      exerciseId: Number(exerciseId),
-      muscle: muscle as MuscleCode,
-      credit: credit as 1.0 | 0.5 | 0.3,
-    }))
-);
 </file>
 
 <file path="src/db/seed/muscles.ts">
@@ -1113,141 +781,6 @@ export interface Food {
 export interface Setting {
   key: string;
   value: unknown;
-}
-</file>
-
-<file path="src/engine/calibration.ts">
-import type { Exercise } from '../db/types';
-import { roundToIncrement, isRepProgressionOnly } from './units';
-
-export const CALIB = {
-  setsPerExercise: 3,
-  targetRir: 2,
-  convergenceRir: [1, 3] as [number, number],
-  rirTooEasy: 4,
-  repsTooHard: 5,
-  tooHardRatio: 0.80,
-  maxChangeRatio: 0.25,
-  rirPlusValue: 5,
-} as const;
-
-export interface Attempt {
-  setNo: number;
-  weight: number;
-  reps: number;
-  rir: number;
-}
-
-export type CalibVerdict = 'too_light' | 'too_heavy' | 'converged' | 'adjusting';
-
-export interface Suggestion {
-  weight: number;
-  targetReps: number;
-  targetRir: number;
-  verdict: CalibVerdict;
-  message: string;
-  est1rm: number;
-  repProgressionOnly: boolean;
-}
-
-/** 種目タイプとRIR(追い込み度)から最適なインターバルタイマー秒数を精度高く自動算定 */
-export function calculateOptimalRestSec(exercise: Exercise, lastRir?: number): number {
-  let baseRest = exercise.restSec || (exercise.type === 'compound' ? 150 : 75);
-
-  // 限界付近（RIR 0〜1）まで追い込んだ場合は神経系・ATPの全回復のため+30秒延長
-  if (lastRir !== undefined && lastRir <= 1) {
-    baseRest += 30;
-  }
-
-  return baseRest;
-}
-
-export function epley1RM(weight: number, reps: number, rir = 0): number {
-  const effectiveRir = rir >= CALIB.rirTooEasy ? CALIB.rirPlusValue : rir;
-  return weight * (1 + (reps + effectiveRir) / 30);
-}
-
-export function targetRepsOf(ex: Exercise): number {
-  const [lo, hi] = ex.repRange;
-  return Math.floor((lo + hi) / 2);
-}
-
-export function suggestNext(ex: Exercise, last: Attempt): Suggestion {
-  const targetReps = targetRepsOf(ex);
-  const est1rm = epley1RM(last.weight, last.reps, last.rir);
-
-  if (ex.increment === 0) {
-    return {
-      weight: 0,
-      targetReps,
-      targetRir: CALIB.targetRir,
-      verdict: 'converged',
-      message: '自重種目。到達レップ数をベースラインとして記録します',
-      est1rm: 0,
-      repProgressionOnly: true,
-    };
-  }
-
-  let raw: number;
-  let verdict: CalibVerdict;
-  let message: string;
-
-  if (last.reps < CALIB.repsTooHard) {
-    raw = last.weight * CALIB.tooHardRatio;
-    verdict = 'too_heavy';
-    message = `${last.reps}回で限界のため重量過大。20%下げて再測定します`;
-  } else {
-    raw = est1rm / (1 + (targetReps + CALIB.targetRir) / 30);
-    if (last.rir >= CALIB.rirTooEasy) {
-      verdict = 'too_light';
-      message = `RIR${last.rir}+（余力大）のため重量を引き上げます`;
-    } else if (last.rir >= CALIB.convergenceRir[0] && last.rir <= CALIB.convergenceRir[1]) {
-      verdict = 'converged';
-      message = `RIR${last.rir} は目標域内。微調整して確定します`;
-    } else {
-      verdict = 'adjusting';
-      message = `RIR${last.rir}（限界到達）のため強度を調整します`;
-    }
-  }
-
-  const lo = last.weight * (1 - CALIB.maxChangeRatio);
-  const hi = last.weight * (1 + CALIB.maxChangeRatio);
-  raw = Math.min(hi, Math.max(lo, raw));
-
-  const weight = roundToIncrement(raw, ex);
-  return {
-    weight,
-    targetReps,
-    targetRir: CALIB.targetRir,
-    verdict,
-    message,
-    est1rm: Number(est1rm.toFixed(1)),
-    repProgressionOnly: isRepProgressionOnly(weight, ex),
-  };
-}
-
-export function finalizeBaseline(ex: Exercise, attempts: Attempt[]) {
-  const valid = attempts.filter((a) => a.reps >= CALIB.repsTooHard);
-  const source = valid.length > 0 ? valid : attempts;
-  const recent = source.slice(-2);
-  const est1rm =
-    recent.reduce((s, a) => s + epley1RM(a.weight, a.reps, a.rir), 0) / recent.length;
-
-  const last = attempts[attempts.length - 1];
-  const targetReps = targetRepsOf(ex);
-  const working = ex.increment === 0
-    ? 0
-    : roundToIncrement(est1rm / (1 + (targetReps + CALIB.targetRir) / 30), ex);
-
-  return {
-    exerciseId: ex.id,
-    weightKg: working,
-    reps: targetReps,
-    rir: CALIB.targetRir,
-    est1rm: Number(est1rm.toFixed(1)),
-    calibratedAt: Date.now(),
-    lastAttempt: last,
-  };
 }
 </file>
 
@@ -1528,129 +1061,13 @@ export function formatWeight(w: number, exercise: Exercise): string {
 }
 </file>
 
-<file path="src/pages/DebugSeed.tsx">
-import { useEffect, useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db/db';
-import { validateSeed, nukeDatabase, SEED_VERSION, WEEKLY_SET_BUDGET_MAX } from '../db/seed';
-import { migrateLocalDataToSupabase } from '../db/queries/supabaseMigration';
+<file path="src/lib/supabase.ts">
+import { createClient } from '@supabase/supabase-js';
 
-export default function DebugSeed() {
-  const [report, setReport] = useState(() => validateSeed());
-  const [busy, setBusy] = useState(false);
-  const [migrating, setMigrating] = useState(false);
-  const [migMsg, setMigMsg] = useState<string | null>(null);
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-  const counts = useLiveQuery(async () => ({
-    muscles: await db.muscles.count(),
-    exercises: await db.exercises.count(),
-    available: await db.exercises.where('isAvailable').equals(1).count(),
-    credits: await db.muscleCredits.count(),
-    foods: await db.foods.count(),
-    baselines: await db.baselines.count(),
-    sessions: await db.sessions.count(),
-    sets: await db.sets.count(),
-  }), []);
-
-  const muscles = useLiveQuery(() => db.muscles.orderBy('priorityRank').toArray(), []);
-
-  useEffect(() => { setReport(validateSeed()); }, []);
-
-  const handleNuke = async () => {
-    if (!confirm('全データを削除して再投入します。よろしいですか？')) return;
-    setBusy(true);
-    await nukeDatabase();
-    setReport(validateSeed());
-    setBusy(false);
-  };
-
-  const handleMigrate = async () => {
-    setMigrating(true);
-    setMigMsg('Supabaseへデータ同期中…');
-    const res = await migrateLocalDataToSupabase();
-    setMigMsg(res.message);
-    setMigrating(false);
-  };
-
-  const ok = report.errors.length === 0;
-
-  return (
-    <div className="page">
-      <h1>Seed 動作確認 & Supabase移行</h1>
-
-      <section className="card">
-        <h2>Supabase 統合データ移行</h2>
-        <p className="sub">現在ローカル（Week 0 等）に保存されているデータを my-kakeibo プロジェクトへアップロードします。</p>
-        <button 
-          className="btn primary" 
-          onClick={handleMigrate} 
-          disabled={migrating}
-          style={{ marginTop: '12px' }}
-        >
-          {migrating ? '送信中…' : '現在のデータを Supabase へ移行'}
-        </button>
-        {migMsg && <p className="mono good" style={{ marginTop: '12px' }}>{migMsg}</p>}
-      </section>
-
-      <section className={`card ${ok ? 'ok' : 'ng'}`}>
-        <h2>{ok ? '✓ 整合性チェック PASS' : `✗ エラー ${report.errors.length} 件`}</h2>
-        <p className="mono">seedVersion: {SEED_VERSION}</p>
-        {report.errors.map((e, i) => <p key={i} className="err">{e}</p>)}
-        {report.warnings.map((w, i) => <p key={i} className="warn">{w}</p>)}
-      </section>
-
-      <section className="card">
-        <h2>ボリューム予算</h2>
-        <table className="kv">
-          <tbody>
-            <tr><th>部位別下限 合計</th><td>{report.stats.totalMinSets} セット</td></tr>
-            <tr><th>週間予算 上限</th><td>{WEEKLY_SET_BUDGET_MAX} セット</td></tr>
-            <tr>
-              <th>余裕</th>
-              <td className={report.stats.budgetHeadroom >= 5 ? 'good' : 'warn'}>
-                {report.stats.budgetHeadroom} セット
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
-
-      <section className="card">
-        <h2>DB レコード数</h2>
-        <table className="kv">
-          <tbody>
-            {counts && Object.entries(counts).map(([k, v]) => (
-              <tr key={k}><th>{k}</th><td>{v}</td></tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
-
-      <section className="card">
-        <h2>部位マスタ（下限 / 上限）</h2>
-        <table className="grid">
-          <thead>
-            <tr><th>部位</th><th>下限</th><th>上限</th><th>tag</th></tr>
-          </thead>
-          <tbody>
-            {muscles?.map((m) => (
-              <tr key={m.code} className={`tag-${m.tag}`}>
-                <td>{m.nameJa}</td>
-                <td>{m.weeklySetsMin}</td>
-                <td>{m.weeklySetsMax}</td>
-                <td className="mono">{m.tag}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
-
-      <button className="btn danger" onClick={handleNuke} disabled={busy}>
-        {busy ? '処理中…' : 'DB完全削除 → 再投入'}
-      </button>
-    </div>
-  );
-}
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 </file>
 
 <file path="src/pages/hypertrophy-navigator.code-workspace">
@@ -1862,33 +1279,6 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <App />
   </React.StrictMode>
 );
-</file>
-
-<file path=".gitignore">
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
 </file>
 
 <file path=".oxlintrc.json">
@@ -2271,6 +1661,303 @@ export const HeaderLevelBadge: React.FC = () => {
 };
 </file>
 
+<file path="src/db/queries/calibration.ts">
+import { db } from '../db';
+import type { SplitType, Exercise, ExerciseBaseline } from '../types';
+import { finalizeBaseline } from '../../engine/calibration';
+
+/** 
+ * CALIBRATION_PLAN 
+ * 同一器具（ケーブル等）を連続して使用できるようID配置を整理[cite: 1]
+ * upper_B に 37(バーベルベンチプレス) を追加[cite: 1]
+ */
+export const CALIBRATION_PLAN: Record<SplitType, number[]> = {
+  upper_A: [12, 10, 2, 6, 1, 8, 9, 11, 25, 14],
+  lower: [29, 30, 33, 34, 31, 32, 27],
+  upper_B: [37, 18, 5, 4, 21, 23, 24, 26, 7],
+};
+
+export const CALIBRATION_TOTAL = Object.values(CALIBRATION_PLAN)
+  .reduce((s, arr) => s + arr.length, 0);
+
+/** 器具(equipment)順にソートして返却する[cite: 1] */
+export async function getCalibrationExercises(split: SplitType): Promise<Exercise[]> {
+  const ids = CALIBRATION_PLAN[split];
+  const list = await db.exercises.bulkGet(ids);
+  const available = list.filter((e): e is Exercise => !!e && e.isAvailable === 1);
+
+  // 器具の優先並び順マップ (cable -> dumbbell -> machine -> barbell -> plate -> bodyweight)[cite: 1]
+  const equipmentOrder: Record<string, number> = {
+    cable: 1,
+    dumbbell: 2,
+    machine: 3,
+    barbell: 4,
+    plate: 5,
+    smith: 6,
+    bodyweight: 7,
+  };
+
+  return available.sort((a, b) => 
+    (equipmentOrder[a.equipment] ?? 99) - (equipmentOrder[b.equipment] ?? 99)
+  );
+}
+
+export async function getBaselineMap(): Promise<Map<number, ExerciseBaseline>> {
+  const all = await db.baselines.toArray();
+  return new Map(all.map((b) => [b.exerciseId, b]));
+}
+
+export async function getOrCreateCalibrationSession(split: SplitType): Promise<number> {
+  const date = new Date().toISOString().slice(0, 10);
+  const existing = await db.sessions
+    .where('date').equals(date)
+    .filter((s) => s.splitType === split && s.mesocycleWeek === 0)
+    .first();
+  if (existing?.id) return existing.id;
+
+  return db.sessions.add({
+    date,
+    startedAt: Date.now(),
+    splitType: split,
+    prsScore: null,
+    sleepHours: null,
+    mesocycleWeek: 0,
+    isDeload: 0,
+    note: 'Week 0 calibration',
+  });
+}
+
+export async function saveCalibrationResult(params: {
+  sessionId: number;
+  exercise: Exercise;
+  attempts: { setNo: number; weight: number; reps: number; rir: number }[];
+  suggestions: number[];
+  baseline: ReturnType<typeof finalizeBaseline>;
+}) {
+  const { sessionId, exercise, attempts, suggestions, baseline } = params;
+  const date = new Date().toISOString().slice(0, 10);
+
+  await db.transaction('rw', [db.sets, db.baselines, db.events, db.settings], async () => {
+    await db.sets.bulkAdd(
+      attempts.map((a, i) => ({
+        sessionId,
+        exerciseId: exercise.id,
+        date,
+        setOrder: a.setNo,
+        targetWeight: suggestions[i] ?? a.weight,
+        actualWeight: a.weight,
+        targetReps: baseline.reps,
+        actualReps: a.reps,
+        targetRir: 2,
+        actualRir: a.rir,
+        volumeLoad: Number((a.weight * a.reps).toFixed(1)),
+        est1rm: Number(
+          (a.weight * (1 + (a.reps + (a.rir >= 4 ? 5 : a.rir)) / 30)).toFixed(1)
+        ),
+        isWarmup: 0 as const,
+        mode: 'calibration' as const,
+      }))
+    );
+
+    await db.baselines.put({
+      exerciseId: exercise.id,
+      weightKg: baseline.weightKg,
+      reps: baseline.reps,
+      rir: baseline.rir,
+      est1rm: baseline.est1rm,
+      calibratedAt: baseline.calibratedAt,
+    });
+
+    await db.events.add({
+      date,
+      createdAt: Date.now(),
+      eventType: 'calibration_done',
+      triggerReason: `${exercise.name} baseline確定`,
+      payload: { ...baseline },
+      acknowledged: 0,
+    });
+  });
+
+  const done = await db.baselines.count();
+  if (done >= CALIBRATION_TOTAL) {
+    await db.settings.bulkPut([
+      { key: 'calibrationDone', value: true },
+      { key: 'programStartDate', value: date },
+      { key: 'currentMesocycleWeek', value: 1 },
+    ]);
+  }
+}
+</file>
+
+<file path="src/db/queries/supabaseMigration.ts">
+import { db } from '../db';
+import { supabase } from '../../lib/supabase';
+import type {
+  ExerciseBaseline,
+  SessionRecord,
+  SetRecord,
+  BodyMetric,
+  NutritionLog,
+} from '../types';
+
+export async function migrateLocalDataToSupabase(): Promise<{ success: boolean; message: string }> {
+  try {
+    // 1. ベースラインデータの移行
+    const baselines: ExerciseBaseline[] = await db.baselines.toArray();
+    if (baselines.length > 0) {
+      const payload = baselines.map((b: ExerciseBaseline) => ({
+        exercise_id: b.exerciseId,
+        weight_kg: b.weightKg,
+        reps: b.reps,
+        rir: b.rir,
+        est1rm: b.est1rm,
+        calibrated_at: b.calibratedAt,
+      }));
+      const { error } = await supabase.from('baselines').upsert(payload, { onConflict: 'exercise_id' });
+      if (error) throw error;
+    }
+
+    // 2. セッション記録の移行
+    const sessions: SessionRecord[] = await db.sessions.toArray();
+    if (sessions.length > 0) {
+      const payload = sessions.map((s: SessionRecord) => ({
+        id: s.id,
+        date: s.date,
+        started_at: s.startedAt,
+        finished_at: s.finishedAt,
+        split_type: s.splitType,
+        prs_score: s.prsScore,
+        sleep_hours: s.sleepHours,
+        mesocycle_week: s.mesocycleWeek,
+        is_deload: s.isDeload,
+        est_minutes: s.estMinutes,
+        note: s.note,
+      }));
+      const { error } = await supabase.from('sessions').upsert(payload, { onConflict: 'id' });
+      if (error) throw error;
+    }
+
+    // 3. セット記録の移行
+    const sets: SetRecord[] = await db.sets.toArray();
+    if (sets.length > 0) {
+      const payload = sets.map((s: SetRecord) => ({
+        id: s.id,
+        session_id: s.sessionId,
+        exercise_id: s.exerciseId,
+        date: s.date,
+        set_order: s.setOrder,
+        target_weight: s.targetWeight,
+        actual_weight: s.actualWeight,
+        target_reps: s.targetReps,
+        actual_reps: s.actualReps,
+        target_rir: s.targetRir,
+        actual_rir: s.actualRir,
+        volume_load: s.volumeLoad,
+        est1rm: s.est1rm,
+        is_warmup: s.isWarmup,
+        mode: s.mode,
+      }));
+      const { error } = await supabase.from('sets').upsert(payload, { onConflict: 'id' });
+      if (error) throw error;
+    }
+
+    // 4. 体組成記録の移行
+    const bodyMetrics: BodyMetric[] = await db.bodyMetrics.toArray();
+    if (bodyMetrics.length > 0) {
+      const payload = bodyMetrics.map((b: BodyMetric) => ({
+        date: b.date,
+        weight_kg: b.weightKg,
+        body_fat_pct: b.bodyFatPct,
+        ffm_kg: b.ffmKg,
+        weight_ma7: b.weightMa7,
+        ffm_ma30: b.ffmMa30,
+        waist_cm: b.waistCm,
+        shoulder_cm: b.shoulderCm,
+        chest_cm: b.chestCm,
+        arm_cm: b.armCm,
+        thigh_cm: b.thighCm,
+        v_taper_ratio: b.vTaperRatio,
+        v_taper_ma7: b.vTaperMa7,
+        sleep_hours: b.sleepHours,
+        prs_score: b.prsScore,
+        is_interpolated: b.isInterpolated,
+      }));
+      const { error } = await supabase.from('body_metrics').upsert(payload, { onConflict: 'date' });
+      if (error) throw error;
+    }
+
+    // 5. 栄養ログの移行
+    const nutritionLogs: NutritionLog[] = await db.nutritionLogs.toArray();
+    if (nutritionLogs.length > 0) {
+      const payload = nutritionLogs.map((n: NutritionLog) => ({
+        date: n.date,
+        estimated_tdee: n.estimatedTdee,
+        target_kcal: n.targetKcal,
+        target_p: n.targetP,
+        target_f: n.targetF,
+        target_c: n.targetC,
+        protein_coef: n.proteinCoef,
+        is_refeed: n.isRefeed,
+        is_diet_break: n.isDietBreak,
+        protein_checked_g: n.proteinCheckedG,
+      }));
+      const { error } = await supabase.from('nutrition_logs').upsert(payload, { onConflict: 'date' });
+      if (error) throw error;
+    }
+
+    return { success: true, message: 'ローカルデータをSupabaseへ無事移行しました！' };
+  } catch (err: unknown) {
+    console.error('Supabase移行エラー:', err);
+    const msg = err instanceof Error ? err.message : String(err);
+    return { success: false, message: `移行失敗: ${msg}` };
+  }
+}
+</file>
+
+<file path="src/db/seed/exercises.ts">
+import type { Exercise } from '../types';
+
+export const EXERCISES: Exercise[] = [
+  { id: 1,  name: 'ダンベルラテラルレイズ',            equipment: 'dumbbell',   type: 'isolation', increment: 1.0,  restSec: 75,  silhouetteTag: 'priority',  repRange: [10, 15], isAvailable: 1, note: '最優先。1kg刻みで微増可' },
+  { id: 2,  name: 'ケーブルラテラルレイズ(DAP)',        equipment: 'cable',      type: 'isolation', increment: 2.5,  restSec: 75,  silhouetteTag: 'priority',  repRange: [10, 15], isAvailable: 1, note: '張力一定。片側ずつ' },
+  { id: 3,  name: 'マシンラテラルレイズ(デルツ)',        equipment: 'machine',    type: 'isolation', increment: 5.0,  restSec: 75,  silhouetteTag: 'priority',  repRange: [10, 15], isAvailable: 1, note: '追い込み用' },
+  { id: 4,  name: 'ショルダープレス(マシン)',           equipment: 'machine',    type: 'compound',  increment: 5.0,  restSec: 150, silhouetteTag: 'neutral',   repRange: [6, 10],  isAvailable: 1, note: '前部主働' },
+  { id: 5,  name: 'ダンベルショルダープレス',           equipment: 'dumbbell',   type: 'compound',  increment: 2.5,  restSec: 150, silhouetteTag: 'neutral',   repRange: [6, 10],  isAvailable: 1 },
+  { id: 6,  name: 'リバースフライ(マシン)',            equipment: 'machine',    type: 'isolation', increment: 5.0,  restSec: 75,  silhouetteTag: 'neutral',   repRange: [12, 15], isAvailable: 1, note: '後部' },
+  { id: 7,  name: 'ケーブルリアデルト(DAP)',           equipment: 'cable',      type: 'isolation', increment: 2.5,  restSec: 75,  silhouetteTag: 'neutral',   repRange: [12, 15], isAvailable: 1 },
+  { id: 8,  name: 'インクラインダンベルカール',         equipment: 'dumbbell',   type: 'isolation', increment: 1.0,  restSec: 75,  silhouetteTag: 'priority',  repRange: [10, 14], isAvailable: 1, note: '長頭ストレッチ位' },
+  { id: 9,  name: 'プリーチャーカール',                equipment: 'dumbbell',   type: 'isolation', increment: 1.0,  restSec: 75,  silhouetteTag: 'priority',  repRange: [10, 14], isAvailable: 1, note: '短頭収縮位' },
+  { id: 10, name: 'ケーブルカール(DAP)',              equipment: 'cable',      type: 'isolation', increment: 2.5,  restSec: 75,  silhouetteTag: 'priority',  repRange: [10, 14], isAvailable: 1, note: '張力一定' },
+  { id: 11, name: 'ハンマーカール',                    equipment: 'dumbbell',   type: 'isolation', increment: 1.0,  restSec: 75,  silhouetteTag: 'neutral',   repRange: [10, 14], isAvailable: 1, note: '上腕筋・前腕' },
+  { id: 12, name: 'ラットプルダウン',                  equipment: 'cable',      type: 'compound',  increment: 5.0,  restSec: 150, silhouetteTag: 'neutral',   repRange: [8, 12],  isAvailable: 1, note: 'V字の要' },
+  { id: 13, name: 'バーティカルトラクション',           equipment: 'machine',    type: 'compound',  increment: 5.0,  restSec: 150, silhouetteTag: 'neutral',   repRange: [8, 12],  isAvailable: 1, note: 'ラットプル代替' },
+  { id: 14, name: 'シーテッドロウ(プレートロード)',      equipment: 'plate',      type: 'compound',  increment: 1.25, restSec: 150, silhouetteTag: 'neutral',   repRange: [8, 12],  isAvailable: 1, note: '片側1.25kgプレート' },
+  { id: 15, name: 'ハイロウ(プレートロード)',          equipment: 'plate',      type: 'compound',  increment: 1.25, restSec: 150, silhouetteTag: 'neutral',   repRange: [8, 12],  isAvailable: 1, note: '上背部' },
+  { id: 16, name: 'ティーバーロウ(プレートロード)',      equipment: 'plate',      type: 'compound',  increment: 1.25, restSec: 150, silhouetteTag: 'neutral',   repRange: [8, 12],  isAvailable: 1, note: '僧帽中部' },
+  { id: 17, name: 'ストレートアームプルダウン',         equipment: 'cable',      type: 'isolation', increment: 2.5,  restSec: 75,  silhouetteTag: 'neutral',   repRange: [12, 15], isAvailable: 1, note: '広背筋アイソレート' },
+  { id: 18, name: 'インクラインダンベルプレス',         equipment: 'dumbbell',   type: 'compound',  increment: 2.5,  restSec: 150, silhouetteTag: 'neutral',   repRange: [8, 12],  isAvailable: 1, note: '30度固定。上部のみ' },
+  { id: 19, name: 'インクラインチェストプレス(PL)',     equipment: 'plate',      type: 'compound',  increment: 1.25, restSec: 150, silhouetteTag: 'neutral',   repRange: [8, 12],  isAvailable: 1 },
+  { id: 20, name: 'ケーブルローフライ(DAP)',          equipment: 'cable',      type: 'isolation', increment: 2.5,  restSec: 75,  silhouetteTag: 'neutral',   repRange: [12, 15], isAvailable: 1, note: '下から上への軌道で上部狙い' },
+  { id: 21, name: 'チェストプレス(マシン)',            equipment: 'machine',    type: 'compound',  increment: 5.0,  restSec: 150, silhouetteTag: 'suppress',  repRange: [8, 12],  isAvailable: 1, note: '中部維持。下限のみ' },
+  { id: 22, name: 'ディップス(チンディップ)',          equipment: 'bodyweight', type: 'compound',  increment: 2.5,  restSec: 150, silhouetteTag: 'suppress',  repRange: [8, 12],  isAvailable: 0, note: '下部関与大。既定では無効' },
+  { id: 23, name: 'ケーブルプレスダウン',              equipment: 'cable',      type: 'isolation', increment: 2.5,  restSec: 75,  silhouetteTag: 'neutral',   repRange: [10, 15], isAvailable: 1 },
+  { id: 24, name: 'オーバーヘッドエクステンション(DAP)', equipment: 'cable',      type: 'isolation', increment: 2.5,  restSec: 75,  silhouetteTag: 'neutral',   repRange: [10, 15], isAvailable: 1, note: '三頭長頭' },
+  { id: 25, name: 'アブドミナルクランチ(マシン)',       equipment: 'machine',    type: 'core',      increment: 5.0,  restSec: 60,  silhouetteTag: 'priority',  repRange: [12, 20], isAvailable: 1, note: '漸進負荷可' },
+  { id: 26, name: 'ケーブルクランチ',                  equipment: 'cable',      type: 'core',      increment: 2.5,  restSec: 60,  silhouetteTag: 'priority',  repRange: [12, 20], isAvailable: 1 },
+  { id: 27, name: 'ハンギングレッグレイズ',            equipment: 'bodyweight', type: 'core',      increment: 0,    restSec: 60,  silhouetteTag: 'priority',  repRange: [10, 20], isAvailable: 1, note: '下腹部。レップ漸進のみ' },
+  { id: 28, name: 'ロータリートルソー',               equipment: 'machine',    type: 'core',      increment: 5.0,  restSec: 60,  silhouetteTag: 'forbidden', repRange: [12, 20], isAvailable: 0, note: '腹斜筋肥大。使用禁止' },
+  { id: 29, name: 'レッグカール',                     equipment: 'machine',    type: 'isolation', increment: 5.0,  restSec: 90,  silhouetteTag: 'neutral',   repRange: [10, 15], isAvailable: 1 },
+  { id: 30, name: 'プローンレッグカール',              equipment: 'machine',    type: 'isolation', increment: 5.0,  restSec: 90,  silhouetteTag: 'neutral',   repRange: [10, 15], isAvailable: 1 },
+  { id: 31, name: 'ヒップスラスト',                    equipment: 'barbell',    type: 'compound',  increment: 2.5,  restSec: 150, silhouetteTag: 'neutral',   repRange: [8, 12],  isAvailable: 1, note: 'ウエスト無影響' },
+  { id: 32, name: 'レッグプレス(足位置ハイ)',          equipment: 'machine',    type: 'compound',  increment: 5.0,  restSec: 150, silhouetteTag: 'suppress',  repRange: [10, 15], isAvailable: 1, note: '四頭抑制・臀ハム寄り' },
+  { id: 33, name: 'レッグエクステンション',            equipment: 'machine',    type: 'isolation', increment: 5.0,  restSec: 90,  silhouetteTag: 'suppress',  repRange: [12, 15], isAvailable: 1, note: '四頭下限維持のみ' },
+  { id: 34, name: 'ローワーバック',                    equipment: 'machine',    type: 'isolation', increment: 5.0,  restSec: 90,  silhouetteTag: 'neutral',   repRange: [12, 15], isAvailable: 1 },
+  { id: 35, name: 'アブダクター',                     equipment: 'machine',    type: 'isolation', increment: 5.0,  restSec: 60,  silhouetteTag: 'optional',  repRange: [12, 20], isAvailable: 1, note: '中臀筋' },
+  { id: 36, name: 'カーフレイズ(スミス)',              equipment: 'smith',      type: 'isolation', increment: 2.5,  restSec: 60,  silhouetteTag: 'optional',  repRange: [12, 20], isAvailable: 1, note: '予算余剰時のみ' },
+  { id: 37, name: 'バーベルベンチプレス',              equipment: 'barbell',    type: 'compound',  increment: 2.5,  restSec: 180, silhouetteTag: 'neutral',   repRange: [6, 10],  isAvailable: 1, note: '胸・肩前部・三頭コンパウンド基本種目' },
+];
+</file>
+
 <file path="src/db/seed/foods.ts">
 import type { Food } from '../types';
 
@@ -2459,6 +2146,196 @@ export async function nukeDatabase(): Promise<void> {
 }
 </file>
 
+<file path="src/db/seed/muscleCredits.ts">
+import type { MuscleCredit, MuscleCode } from '../types';
+
+type CreditSpec = Record<number, Partial<Record<MuscleCode, 1.0 | 0.5 | 0.3>>>;
+
+const SPEC: CreditSpec = {
+  1:  { delt_lateral: 1.0, delt_front: 0.3, traps_upper: 0.3 },
+  2:  { delt_lateral: 1.0, traps_upper: 0.3 },
+  3:  { delt_lateral: 1.0, traps_upper: 0.3 },
+  4:  { delt_front: 1.0, delt_lateral: 0.5, triceps: 0.5, chest_upper: 0.3 },
+  5:  { delt_front: 1.0, delt_lateral: 0.5, triceps: 0.5, traps_upper: 0.3 },
+  6:  { delt_rear: 1.0, traps_mid: 0.5 },
+  7:  { delt_rear: 1.0, traps_mid: 0.3 },
+  8:  { biceps_long: 1.0, biceps_short: 0.5, brachialis: 0.3 },
+  9:  { biceps_short: 1.0, biceps_long: 0.5, brachialis: 0.3 },
+  10: { biceps_short: 1.0, biceps_long: 0.5, brachialis: 0.3 },
+  11: { brachialis: 1.0, biceps_long: 0.5, biceps_short: 0.3 },
+  12: { lat: 1.0, biceps_long: 0.5, traps_mid: 0.3, delt_rear: 0.3 },
+  13: { lat: 1.0, biceps_long: 0.5, traps_mid: 0.3 },
+  14: { lat: 1.0, traps_mid: 0.5, delt_rear: 0.3, biceps_long: 0.3, erector: 0.3 },
+  15: { traps_mid: 1.0, lat: 0.5, delt_rear: 0.5, biceps_long: 0.3 },
+  16: { traps_mid: 1.0, lat: 0.5, erector: 0.5, delt_rear: 0.3, biceps_long: 0.3 },
+  17: { lat: 1.0, triceps: 0.3, abs_rectus: 0.3 },
+  18: { chest_upper: 1.0, delt_front: 0.5, triceps: 0.5, chest_mid: 0.3 },
+  19: { chest_upper: 1.0, delt_front: 0.5, triceps: 0.5, chest_mid: 0.3 },
+  20: { chest_upper: 1.0, delt_front: 0.3 },
+  21: { chest_mid: 1.0, chest_lower: 0.5, triceps: 0.5, delt_front: 0.3 },
+  22: { chest_lower: 1.0, triceps: 1.0, chest_mid: 0.5, delt_front: 0.3 },
+  23: { triceps: 1.0 },
+  24: { triceps: 1.0 },
+  25: { abs_rectus: 1.0, obliques: 0.3 },
+  26: { abs_rectus: 1.0, obliques: 0.3 },
+  27: { abs_rectus: 1.0, obliques: 0.3, quads: 0.3 },
+  28: { obliques: 1.0 },
+  29: { hams: 1.0, calves: 0.3 },
+  30: { hams: 1.0, calves: 0.3 },
+  31: { glutes: 1.0, hams: 0.5, quads: 0.3, erector: 0.3 },
+  32: { glutes: 1.0, hams: 0.5, quads: 0.5, erector: 0.3 },
+  33: { quads: 1.0 },
+  34: { erector: 1.0, glutes: 0.3, hams: 0.3 },
+  35: { abductor: 1.0, glutes: 0.3 },
+  36: { calves: 1.0 },
+  37: { chest_mid: 1.0, delt_front: 0.5, triceps: 0.5, chest_upper: 0.3 },
+};
+
+export const MUSCLE_CREDITS: MuscleCredit[] = Object.entries(SPEC).flatMap(
+  ([exerciseId, credits]) =>
+    Object.entries(credits).map(([muscle, credit]) => ({
+      exerciseId: Number(exerciseId),
+      muscle: muscle as MuscleCode,
+      credit: credit as 1.0 | 0.5 | 0.3,
+    }))
+);
+</file>
+
+<file path="src/engine/calibration.ts">
+import type { Exercise } from '../db/types';
+import { roundToIncrement, isRepProgressionOnly } from './units';
+
+export const CALIB = {
+  setsPerExercise: 3,
+  targetRir: 2,
+  convergenceRir: [1, 3] as [number, number],
+  rirTooEasy: 4,
+  repsTooHard: 5,
+  tooHardRatio: 0.80,
+  maxChangeRatio: 0.25,
+  rirPlusValue: 5,
+} as const;
+
+export interface Attempt {
+  setNo: number;
+  weight: number;
+  reps: number;
+  rir: number;
+}
+
+export type CalibVerdict = 'too_light' | 'too_heavy' | 'converged' | 'adjusting';
+
+export interface Suggestion {
+  weight: number;
+  targetReps: number;
+  targetRir: number;
+  verdict: CalibVerdict;
+  message: string;
+  est1rm: number;
+  repProgressionOnly: boolean;
+}
+
+/** 種目タイプとRIR(追い込み度)から最適なインターバルタイマー秒数を精度高く自動算定 */
+export function calculateOptimalRestSec(exercise: Exercise, lastRir?: number): number {
+  let baseRest = exercise.restSec || (exercise.type === 'compound' ? 150 : 75);
+
+  // 限界付近（RIR 0〜1）まで追い込んだ場合は神経系・ATPの全回復のため+30秒延長
+  if (lastRir !== undefined && lastRir <= 1) {
+    baseRest += 30;
+  }
+
+  return baseRest;
+}
+
+export function epley1RM(weight: number, reps: number, rir = 0): number {
+  const effectiveRir = rir >= CALIB.rirTooEasy ? CALIB.rirPlusValue : rir;
+  return weight * (1 + (reps + effectiveRir) / 30);
+}
+
+export function targetRepsOf(ex: Exercise): number {
+  const [lo, hi] = ex.repRange;
+  return Math.floor((lo + hi) / 2);
+}
+
+export function suggestNext(ex: Exercise, last: Attempt): Suggestion {
+  const targetReps = targetRepsOf(ex);
+  const est1rm = epley1RM(last.weight, last.reps, last.rir);
+
+  if (ex.increment === 0) {
+    return {
+      weight: 0,
+      targetReps,
+      targetRir: CALIB.targetRir,
+      verdict: 'converged',
+      message: '自重種目。到達レップ数をベースラインとして記録します',
+      est1rm: 0,
+      repProgressionOnly: true,
+    };
+  }
+
+  let raw: number;
+  let verdict: CalibVerdict;
+  let message: string;
+
+  if (last.reps < CALIB.repsTooHard) {
+    raw = last.weight * CALIB.tooHardRatio;
+    verdict = 'too_heavy';
+    message = `${last.reps}回で限界のため重量過大。20%下げて再測定します`;
+  } else {
+    raw = est1rm / (1 + (targetReps + CALIB.targetRir) / 30);
+    if (last.rir >= CALIB.rirTooEasy) {
+      verdict = 'too_light';
+      message = `RIR${last.rir}+（余力大）のため重量を引き上げます`;
+    } else if (last.rir >= CALIB.convergenceRir[0] && last.rir <= CALIB.convergenceRir[1]) {
+      verdict = 'converged';
+      message = `RIR${last.rir} は目標域内。微調整して確定します`;
+    } else {
+      verdict = 'adjusting';
+      message = `RIR${last.rir}（限界到達）のため強度を調整します`;
+    }
+  }
+
+  const lo = last.weight * (1 - CALIB.maxChangeRatio);
+  const hi = last.weight * (1 + CALIB.maxChangeRatio);
+  raw = Math.min(hi, Math.max(lo, raw));
+
+  const weight = roundToIncrement(raw, ex);
+  return {
+    weight,
+    targetReps,
+    targetRir: CALIB.targetRir,
+    verdict,
+    message,
+    est1rm: Number(est1rm.toFixed(1)),
+    repProgressionOnly: isRepProgressionOnly(weight, ex),
+  };
+}
+
+export function finalizeBaseline(ex: Exercise, attempts: Attempt[]) {
+  const valid = attempts.filter((a) => a.reps >= CALIB.repsTooHard);
+  const source = valid.length > 0 ? valid : attempts;
+  const recent = source.slice(-2);
+  const est1rm =
+    recent.reduce((s, a) => s + epley1RM(a.weight, a.reps, a.rir), 0) / recent.length;
+
+  const last = attempts[attempts.length - 1];
+  const targetReps = targetRepsOf(ex);
+  const working = ex.increment === 0
+    ? 0
+    : roundToIncrement(est1rm / (1 + (targetReps + CALIB.targetRir) / 30), ex);
+
+  return {
+    exerciseId: ex.id,
+    weightKg: working,
+    reps: targetReps,
+    rir: CALIB.targetRir,
+    est1rm: Number(est1rm.toFixed(1)),
+    calibratedAt: Date.now(),
+    lastAttempt: last,
+  };
+}
+</file>
+
 <file path="src/pages/BodyTracking.tsx">
 import { fireNeonConfetti } from '../engine/achievements';
 import { useEffect, useState } from 'react';
@@ -2613,6 +2490,131 @@ export default function BodyTracking() {
 }
 </file>
 
+<file path="src/pages/DebugSeed.tsx">
+import { useEffect, useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../db/db';
+import { validateSeed, nukeDatabase, SEED_VERSION, WEEKLY_SET_BUDGET_MAX } from '../db/seed';
+import { migrateLocalDataToSupabase } from '../db/queries/supabaseMigration';
+
+export default function DebugSeed() {
+  const [report, setReport] = useState(() => validateSeed());
+  const [busy, setBusy] = useState(false);
+  const [migrating, setMigrating] = useState(false);
+  const [migMsg, setMigMsg] = useState<string | null>(null);
+
+  const counts = useLiveQuery(async () => ({
+    muscles: await db.muscles.count(),
+    exercises: await db.exercises.count(),
+    available: await db.exercises.where('isAvailable').equals(1).count(),
+    credits: await db.muscleCredits.count(),
+    foods: await db.foods.count(),
+    baselines: await db.baselines.count(),
+    sessions: await db.sessions.count(),
+    sets: await db.sets.count(),
+  }), []);
+
+  const muscles = useLiveQuery(() => db.muscles.orderBy('priorityRank').toArray(), []);
+
+  useEffect(() => { setReport(validateSeed()); }, []);
+
+  const handleNuke = async () => {
+    if (!confirm('全データを削除して再投入します。よろしいですか？')) return;
+    setBusy(true);
+    await nukeDatabase();
+    setReport(validateSeed());
+    setBusy(false);
+  };
+
+  const handleMigrate = async () => {
+    setMigrating(true);
+    setMigMsg('Supabaseへデータ同期中…');
+    const res = await migrateLocalDataToSupabase();
+    setMigMsg(res.message);
+    setMigrating(false);
+  };
+
+  const ok = report.errors.length === 0;
+
+  return (
+    <div className="page">
+      <h1>Seed 動作確認 & Supabase移行</h1>
+
+      <section className="card">
+        <h2>Supabase 統合データ移行</h2>
+        <p className="sub">現在ローカル（Week 0 等）に保存されているデータを my-kakeibo プロジェクトへアップロードします。</p>
+        <button 
+          className="btn primary" 
+          onClick={handleMigrate} 
+          disabled={migrating}
+          style={{ marginTop: '12px' }}
+        >
+          {migrating ? '送信中…' : '現在のデータを Supabase へ移行'}
+        </button>
+        {migMsg && <p className="mono good" style={{ marginTop: '12px' }}>{migMsg}</p>}
+      </section>
+
+      <section className={`card ${ok ? 'ok' : 'ng'}`}>
+        <h2>{ok ? '✓ 整合性チェック PASS' : `✗ エラー ${report.errors.length} 件`}</h2>
+        <p className="mono">seedVersion: {SEED_VERSION}</p>
+        {report.errors.map((e, i) => <p key={i} className="err">{e}</p>)}
+        {report.warnings.map((w, i) => <p key={i} className="warn">{w}</p>)}
+      </section>
+
+      <section className="card">
+        <h2>ボリューム予算</h2>
+        <table className="kv">
+          <tbody>
+            <tr><th>部位別下限 合計</th><td>{report.stats.totalMinSets} セット</td></tr>
+            <tr><th>週間予算 上限</th><td>{WEEKLY_SET_BUDGET_MAX} セット</td></tr>
+            <tr>
+              <th>余裕</th>
+              <td className={report.stats.budgetHeadroom >= 5 ? 'good' : 'warn'}>
+                {report.stats.budgetHeadroom} セット
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section className="card">
+        <h2>DB レコード数</h2>
+        <table className="kv">
+          <tbody>
+            {counts && Object.entries(counts).map(([k, v]) => (
+              <tr key={k}><th>{k}</th><td>{v}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+
+      <section className="card">
+        <h2>部位マスタ（下限 / 上限）</h2>
+        <table className="grid">
+          <thead>
+            <tr><th>部位</th><th>下限</th><th>上限</th><th>tag</th></tr>
+          </thead>
+          <tbody>
+            {muscles?.map((m) => (
+              <tr key={m.code} className={`tag-${m.tag}`}>
+                <td>{m.nameJa}</td>
+                <td>{m.weeklySetsMin}</td>
+                <td>{m.weeklySetsMax}</td>
+                <td className="mono">{m.tag}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+
+      <button className="btn danger" onClick={handleNuke} disabled={busy}>
+        {busy ? '処理中…' : 'DB完全削除 → 再投入'}
+      </button>
+    </div>
+  );
+}
+</file>
+
 <file path="src/index.css">
 :root {
   --text: #6b6375;
@@ -2725,6 +2727,38 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+</file>
+
+<file path=".gitignore">
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+
+.env
+.env.local
+*.local
 </file>
 
 <file path="index.html">
@@ -2938,269 +2972,6 @@ export function fireNeonConfetti() {
 }
 </file>
 
-<file path="src/pages/Calibration.tsx">
-import { fireNeonConfetti } from '../engine/achievements';
-import { useMemo, useState, useEffect } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db/db';
-import type { Exercise, SplitType } from '../db/types';
-import {
-  CALIBRATION_PLAN, CALIBRATION_TOTAL, getCalibrationExercises,
-  getBaselineMap, getOrCreateCalibrationSession, saveCalibrationResult,
-} from '../db/queries/calibration';
-import {
-  CALIB, suggestNext, finalizeBaseline, targetRepsOf, calculateOptimalRestSec, type Attempt,
-} from '../engine/calibration';
-import { effectiveIncrement, formatWeight } from '../engine/units';
-import { TrainerGuide } from '../components/TrainerGuide';
-import { BodyAnatomy } from '../components/BodyAnatomy';
-
-const SPLIT_LABEL: Record<SplitType, string> = {
-  upper_A: '上半身 A（背中・肩中部・二頭）',
-  lower: '下半身',
-  upper_B: '上半身 B（胸上部・胸中部・肩・三頭）',
-};
-
-export default function Calibration() {
-  const [split, setSplit] = useState<SplitType>('upper_A');
-  const [active, setActive] = useState<Exercise | null>(null);
-
-  const exercises = useLiveQuery(() => getCalibrationExercises(split), [split]);
-  const baselines = useLiveQuery(() => getBaselineMap(), []);
-  const doneCount = baselines?.size ?? 0;
-
-  if (active) {
-    return (
-      <Wizard
-        exercise={active}
-        split={split}
-        onClose={() => setActive(null)}
-      />
-    );
-  }
-
-  return (
-    <div className="page">
-      <header className="hdr">
-        <h1>Week 0 キャリブレーション</h1>
-        <div className="progress">
-          <div className="bar" style={{ width: `${(doneCount / CALIBRATION_TOTAL) * 100}%` }} />
-        </div>
-        <p className="sub">{doneCount} / {CALIBRATION_TOTAL} 種目 完了</p>
-      </header>
-
-      <div className="tabs">
-        {(Object.keys(CALIBRATION_PLAN) as SplitType[]).map((s) => (
-          <button
-            key={s}
-            className={`tab ${s === split ? 'on' : ''}`}
-            onClick={() => setSplit(s)}
-          >
-            {s.replace('upper_', 'Upper ').replace('lower', 'Lower')}
-          </button>
-        ))}
-      </div>
-      <p className="sub">{SPLIT_LABEL[split]}</p>
-
-      <ul className="list">
-        {exercises?.map((ex) => {
-          const b = baselines?.get(ex.id);
-          return (
-            <li key={ex.id}>
-              <button className={`row ${b ? 'done' : ''}`} onClick={() => setActive(ex)}>
-                <span className="name">{ex.name}</span>
-                <span className="meta">
-                  {b
-                    ? `${formatWeight(b.weightKg, ex)} × ${b.reps}`
-                    : `${ex.repRange[0]}–${ex.repRange[1]} reps`}
-                </span>
-                <span className="mark">{b ? '✓' : '›'}</span>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-
-      <p className="note">
-        各種目3セット。1セット目は「これくらいかな」で構いません。
-        RIRの入力から2・3セット目の重量を自動計算します。
-      </p>
-    </div>
-  );
-}
-
-function Wizard({
-  exercise, split, onClose,
-}: { exercise: Exercise; split: SplitType; onClose: () => void }) {
-  const inc = effectiveIncrement(exercise, 10);
-  const [weight, setWeight] = useState<number>(
-    exercise.increment === 0 ? 0 : guessInitial(exercise)
-  );
-  const [reps, setReps] = useState<number>(targetRepsOf(exercise));
-  const [rir, setRir] = useState<number>(2);
-  const [attempts, setAttempts] = useState<Attempt[]>([]);
-  const [suggestions, setSuggestions] = useState<number[]>([]);
-  const [saving, setSaving] = useState(false);
-  const [timerSec, setTimerSec] = useState<number | null>(null);
-
-  const credits = useLiveQuery(() => db.muscleCredits.where('exerciseId').equals(exercise.id).toArray(), [exercise.id]);
-  const primaryMuscles = credits?.filter((c) => c.credit >= 0.8).map((c) => c.muscle) ?? [];
-  const secondaryMuscles = credits?.filter((c) => c.credit < 0.8).map((c) => c.muscle) ?? [];
-
-  const setNo = attempts.length + 1;
-  const isLast = setNo === CALIB.setsPerExercise;
-
-  // カウントダウンタイマー処理
-  useEffect(() => {
-    if (timerSec === null || timerSec <= 0) return;
-    const interval = setInterval(() => {
-      setTimerSec((prev) => (prev && prev > 1 ? prev - 1 : null));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [timerSec]);
-
-  const lastSuggestion = useMemo(() => {
-    if (attempts.length === 0) return null;
-    return suggestNext(exercise, attempts[attempts.length - 1]);
-  }, [attempts, exercise]);
-
-  const step = exercise.increment === 0 ? 0 : effectiveIncrement(exercise, weight);
-
-  const handleNext = async () => {
-    const attempt: Attempt = { setNo, weight, reps, rir };
-    const next = [...attempts, attempt];
-    setAttempts(next);
-    setSuggestions([...suggestions, weight]);
-
-    if (next.length < CALIB.setsPerExercise) {
-      const s = suggestNext(exercise, attempt);
-      setWeight(s.weight);
-      setReps(s.targetReps);
-      setRir(2);
-
-      // セット1・セット2完了時に動的インターバルタイマーを起動[cite: 1]
-      const optimalRest = calculateOptimalRestSec(exercise, rir);
-      setTimerSec(optimalRest);
-      return;
-    }
-
-    setSaving(true);
-    const baseline = finalizeBaseline(exercise, next);
-    const sessionId = await getOrCreateCalibrationSession(split);
-    await saveCalibrationResult({
-      sessionId,
-      exercise,
-      attempts: next,
-      suggestions: [...suggestions, weight],
-      baseline,
-    });
-    fireNeonConfetti();
-    setSaving(false);
-    onClose();
-  };
-
-  return (
-    <div className="page wizard">
-      <header className="hdr">
-        <button className="back" onClick={onClose}>‹ 戻る</button>
-        <h2>{exercise.name}</h2>
-        <p className="sub">
-          Set {setNo} / {CALIB.setsPerExercise} ・ 目標 {exercise.repRange[0]}–{exercise.repRange[1]} reps
-        </p>
-      </header>
-
-      {/* 🤖 AIトレーナー4ステップ解説ガイド */}
-      <TrainerGuide exercise={exercise} />
-
-      {/* 筋肉発光ネオンアナトミーマップ */}
-      <BodyAnatomy primaryMuscles={primaryMuscles} secondaryMuscles={secondaryMuscles} />
-
-      {/* インターバルカウントダウンタイマー表示エリア[cite: 1] */}
-      {timerSec !== null && (
-        <div className="hint converged" style={{ textAlign: 'center', fontSize: '20px', fontWeight: 'bold', margin: '12px 0' }}>
-          ⏱ 推奨インターバル: {Math.floor(timerSec / 60)}分 {String(timerSec % 60).padStart(2, '0')}秒
-        </div>
-      )}
-
-      {lastSuggestion && (
-        <div className={`hint ${lastSuggestion.verdict}`}>
-          <p>{lastSuggestion.message}</p>
-          <p className="mono">推定1RM {lastSuggestion.est1rm} kg</p>
-          {lastSuggestion.repProgressionOnly && exercise.increment > 0 && (
-            <p className="mono warn">
-              ▲ 刻み {inc}kg が重量比4%超。以降はレップ漸進で管理します
-            </p>
-          )}
-        </div>
-      )}
-
-      {exercise.increment > 0 && (
-        <section className="field">
-          <label>重量</label>
-          <div className="stepper">
-            <button onClick={() => setWeight((w) => Math.max(step, w - step))}>−</button>
-            <span className="value">{formatWeight(weight, exercise)}</span>
-            <button onClick={() => setWeight((w) => w + step)}>＋</button>
-          </div>
-          <p className="mono sub">刻み {step} kg</p>
-        </section>
-      )}
-
-      <section className="field">
-        <label>実施レップ数</label>
-        <div className="stepper">
-          <button onClick={() => setReps((r) => Math.max(1, r - 1))}>−</button>
-          <span className="value">{reps} reps</span>
-          <button onClick={() => setReps((r) => r + 1)}>＋</button>
-        </div>
-      </section>
-
-      <section className="field">
-        <label>RIR（あと何回挙がったか）</label>
-        <div className="rir">
-          {[0, 1, 2, 3, 4].map((v) => (
-            <button
-              key={v}
-              className={`rir-btn ${rir === v ? 'on' : ''}`}
-              onClick={() => setRir(v)}
-            >
-              {v === 4 ? '4+' : v}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {attempts.length > 0 && (
-        <section className="log">
-          <h3>記録済み</h3>
-          {attempts.map((a) => (
-            <p key={a.setNo} className="mono">
-              Set{a.setNo}: {a.weight}kg × {a.reps} (RIR {a.rir >= 4 ? '4+' : a.rir})
-            </p>
-          ))}
-        </section>
-      )}
-
-      <button className="btn primary big" onClick={handleNext} disabled={saving}>
-        {saving ? '保存中…' : isLast ? 'ベースラインを確定' : `Set ${setNo} を記録して次へ`}
-      </button>
-    </div>
-  );
-}
-
-function guessInitial(ex: Exercise): number {
-  switch (ex.equipment) {
-    case 'dumbbell': return ex.type === 'isolation' ? 8 : 12;
-    case 'cable': return ex.type === 'isolation' ? 10 : 30;
-    case 'machine': return ex.type === 'isolation' ? 20 : 35;
-    case 'plate': return 20;
-    case 'barbell': return 40;
-    case 'smith': return 20;
-    default: return 0;
-  }
-}
-</file>
-
 <file path="src/pages/Nutrition.tsx">
 import { useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -3373,6 +3144,142 @@ export default function App() {
           Debug
         </button>
       </nav>
+    </div>
+  );
+}
+</file>
+
+<file path="src/pages/Calibration.tsx">
+import { useEffect, useState } from 'react';
+import { db } from '../db/db';
+import { fetchBaselines, saveBaseline } from '../db/queries/workout';
+import type { ExerciseBaseline, Exercise } from '../db/types';
+
+export default function Calibration() {
+  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [baselines, setBaselines] = useState<Record<string, ExerciseBaseline>>({});
+  const [loading, setLoading] = useState(true);
+  const [savingId, setSavingId] = useState<string | null>(null);
+
+  // 初回ロード：種目マスタと Supabase からのベースラインを取得
+  useEffect(() => {
+    async function loadData() {
+      setLoading(true);
+      try {
+        const exList = await db.exercises.toArray();
+        setExercises(exList);
+
+        // Supabase から最新の基準重量を取得
+        const remoteBaselines = await fetchBaselines();
+        const map: Record<string, ExerciseBaseline> = {};
+        
+        remoteBaselines.forEach((b) => {
+          map[b.exerciseId] = b;
+        });
+
+        setBaselines(map);
+      } catch (err) {
+        console.error('データ読み込みエラー:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
+  // 重量・回数・RIR の入力変更
+  const handleChange = (exerciseId: string, field: keyof ExerciseBaseline, value: number) => {
+    setBaselines((prev) => {
+      const current = prev[exerciseId] || {
+        exerciseId,
+        weightKg: 0,
+        reps: 0,
+        rir: 0,
+        est1rm: 0,
+        calibratedAt: new Date().toISOString(),
+      };
+      const updated = { ...current, [field]: value };
+      // 簡易 1RM 計算 (Epleyの式)
+      if (updated.weightKg > 0 && updated.reps > 0) {
+        updated.est1rm = Math.round(updated.weightKg * (1 + updated.reps / 30));
+      }
+      return { ...prev, [exerciseId]: updated };
+    });
+  };
+
+  // 1種目の保存（Supabase へ即時同期）
+  const handleSave = async (exerciseId: string) => {
+    const target = baselines[exerciseId];
+    if (!target) return;
+
+    setSavingId(exerciseId);
+    target.calibratedAt = new Date().toISOString();
+
+    const success = await saveBaseline(target);
+    if (success) {
+      // ローカルの IndexedDB にもキャッシュとして保存
+      await db.baselines.put(target);
+      alert('Supabase へ正常に保存されました！');
+    } else {
+      alert('保存に失敗しました。接続を確認してください。');
+    }
+    setSavingId(null);
+  };
+
+  if (loading) return <div className="page"><p>Supabase からデータを読み込み中…</p></div>;
+
+  return (
+    <div className="page">
+      <h1>基準重量（キャリブレーション）</h1>
+      <p className="sub">記録したデータは自動的に Supabase へ保存・復元されます。</p>
+
+      <div className="card-list">
+        {exercises.map((ex) => {
+          const b = baselines[ex.id] || { exerciseId: ex.id, weightKg: 0, reps: 0, rir: 0, est1rm: 0 };
+          const isSaving = savingId === ex.id;
+
+          return (
+            <div key={ex.id} className="card">
+              <h3>{ex.nameJa}</h3>
+              <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', margin: '12px 0' }}>
+                <div>
+                  <label>重量 (kg)</label>
+                  <input
+                    type="number"
+                    value={b.weightKg || ''}
+                    onChange={(e) => handleChange(ex.id, 'weightKg', Number(e.target.value))}
+                  />
+                </div>
+                <div>
+                  <label>回数</label>
+                  <input
+                    type="number"
+                    value={b.reps || ''}
+                    onChange={(e) => handleChange(ex.id, 'reps', Number(e.target.value))}
+                  />
+                </div>
+                <div>
+                  <label>RIR</label>
+                  <input
+                    type="number"
+                    value={b.rir ?? ''}
+                    onChange={(e) => handleChange(ex.id, 'rir', Number(e.target.value))}
+                  />
+                </div>
+              </div>
+              <p className="mono">推定 1RM: <strong>{b.est1rm || 0} kg</strong></p>
+              <button
+                className="btn primary"
+                onClick={() => handleSave(ex.id)}
+                disabled={isSaving}
+                style={{ marginTop: '8px', width: '100%' }}
+              >
+                {isSaving ? '保存中…' : 'Supabase へ保存'}
+              </button>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
