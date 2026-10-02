@@ -21,18 +21,19 @@ export async function get7DayVolumeByMuscle(muscleId: string): Promise<number> {
 
   if (recentSets.length === 0) return 0;
 
-  const exercises = await db.exercises.toArray();
-  const exerciseMap = new Map(exercises.map((e) => [e.id, e]));
+  const credits = await db.muscleCredits
+    .where('muscle')
+    .equals(muscleId)
+    .toArray();
+
+  const targetExerciseIds = new Set(
+    credits.filter((c) => c.credit >= 0.5).map((c) => c.exerciseId)
+  );
 
   let count = 0;
   for (const s of recentSets) {
-    // any型でキャストして型チェックを回避しつつ安全にデータを取得
-    const ex: any = exerciseMap.get(s.exerciseId);
-    if (ex) {
-      const muscles = ex.primaryMuscles || ex.targetMuscles || [];
-      if (muscles.includes(muscleId)) {
-        count++;
-      }
+    if (targetExerciseIds.has(s.exerciseId)) {
+      count++;
     }
   }
   return count;
@@ -40,10 +41,13 @@ export async function get7DayVolumeByMuscle(muscleId: string): Promise<number> {
 
 /** 種目ごとの推奨セット数と疲労回復アドバイスを判定 */
 export async function getExerciseRecommendation(exercise: Exercise): Promise<ExerciseRecommendation> {
-  // 型エラーを回避し、実際のDBに存在するプロパティ名から部位を取得
-  const exAny: any = exercise;
-  const muscles = exAny.primaryMuscles || exAny.targetMuscles || [];
-  const primaryMuscle = muscles[0];
+  const credits = await db.muscleCredits
+    .where('exerciseId')
+    .equals(exercise.id)
+    .toArray();
+
+  const primaryCredit = credits.find((c) => c.credit === 1.0) ?? credits[0];
+  const primaryMuscle = primaryCredit?.muscle;
 
   const volume7D = primaryMuscle ? await get7DayVolumeByMuscle(primaryMuscle) : 0;
 

@@ -5,9 +5,9 @@ import type { ExerciseBaseline, Exercise } from '../db/types';
 
 export default function Calibration() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
-  const [baselines, setBaselines] = useState<Record<string, ExerciseBaseline>>({});
+  const [baselines, setBaselines] = useState<Record<number, ExerciseBaseline>>({});
   const [loading, setLoading] = useState(true);
-  const [savingId, setSavingId] = useState<string | null>(null);
+  const [savingId, setSavingId] = useState<number | null>(null);
 
   // 初回ロード：種目マスタと Supabase からのベースラインを取得
   useEffect(() => {
@@ -17,9 +17,9 @@ export default function Calibration() {
         const exList = await db.exercises.toArray();
         setExercises(exList);
 
-        // Supabase から最新の基準重量を取得
+        // Supabase / Local から最新の基準重量を取得
         const remoteBaselines = await fetchBaselines();
-        const map: Record<string, ExerciseBaseline> = {};
+        const map: Record<number, ExerciseBaseline> = {};
         
         remoteBaselines.forEach((b) => {
           map[b.exerciseId] = b;
@@ -36,7 +36,7 @@ export default function Calibration() {
   }, []);
 
   // 重量・回数・RIR の入力変更
-  const handleChange = (exerciseId: string, field: keyof ExerciseBaseline, value: number) => {
+  const handleChange = (exerciseId: number, field: keyof ExerciseBaseline, value: number) => {
     setBaselines((prev) => {
       const current = prev[exerciseId] || {
         exerciseId,
@@ -44,7 +44,7 @@ export default function Calibration() {
         reps: 0,
         rir: 0,
         est1rm: 0,
-        calibratedAt: new Date().toISOString(),
+        calibratedAt: Date.now(),
       };
       const updated = { ...current, [field]: value };
       // 簡易 1RM 計算 (Epleyの式)
@@ -55,26 +55,24 @@ export default function Calibration() {
     });
   };
 
-  // 1種目の保存（Supabase へ即時同期）
-  const handleSave = async (exerciseId: string) => {
+  // 1種目の保存（IndexedDB & Supabase へ即時同期）
+  const handleSave = async (exerciseId: number) => {
     const target = baselines[exerciseId];
     if (!target) return;
 
     setSavingId(exerciseId);
-    target.calibratedAt = new Date().toISOString();
+    target.calibratedAt = Date.now();
 
     const success = await saveBaseline(target);
     if (success) {
-      // ローカルの IndexedDB にもキャッシュとして保存
-      await db.baselines.put(target);
-      alert('Supabase へ正常に保存されました！');
+      alert('Supabase & ローカルDBへ正常に保存されました！');
     } else {
-      alert('保存に失敗しました。接続を確認してください。');
+      alert('ローカルDBへ保存されました（Supabase同期は接続確認が必要です）。');
     }
     setSavingId(null);
   };
 
-  if (loading) return <div className="page"><p>Supabase からデータを読み込み中…</p></div>;
+  if (loading) return <div className="page"><p>Supabase / ローカルDB からデータを読み込み中…</p></div>;
 
   return (
     <div className="page">
@@ -83,12 +81,12 @@ export default function Calibration() {
 
       <div className="card-list">
         {exercises.map((ex) => {
-          const b = baselines[ex.id] || { exerciseId: ex.id, weightKg: 0, reps: 0, rir: 0, est1rm: 0 };
+          const b = baselines[ex.id] || { exerciseId: ex.id, weightKg: 0, reps: 0, rir: 0, est1rm: 0, calibratedAt: Date.now() };
           const isSaving = savingId === ex.id;
 
           return (
             <div key={ex.id} className="card">
-              <h3>{ex.nameJa}</h3>
+              <h3>{ex.name}</h3>
               <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', margin: '12px 0' }}>
                 <div>
                   <label>重量 (kg)</label>
@@ -122,7 +120,7 @@ export default function Calibration() {
                 disabled={isSaving}
                 style={{ marginTop: '8px', width: '100%' }}
               >
-                {isSaving ? '保存中…' : 'Supabase へ保存'}
+                {isSaving ? '保存中…' : 'Supabase & ローカルへ保存'}
               </button>
             </div>
           );

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/db';
-import type { Exercise, SplitType } from '../db/types';
+import type { Exercise, SplitType, SetRecord } from '../db/types';
 import { effectiveIncrement, formatWeight } from '../engine/units';
 import { prescribeNextLoad } from '../engine/progression';
 import { getExerciseRecommendation } from '../engine/generator';
@@ -122,7 +122,7 @@ function LoggerSection({ exercise, split }: { exercise: Exercise; split: SplitTy
     const presc = prescribeNextLoad({ weight, reps, rir }, exercise);
     const addedVolume = Number((weight * reps).toFixed(1));
 
-    const setData = {
+    const setData: SetRecord = {
       sessionId: 1,
       exerciseId: exercise.id,
       date,
@@ -139,11 +139,8 @@ function LoggerSection({ exercise, split }: { exercise: Exercise; split: SplitTy
       mode: presc.mode,
     };
 
-    // 1. ローカル DB (IndexedDB) に追加
-    const setId = await db.sets.add(setData);
-
-    // 2. Supabase へ自動同期（バックグラウンド保存）
-    saveWorkoutSession(
+    // IndexedDB 保存と Supabase バックグラウンド自動同期を統合実行
+    await saveWorkoutSession(
       {
         id: 1,
         date,
@@ -154,8 +151,8 @@ function LoggerSection({ exercise, split }: { exercise: Exercise; split: SplitTy
         mesocycleWeek: 1,
         isDeload: 0,
       },
-      [{ ...setData, id: Number(setId) }]
-    ).catch((err) => console.error('Supabase自動同期失敗:', err));
+      [setData]
+    );
 
     fireNeonConfetti();
 
