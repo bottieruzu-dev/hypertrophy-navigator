@@ -2,6 +2,7 @@ import { db } from '../db';
 import type { TrainingBackup } from '../../engine/backup';
 import { validBaseline } from '../../engine/planner';
 import { markPending } from './workout';
+import { startingReference } from '../../engine/trainingReferences';
 
 function canonical(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
@@ -32,7 +33,7 @@ export async function restoreTrainingBackup(backup: TrainingBackup): Promise<voi
       if (!existing) { await db.sets.add(set); await markPending('session',set.sessionId); }
     }
     for (const plan of backup.plans) {
-      if (plan.exercises.some(item => !backup.baselines.some(b => b.exerciseId === item.exerciseId))) throw new Error('メニューに必要なWeek0記録がありません。');
+      if (plan.exercises.some(item => !backup.baselines.some(b => b.exerciseId === item.exerciseId) && !startingReference(item.exerciseId))) throw new Error('メニューに必要なWeek0記録がありません。');
       const existing = await db.plans.get(plan.sessionId);
       if (existing && canonical(existing) !== canonical(plan)) throw new Error('同じIDに異なるメニューがあります。上書きせず復元を中止しました。');
       if (!existing) { await db.plans.add(plan); await markPending('session',plan.sessionId); }

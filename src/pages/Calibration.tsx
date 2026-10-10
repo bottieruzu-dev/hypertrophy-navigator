@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { validBaseline } from '../engine/planner';
 import { formatWeight } from '../engine/units';
 import { supabase } from '../lib/supabase';
+import { BENCH_START } from '../engine/trainingReferences';
 
 export default function Calibration() {
   const [split, setSplit] = useState<SplitType>('upper_A');
@@ -139,9 +140,11 @@ interface CalibrationModalProps {
 }
 
 function CalibrationModal({ exercise, existingBaseline, onClose }: CalibrationModalProps) {
-  const [weight, setWeight] = useState<number | ''>(exercise.increment === 0 ? 0 : existingBaseline?.weightKg ?? '');
-  const [reps, setReps] = useState<number | ''>(existingBaseline?.reps ?? '');
-  const [rir, setRir] = useState<number | ''>(existingBaseline?.rir ?? 2);
+  const bench = exercise.id === BENCH_START.exerciseId;
+  const bodyweight = exercise.increment === 0;
+  const [weight, setWeight] = useState<number | ''>(bodyweight ? 0 : existingBaseline?.weightKg ?? (bench ? BENCH_START.weightKg : ''));
+  const [reps, setReps] = useState<number | ''>(existingBaseline?.reps ?? (bench ? BENCH_START.reps : ''));
+  const [rir, setRir] = useState<number | ''>(existingBaseline?.rir ?? (bench ? '' : 2));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -221,8 +224,9 @@ function CalibrationModal({ exercise, existingBaseline, onClose }: CalibrationMo
         </div>
 
         <p className="sub" style={{ marginBottom: '20px', fontSize: '13px' }}>
-          {exercise.equipment === 'dumbbell' ? '重量は片手分。' : exercise.increment === 0 ? '自重種目は重量0で保存できます。' : '重量は前回と同じ数え方で入力。'} RIRはあと何回できそうかの目安です。
+          {exercise.equipment === 'dumbbell' ? '重量は片手分。' : bodyweight ? '自重で実施。重量の入力は不要です。' : bench ? '重量はバーとプレートを合わせた合計です。' : '重量は前回と同じ数え方で入力。'} RIRはあと何回できそうかの目安です。
         </p>
+        {bench && !existingBaseline && <p className="notice">開始基準は50kg・10回・3セットです。実際に確認した回数とRIRを入力して測定値として保存してください。</p>}
         {error && <p className="notice" role="alert">{error}</p>}
 
         {/* フォーム入力エリア */}
@@ -230,12 +234,12 @@ function CalibrationModal({ exercise, existingBaseline, onClose }: CalibrationMo
           className="form-grid"
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
+            gridTemplateColumns: `repeat(${bodyweight ? 2 : 3}, 1fr)`,
             gap: '10px',
             marginBottom: '20px',
           }}
         >
-          <div>
+          {!bodyweight && <div>
             <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: 'var(--sub)', marginBottom: '8px', letterSpacing: '0.5px' }}>
               重量 (kg)
             </label>
@@ -248,7 +252,7 @@ function CalibrationModal({ exercise, existingBaseline, onClose }: CalibrationMo
               placeholder="0"
               onChange={(e) => setWeight(e.target.value === '' ? '' : Number(e.target.value))}
             />
-          </div>
+          </div>}
 
           <div>
             <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, color: 'var(--sub)', marginBottom: '8px', letterSpacing: '0.5px' }}>
@@ -282,7 +286,7 @@ function CalibrationModal({ exercise, existingBaseline, onClose }: CalibrationMo
         </div>
 
         {/* 推定 1RM カード */}
-        <div
+        {!bodyweight && <div
           style={{
             background: 'rgba(0, 242, 254, 0.05)',
             border: '1px solid rgba(0, 242, 254, 0.2)',
@@ -298,7 +302,7 @@ function CalibrationModal({ exercise, existingBaseline, onClose }: CalibrationMo
           <span className="mono" style={{ fontSize: '18px', fontWeight: 900, color: 'var(--accent)' }}>
             {est1rm} <span style={{ fontSize: '12px' }}>kg</span>
           </span>
-        </div>
+        </div>}
 
         {/* 操作ボタン */}
         <div style={{ display: 'flex', gap: '12px' }}>
@@ -306,7 +310,7 @@ function CalibrationModal({ exercise, existingBaseline, onClose }: CalibrationMo
             キャンセル
           </button>
           <button className="btn primary" style={{ flex: 1.5, height: '48px' }} onClick={handleSave} disabled={saving}>
-            {saving ? '保存中...' : '基準重量を確定'}
+            {saving ? '保存中...' : bodyweight ? '基準回数を保存' : '測定した基準を保存'}
           </button>
         </div>
       </motion.div>

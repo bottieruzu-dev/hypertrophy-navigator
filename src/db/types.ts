@@ -170,7 +170,7 @@ export interface PlannedExercise {
   sets: number;
   restSec: number;
   reason: string;
-  source: 'baseline' | 'history';
+  source: 'baseline' | 'history' | 'reference';
 }
 
 export interface DailyPlan {

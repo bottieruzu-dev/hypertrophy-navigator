@@ -12,6 +12,7 @@ import { fetchBaselines, retryPendingSync } from '../db/queries/workout';
 import { supabase } from '../lib/supabase';
 import { CALIBRATION_PLAN } from '../db/queries/calibration';
 import { BackupControls } from '../components/BackupControls';
+import { startingReference } from '../engine/trainingReferences';
 
 export default function Workout({ onCalibration }: { onCalibration: () => void }) {
   const [now, setNow] = useState(Date.now);
@@ -69,7 +70,7 @@ export default function Workout({ onCalibration }: { onCalibration: () => void }
         {draft.warnings.map(w => <p className="notice" key={w}>{w}</p>)}
         <button className="btn primary big" disabled={busy || !draft.exercises.length || context.pain} onClick={() => action(async () => { await startWorkout(draft); setSelectedId(null); })}>{busy ? '保存中…' : 'このメニューで開始'}</button>
       </section>
-      <section className="card"><h2>Week0の記録を使っています</h2><p className="sub">全種目のやり直しは不要です。未測定の種目は自動で省略し、必要なものだけ追加できます。ダンベルは片手分、プレート式はWeek0と同じ数え方で入力してください。</p><div className="two-actions"><button className="btn" onClick={onCalibration}>Week0を確認・追加</button>{supabase && <button className="btn" disabled={busy} onClick={() => action(() => fetchBaselines(), 'クラウドのWeek0を確認しました。新しい記録だけを取り込みました。')}>クラウドから読込</button>}</div></section>
+      <section className="card"><h2>Week0の記録を使っています</h2><p className="sub">全種目のやり直しは不要です。未測定の種目は原則省略します。ベンチプレスは未測定でも申告された50kg・10回・3セットを開始基準に使えます。ダンベルは片手分、プレート式はWeek0と同じ数え方で入力してください。</p><div className="two-actions"><button className="btn" onClick={onCalibration}>Week0を確認・追加</button>{supabase && <button className="btn" disabled={busy} onClick={() => action(() => fetchBaselines(), 'クラウドのWeek0を確認しました。新しい記録だけを取り込みました。')}>クラウドから読込</button>}</div></section>
     </>}
     {active && <>
       <section className="card session-summary"><p className="eyebrow">SESSION IN PROGRESS</p><h2>{SPLIT_LABELS[active.split]}</h2><p className="sub">{active.date} 開始 · 途中で閉じても続きから再開できます</p><div className="plan-stats"><span><strong>{doneSets}/{totalSets}</strong> セット</span><span>約 <strong>{active.estimatedMinutes}</strong> 分</span></div><progress value={Math.min(doneSets,totalSets)} max={totalSets} aria-label="セットの進捗"/>
@@ -79,7 +80,7 @@ export default function Workout({ onCalibration }: { onCalibration: () => void }
         const group = WORKOUT_GROUPS[active.split].find(g => g.includes(currentExercise.id)) ?? [];
         return group.filter(id => id !== currentExercise.id && !active.exercises.some(e => e.exerciseId === id)).flatMap(id => {
           const ex = data.exercises.find(e => e.id === id); const b = data.baselines.find(b => b.exerciseId === id);
-          if (!ex || !validBaseline(b,ex) || ex.isAvailable !== 1 || ex.silhouetteTag === 'forbidden') return [];
+          if (!ex || (!validBaseline(b,ex) && !startingReference(id)) || ex.isAvailable !== 1 || ex.silhouetteTag === 'forbidden') return [];
           const replacement = proposeReplacement(active, currentExercise.id, id, { ...data, date, now, context: active.context });
           return replacement ? [{ exercise: ex, item: replacement }] : [];
         });
@@ -94,7 +95,7 @@ export default function Workout({ onCalibration }: { onCalibration: () => void }
 }
 
 function MenuList({ items, exercises, sets = [], skipped = [], onSelect, selectedId }: { items: PlannedExercise[]; exercises: Exercise[]; sets?: SetRecord[]; skipped?: number[]; onSelect?: (id: number) => void; selectedId?: number }) {
-  return <ol className="daily-menu">{items.map((item,index) => { const ex = exercises.find(e => e.id === item.exerciseId); if (!ex) return null; const count = sets.filter(s => !s.isWarmup && s.exerciseId === ex.id).length; const done = count >= item.sets; const skip = skipped.includes(ex.id); return <li key={ex.id} className={`${done || skip ? 'menu-done' : ''} ${selectedId === ex.id ? 'menu-current' : ''}`}><button disabled={!onSelect || skip} onClick={() => onSelect?.(ex.id)}><span className="menu-number">{done ? '✓' : skip ? '–' : String(index+1).padStart(2,'0')}</span><span className="menu-content"><strong>{ex.name}</strong><span>{formatWeight(item.targetWeight,ex)} × {item.targetReps}回 × {item.sets}セット · RIR {item.targetRir}</span><small>{onSelect ? skip ? 'スキップ' : `${count}/${item.sets} 完了 · ` : ''}休憩 {item.restSec}秒 · {item.source === 'baseline' ? 'Week0基準' : '前回実績'}</small></span></button></li>; })}</ol>;
+  return <ol className="daily-menu">{items.map((item,index) => { const ex = exercises.find(e => e.id === item.exerciseId); if (!ex) return null; const count = sets.filter(s => !s.isWarmup && s.exerciseId === ex.id).length; const done = count >= item.sets; const skip = skipped.includes(ex.id); return <li key={ex.id} className={`${done || skip ? 'menu-done' : ''} ${selectedId === ex.id ? 'menu-current' : ''}`}><button disabled={!onSelect || skip} onClick={() => onSelect?.(ex.id)}><span className="menu-number">{done ? '✓' : skip ? '–' : String(index+1).padStart(2,'0')}</span><span className="menu-content"><strong>{ex.name}</strong><span>{formatWeight(item.targetWeight,ex)} × {item.targetReps}回 × {item.sets}セット · RIR {item.targetRir}</span><small>{onSelect ? skip ? 'スキップ' : `${count}/${item.sets} 完了 · ` : ''}休憩 {item.restSec}秒 · {item.source === 'baseline' ? 'Week0基準' : item.source === 'reference' ? '申告された開始基準' : '前回実績'}</small></span></button></li>; })}</ol>;
 }
 
 function ExerciseLogger({ plan, item, exercise, sets, credits, disabled, onLog, onCorrect, onSkip, alternatives, onReplace }: { plan: DailyPlan; item: PlannedExercise; exercise: Exercise; sets: SetRecord[]; credits: { muscle: string; credit: number }[]; disabled: boolean; onLog: (actual: { weight: number; reps: number; rir: number; isWarmup: boolean }) => Promise<boolean | undefined>; onCorrect: (id: number, actual: { weight: number; reps: number; rir: number }) => Promise<boolean | undefined>; onSkip: () => void; alternatives: { exercise: Exercise; item: PlannedExercise }[]; onReplace: (item: PlannedExercise) => void }) {

@@ -6,7 +6,7 @@ const number = (v: unknown) => typeof v === 'number' && Number.isFinite(v);
 const id = (v: unknown) => number(v) && Number.isSafeInteger(v) && Number(v) > 0;
 const date = (v: unknown) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && Number.isFinite(Date.parse(`${v}T00:00:00Z`)) && new Date(`${v}T00:00:00Z`).toISOString().slice(0,10) === v;
 const split = (v: unknown) => ['upper_A','lower','upper_B'].includes(String(v));
-const validItem = (v: unknown) => object(v) && id(v.exerciseId) && number(v.targetWeight) && Number(v.targetWeight) >= 0 && Number.isInteger(v.targetReps) && Number(v.targetReps) >= 1 && Number(v.targetReps) <= 100 && Number.isInteger(v.targetRir) && Number(v.targetRir) >= 0 && Number(v.targetRir) <= 4 && Number.isInteger(v.sets) && Number(v.sets) >= 1 && Number(v.sets) <= 10 && number(v.restSec) && Number(v.restSec) > 0 && Number(v.restSec) <= 600 && typeof v.reason === 'string' && ['baseline','history'].includes(String(v.source));
+const validItem = (v: unknown) => object(v) && id(v.exerciseId) && number(v.targetWeight) && Number(v.targetWeight) >= 0 && Number.isInteger(v.targetReps) && Number(v.targetReps) >= 1 && Number(v.targetReps) <= 100 && Number.isInteger(v.targetRir) && Number(v.targetRir) >= 0 && Number(v.targetRir) <= 4 && Number.isInteger(v.sets) && Number(v.sets) >= 1 && Number(v.sets) <= 10 && number(v.restSec) && Number(v.restSec) > 0 && Number(v.restSec) <= 600 && typeof v.reason === 'string' && ['baseline','history','reference'].includes(String(v.source));
 
 /** Validate the complete file before any database writes. No executable / arbitrary settings data. */
 export function parseTrainingBackup(text: string): TrainingBackup {

@@ -2,6 +2,7 @@ import type { DailyPlan, Exercise, ExerciseBaseline, Muscle, MuscleCode, MuscleC
 import { daysBetween, shiftDate, todayInJapan } from './dates';
 import { prescribeNextLoad } from './progression';
 import { effectiveIncrement, roundToIncrement } from './units';
+import { startingReference } from './trainingReferences';
 
 export const SPLIT_LABELS: Record<SplitType, string> = { upper_A: '上半身 A · 背中・肩・二頭筋', lower: '下半身 · 脚・お尻・体幹', upper_B: '上半身 B · 胸・肩・三頭筋' };
 export const SPLIT_ORDER: SplitType[] = ['upper_A', 'lower', 'upper_B'];
@@ -9,7 +10,7 @@ export const SPLIT_ORDER: SplitType[] = ['upper_A', 'lower', 'upper_B'];
 export const WORKOUT_GROUPS: Record<SplitType, number[][]> = {
   upper_A: [[12, 13], [14, 15, 16], [1, 2, 3], [6, 7], [8], [9, 10], [25, 26]],
   lower: [[31, 32], [29, 30], [33], [34], [27, 25, 26]],
-  upper_B: [[18, 19, 20], [37, 21], [2, 1, 3], [23, 24], [7, 6], [26, 25], [4, 5]],
+  upper_B: [[37, 21], [18, 19, 20], [2, 1, 3], [23, 24], [7, 6], [26, 25], [4, 5]],
 };
 
 export function validBaseline(b: ExerciseBaseline | undefined, ex: Exercise): b is ExerciseBaseline {
@@ -50,7 +51,8 @@ function previousPerformance(ex: Exercise, input: PlannerInput): SetRecord[] {
   const eligible = workingSets(input.sets, input.date).filter(s => s.exerciseId === ex.id && (ex.increment === 0 || s.actualWeight > 0));
   const managedIds = new Set(input.plans.map(p => p.sessionId));
   const completedIds = new Set(input.plans.filter(p => p.status === 'completed').map(p => p.sessionId));
-  const baseline = input.baselines.find(b => b.exerciseId === ex.id);
+  const storedBaseline = input.baselines.find(b => b.exerciseId === ex.id);
+  const baseline = validBaseline(storedBaseline, ex) ? storedBaseline : undefined;
   const baselineDate = baseline ? todayInJapan(new Date(baseline.calibratedAt)) : '';
   const usable = eligible.filter(s => {
     const plan = input.plans.find(p => p.sessionId === s.sessionId);
@@ -80,7 +82,7 @@ export function buildDailyPlan(input: PlannerInput): Omit<DailyPlan, 'sessionId'
   const hasSoreness = (id: number) => credits.some(c => c.exerciseId === id && c.credit >= 0.5 && context.soreMuscles.includes(c.muscle));
   const available = (id: number) => {
     const ex = exercises.find(e => e.id === id);
-    return !!ex && ex.isAvailable === 1 && ex.silhouetteTag !== 'forbidden' && validBaseline(baselines.find(b => b.exerciseId === id), ex) && !hasSoreness(id);
+    return !!ex && ex.isAvailable === 1 && ex.silhouetteTag !== 'forbidden' && (validBaseline(baselines.find(b => b.exerciseId === id), ex) || !!startingReference(id)) && !hasSoreness(id);
   };
   const recentlyLoaded = (id: number) => {
     const primary = credits.filter(c => c.exerciseId === id && c.credit === 1).map(c => c.muscle);
@@ -118,7 +120,9 @@ export function buildDailyPlan(input: PlannerInput): Omit<DailyPlan, 'sessionId'
       continue;
     }
     const ex = exercises.find(e => e.id === id)!;
-    const baseline = baselines.find(b => b.exerciseId === id)!;
+    const measured = baselines.find(b => b.exerciseId === id);
+    const baseline = validBaseline(measured, ex) ? measured : startingReference(id)!;
+    const isReference = !validBaseline(measured, ex);
     let count = context.readiness === 'tired' ? 2 : 3;
     for (const c of credits.filter(c => c.exerciseId === id && c.credit >= 0.5)) {
       const muscle = muscles.find(m => m.code === c.muscle);
@@ -128,7 +132,7 @@ export function buildDailyPlan(input: PlannerInput): Omit<DailyPlan, 'sessionId'
     const history = previousPerformance(ex, input);
     let weight = baseline.weightKg;
     let reps = Math.max(ex.repRange[0], Math.min(ex.repRange[1], baseline.reps));
-    let reason = 'Week0の基準を引き継ぎ、実際の余力を確認';
+    let reason = isReference ? '申告された開始基準。Week0の測定値ではないため、実際の回数と余力を記録' : 'Week0の基準を引き継ぎ、実際の余力を確認';
     if (history.length) {
       weight = Math.min(...history.map(s => s.actualWeight));
       const sameLoad = history.filter(s => s.actualWeight === weight);
@@ -142,7 +146,7 @@ export function buildDailyPlan(input: PlannerInput): Omit<DailyPlan, 'sessionId'
     if (ex.increment === 0) weight = 0;
     const targetRir = context.readiness === 'tired' ? 3 : 2;
     if (context.readiness === 'tired' && ex.increment > 0) weight = roundToIncrement(Math.max(effectiveIncrement(ex, weight), weight - effectiveIncrement(ex, weight)), ex);
-    const item: PlannedExercise = { exerciseId: id, targetWeight: weight, targetReps: reps, targetRir, sets: count, restSec: ex.restSec, reason, source: history.length ? 'history' : 'baseline' };
+    const item: PlannedExercise = { exerciseId: id, targetWeight: weight, targetReps: reps, targetRir, sets: count, restSec: ex.restSec, reason, source: history.length ? 'history' : isReference ? 'reference' : 'baseline' };
     while (item.sets > 0 && estimateMinutes([...items, item], exercises) > context.minutes) item.sets--;
     if (!item.sets) continue;
     items.push(item);
@@ -182,7 +186,7 @@ export function proposeReplacement(plan: DailyPlan, originalId: number, candidat
   }
   while (candidate.sets > 0 && estimateMinutes(plan.exercises.map(e => e.exerciseId === originalId ? candidate : e), input.exercises) > plan.context.minutes) candidate.sets--;
   if (candidate.sets < 1) return undefined;
-  candidate.reason = '器具変更：この種目自身のWeek0・履歴から設定';
+  candidate.reason = candidate.source === 'reference' ? '器具変更：申告された開始基準から設定。実際の回数と余力を記録' : '器具変更：この種目自身のWeek0・履歴から設定';
   return candidate;
 }
 

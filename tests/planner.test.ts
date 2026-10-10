@@ -58,3 +58,35 @@ test('A session across midnight uses all completed sets, and same-day recalibrat
   assert.equal(buildDailyPlan(i).exercises.find(e=>e.exerciseId===14)!.targetWeight,40);
 });
 test('Backup rejects invalid dates, duplicates and incomplete active plan metadata',()=> { const b={app:'HypertrophyNavigator',version:2,exportedAt:'dummy',baselines:input().baselines,sessions:[],sets:[],plans:[]}; assert.throws(()=>parseTrainingBackup(JSON.stringify({...b,baselines:[b.baselines[0],b.baselines[0]]}))); assert.throws(()=>parseTrainingBackup(JSON.stringify({...b,sessions:[{id:1,date:'2026-99-99',startedAt:1,splitType:'upper_A',mesocycleWeek:1,isDeload:0}]}))); assert.throws(()=>parseTrainingBackup('{personal malformed content')); });
+test('Unmeasured bench uses the requested 50kg x 10 x 3 reference without creating Week0',()=> {
+  const i=input(); i.context.split='upper_B'; i.baselines=i.baselines.filter(b=>b.exerciseId!==37);
+  const before=JSON.stringify(i.baselines); const p=buildDailyPlan(i); const bench=p.exercises.find(e=>e.exerciseId===37)!;
+  assert.equal(p.exercises[0].exerciseId,37);
+  assert.deepEqual([bench.targetWeight,bench.targetReps,bench.sets,bench.source],[50,10,3,'reference']);
+  assert.equal(JSON.stringify(i.baselines),before);
+});
+test('Bench keeps measured baselines and uses completed performance after an unmeasured start',()=> {
+  const i=input(); i.context.split='upper_B'; i.baselines.find(b=>b.exerciseId===37)!.weightKg=45;
+  assert.equal(buildDailyPlan(i).exercises.find(e=>e.exerciseId===37)!.targetWeight,45);
+  i.baselines=i.baselines.filter(b=>b.exerciseId!==37);
+  const initial=buildDailyPlan(i); i.plans=[{...initial,sessionId:101,date:'2026-10-08',status:'completed'}];
+  i.sets=Array.from({length:3},(_,n)=>set(37,{id:n+1,sessionId:101,setOrder:n+1,actualWeight:50,actualReps:10,actualRir:2}));
+  const next=buildDailyPlan(i).exercises.find(e=>e.exerciseId===37)!;
+  assert.equal(next.source,'history'); assert.equal(next.targetWeight,52.5);
+});
+test('Bench reference still observes fatigue, pain and recent workload',()=> {
+  const i=input(); i.context.split='upper_B'; i.baselines=i.baselines.filter(b=>b.exerciseId!==37); i.context.readiness='tired';
+  const bench=buildDailyPlan(i).exercises.find(e=>e.exerciseId===37)!;
+  assert.equal(bench.sets,2); assert.equal(bench.targetWeight,47.5);
+  i.context.pain=true; assert.equal(buildDailyPlan(i).exercises.length,0);
+  i.context.pain=false; i.sets=[set(37,{date:'2026-10-10'})]; assert(!buildDailyPlan(i).exercises.some(e=>e.exerciseId===37));
+});
+test('Hanging leg raises remain bodyweight and reference menus survive backup validation',()=> {
+  const i=input(); i.context.split='lower'; i.baselines.find(b=>b.exerciseId===27)!.weightKg=15;
+  const leg=buildDailyPlan(i).exercises.find(e=>e.exerciseId===27)!; assert.equal(leg.targetWeight,0);
+  i.context.split='upper_B'; i.baselines=i.baselines.filter(b=>b.exerciseId!==37);
+  const p={...buildDailyPlan(i),sessionId:101};
+  const session={id:101,date,startedAt:now,splitType:'upper_B',mesocycleWeek:1,isDeload:0};
+  const b={app:'HypertrophyNavigator',version:2,exportedAt:new Date(now).toISOString(),baselines:i.baselines,sessions:[session],sets:[],plans:[p]};
+  assert.equal(parseTrainingBackup(JSON.stringify(b)).plans[0].exercises[0].source,'reference');
+});
