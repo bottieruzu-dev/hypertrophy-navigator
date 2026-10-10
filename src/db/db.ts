@@ -2,7 +2,7 @@ import Dexie, { type Table } from 'dexie';
 import type {
   Muscle, Exercise, MuscleCredit, SessionRecord, SetRecord,
   BodyMetric, NutritionLog, CardioLog, EventLog,
-  ExerciseBaseline, Food, Setting,
+  ExerciseBaseline, Food, Setting, DailyPlan,
 } from './types';
 
 export class HypertrophyDB extends Dexie {
@@ -18,9 +18,10 @@ export class HypertrophyDB extends Dexie {
   baselines!: Table<ExerciseBaseline, number>;
   foods!: Table<Food, number>;
   settings!: Table<Setting, string>;
+  plans!: Table<DailyPlan, number>;
 
   constructor() {
-    super('HypertrophyNavigatorDB');
+    super(import.meta.env.MODE === 'test' ? 'HypertrophyNavigatorTestDB' : 'HypertrophyNavigatorDB');
 
     this.version(1).stores({
       muscles:       'code, priorityRank, tag',
@@ -36,6 +37,8 @@ export class HypertrophyDB extends Dexie {
       foods:         'id, tag',
       settings:      'key',
     });
+    // Additive migration: Week0 and existing logs are left intact.
+    this.version(2).stores({ plans: 'sessionId, date, status' });
   }
 }
 

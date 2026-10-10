@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/db';
 import { validateSeed, nukeDatabase, SEED_VERSION, WEEKLY_SET_BUDGET_MAX } from '../db/seed';
@@ -23,7 +23,6 @@ export default function DebugSeed() {
 
   const muscles = useLiveQuery(() => db.muscles.orderBy('priorityRank').toArray(), []);
 
-  useEffect(() => { setReport(validateSeed()); }, []);
 
   const handleNuke = async () => {
     if (!confirm('全データを削除して再投入します。よろしいですか？')) return;
@@ -50,9 +49,9 @@ export default function DebugSeed() {
       <section className="card">
         <h2>Supabase 統合データ移行</h2>
         <p className="sub">現在ローカル（Week 0 等）に保存されているデータを my-kakeibo プロジェクトへアップロードします。</p>
-        <button 
-          className="btn primary" 
-          onClick={handleMigrate} 
+        <button
+          className="btn primary"
+          onClick={handleMigrate}
           disabled={migrating}
           style={{ marginTop: '12px' }}
         >

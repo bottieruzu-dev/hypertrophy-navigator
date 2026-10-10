@@ -10,6 +10,7 @@ import type {
 
 export async function migrateLocalDataToSupabase(): Promise<{ success: boolean; message: string }> {
   try {
+    if (!supabase) return { success: false, message: 'クラウド未設定です。端末の記録は保持しています。' };
     // 1. ベースラインデータの移行
     const baselines: ExerciseBaseline[] = await db.baselines.toArray();
     if (baselines.length > 0) {
@@ -114,9 +115,7 @@ export async function migrateLocalDataToSupabase(): Promise<{ success: boolean; 
     }
 
     return { success: true, message: 'ローカルデータをSupabaseへ無事移行しました！' };
-  } catch (err: unknown) {
-    console.error('Supabase移行エラー:', err);
-    const msg = err instanceof Error ? err.message : String(err);
-    return { success: false, message: `移行失敗: ${msg}` };
+  } catch {
+    return { success: false, message: 'クラウドへの送信に失敗しました。端末の記録は保持しています。' };
   }
 }

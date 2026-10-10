@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/db';
-import { CALIBRATION_TOTAL, getCalibrationExercises } from '../db/queries/calibration';
+import { CALIBRATION_PLAN, CALIBRATION_TOTAL, getCalibrationExercises } from '../db/queries/calibration';
 import { fetchBaselines, saveBaseline } from '../db/queries/workout';
 import type { Exercise, SplitType, ExerciseBaseline } from '../db/types';
 import { motion, AnimatePresence } from 'framer-motion';
+import { validBaseline } from '../engine/planner';
+import { formatWeight } from '../engine/units';
+import { supabase } from '../lib/supabase';
 
 export default function Calibration() {
   const [split, setSplit] = useState<SplitType>('upper_A');
@@ -13,12 +16,11 @@ export default function Calibration() {
 
   // 全ベースライン（保存済みデータ）をローカルDBからリアルタイム取得
   const baselines = useLiveQuery(() => db.baselines.toArray(), []) || [];
-  const doneCount = baselines.length;
-
-  useEffect(() => {
-    // 初回マウント時にSupabaseから最新データを取得・同期
-    fetchBaselines();
-  }, []);
+  const [cloudMessage, setCloudMessage] = useState('');
+  const [loadingCloud, setLoadingCloud] = useState(false);
+  const allExercises = useLiveQuery(() => db.exercises.toArray(), []) ?? [];
+  const requiredIds = Object.values(CALIBRATION_PLAN).flat();
+  const doneCount = allExercises.filter(ex => requiredIds.includes(ex.id) && validBaseline(baselines.find(b => b.exerciseId === ex.id), ex)).length;
 
   useEffect(() => {
     // 選択されたタブ（SplitType）に応じた種目リストを取得
@@ -44,7 +46,10 @@ export default function Calibration() {
 
   return (
     <div className="page">
-      {/* Week 0 進捗バー & カウンター */}
+      <h1>Week0 · 基準の記録</h1>
+      <p className="sub">保存済みの記録は今日のメニューに引き継ぎます。全種目のやり直しは不要です。変更したい種目だけ開いてください。</p>
+      {supabase && <button className="btn" disabled={loadingCloud} onClick={async () => { setLoadingCloud(true); try { await fetchBaselines(); setCloudMessage('新しいクラウド記録を取り込みました。端末の新しい記録は保持しています。'); } catch (error) { setCloudMessage(error instanceof Error ? error.message : '読み込めませんでした。'); } finally { setLoadingCloud(false); } }}>{loadingCloud ? '読込中…' : 'クラウドのWeek0を読み込む'}</button>}
+      {cloudMessage && <p role="status" className="notice">{cloudMessage}</p>}
       <header className="hdr" style={{ marginBottom: '16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
           <span className="sub" style={{ fontSize: '13px', fontWeight: 800, color: 'var(--sub)' }}>
@@ -90,7 +95,7 @@ export default function Calibration() {
       <ul className="list">
         {exercises.map((ex) => {
           const b = getBaseline(ex.id);
-          const isDone = !!b;
+          const isDone = validBaseline(b, ex);
           return (
             <li key={ex.id} style={{ listStyle: 'none', margin: 0, padding: 0 }}>
               <button
@@ -100,7 +105,7 @@ export default function Calibration() {
                 <div className="name">{ex.name}</div>
                 <div className="meta">
                   {isDone
-                    ? `${b.weightKg} kg × ${b.reps}`
+                    ? `${formatWeight(b!.weightKg, ex)} × ${b!.reps}回 · RIR ${b!.rir}`
                     : `${ex.repRange[0]}-${ex.repRange[1]} reps`}
                 </div>
                 <div className="mark">{isDone ? '✓' : '›'}</div>
@@ -134,10 +139,11 @@ interface CalibrationModalProps {
 }
 
 function CalibrationModal({ exercise, existingBaseline, onClose }: CalibrationModalProps) {
-  const [weight, setWeight] = useState<number | ''>(existingBaseline?.weightKg ?? '');
+  const [weight, setWeight] = useState<number | ''>(exercise.increment === 0 ? 0 : existingBaseline?.weightKg ?? '');
   const [reps, setReps] = useState<number | ''>(existingBaseline?.reps ?? '');
   const [rir, setRir] = useState<number | ''>(existingBaseline?.rir ?? 2);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
   // Epleyの公式による推定1RM計算
   const numWeight = Number(weight) || 0;
@@ -149,12 +155,12 @@ function CalibrationModal({ exercise, existingBaseline, onClose }: CalibrationMo
     : 0;
 
   const handleSave = async () => {
-    if (weight === '' || reps === '' || rir === '') return;
+    if (weight === '' || reps === '' || rir === '' || Number(weight) < 0 || (exercise.increment > 0 && Number(weight) <= 0) || !Number.isInteger(Number(reps)) || Number(reps) < 1 || Number(reps) > 100 || !Number.isInteger(Number(rir)) || Number(rir) < 0 || Number(rir) > 4) { setError('重量・回数（1〜100）・RIR（0〜4）を確認してください。自重は重量0で保存できます。'); return; }
     setSaving(true);
 
     const baseline: ExerciseBaseline = {
       exerciseId: exercise.id,
-      weightKg: Number(weight),
+      weightKg: exercise.increment === 0 ? 0 : Number(weight),
       reps: Number(reps),
       rir: Number(rir),
       est1rm,
@@ -162,10 +168,9 @@ function CalibrationModal({ exercise, existingBaseline, onClose }: CalibrationMo
     };
 
     // ローカル IndexedDB と Supabase へ自動同期・保存
-    await saveBaseline(baseline);
-
-    setSaving(false);
-    onClose();
+    try { await saveBaseline(baseline); onClose(); }
+    catch (failure) { setError(failure instanceof Error ? failure.message : '端末に保存できませんでした。'); }
+    finally { setSaving(false); }
   };
 
   return (
@@ -174,7 +179,7 @@ function CalibrationModal({ exercise, existingBaseline, onClose }: CalibrationMo
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      onClick={onClose}
+      onClick={() => { if (!saving) onClose(); }}
     >
       <motion.div
         className="card"
@@ -198,6 +203,8 @@ function CalibrationModal({ exercise, existingBaseline, onClose }: CalibrationMo
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
           <h2 style={{ margin: 0, color: '#fff', fontSize: '19px', fontWeight: 800 }}>{exercise.name}</h2>
           <button
+            disabled={saving}
+            aria-label="閉じる"
             onClick={onClose}
             style={{
               background: 'none',
@@ -214,8 +221,9 @@ function CalibrationModal({ exercise, existingBaseline, onClose }: CalibrationMo
         </div>
 
         <p className="sub" style={{ marginBottom: '20px', fontSize: '13px' }}>
-          Week 0 基準重量・RIR の設定
+          {exercise.equipment === 'dumbbell' ? '重量は片手分。' : exercise.increment === 0 ? '自重種目は重量0で保存できます。' : '重量は前回と同じ数え方で入力。'} RIRはあと何回できそうかの目安です。
         </p>
+        {error && <p className="notice" role="alert">{error}</p>}
 
         {/* フォーム入力エリア */}
         <div
@@ -235,6 +243,7 @@ function CalibrationModal({ exercise, existingBaseline, onClose }: CalibrationMo
               type="number"
               className="btn"
               style={{ background: 'var(--bg)', textAlign: 'center', fontSize: '18px', fontWeight: 'bold', height: '48px' }}
+              min="0" step="any"
               value={weight}
               placeholder="0"
               onChange={(e) => setWeight(e.target.value === '' ? '' : Number(e.target.value))}
@@ -249,6 +258,7 @@ function CalibrationModal({ exercise, existingBaseline, onClose }: CalibrationMo
               type="number"
               className="btn"
               style={{ background: 'var(--bg)', textAlign: 'center', fontSize: '18px', fontWeight: 'bold', height: '48px' }}
+              min="1" max="100" step="1"
               value={reps}
               placeholder="0"
               onChange={(e) => setReps(e.target.value === '' ? '' : Number(e.target.value))}
@@ -263,6 +273,7 @@ function CalibrationModal({ exercise, existingBaseline, onClose }: CalibrationMo
               type="number"
               className="btn"
               style={{ background: 'var(--bg)', textAlign: 'center', fontSize: '18px', fontWeight: 'bold', height: '48px' }}
+              min="0" max="4" step="1"
               value={rir}
               placeholder="2"
               onChange={(e) => setRir(e.target.value === '' ? '' : Number(e.target.value))}

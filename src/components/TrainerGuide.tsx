@@ -1,44 +1,16 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import type { Exercise } from '../db/types';
 import { getExerciseSteps } from '../engine/exerciseGuides';
 
-interface TrainerGuideProps {
-  exercise: Exercise;
-}
-
-export const TrainerGuide: React.FC<TrainerGuideProps> = ({ exercise }) => {
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+export function TrainerGuide({ exercise }: { exercise: Exercise }) {
+  const [index, setIndex] = useState(0);
   const steps = getExerciseSteps(exercise);
-  const currentStep = steps[currentStepIndex];
-
-  const handleNextStep = () => {
-    setCurrentStepIndex((prev) => (prev + 1) % steps.length);
-  };
-
-  return (
-    <div className="trainer-dialog-card" onClick={handleNextStep}>
-      {/* キャラクター立ち絵領域 */}
-      <div className="trainer-character-area">
-        <img
-          src="/trainer.png"
-          alt="AI Trainer RIO"
-          className="trainer-character-img"
-          onError={(e) => {
-            (e.target as HTMLElement).style.display = 'none';
-          }}
-        />
-        <div className="trainer-fallback-icon">👩‍🏫</div>
-      </div>
-
-      {/* 横長大型話者吹き出し */}
-      <div className="trainer-speech-box">
-        <div className="trainer-header">
-          <span className="trainer-title">AI TRAINER RIO</span>
-          <span className="step-badge">{currentStep.title} ({currentStepIndex + 1}/4)</span>
-        </div>
-        <p className="trainer-speech-text">{currentStep.text}</p>
-        <div className="tap-prompt">TAP TO NEXT ›</div>
-      </div>
-    </div>
-  );
-};
+  const current = steps[index];
+  return <section className="trainer-guide" aria-label={`${exercise.name}のフォームガイド`}>
+    <div className="guide-header"><img src={`${import.meta.env.BASE_URL}trainer.png`} alt="トレーナーキャラクター RIO"/><div><p className="eyebrow">FORM GUIDE · RIO</p><h3>落ち着いて、1回ずつ。</h3><p className="sub">器具に合わせた動作のポイント</p></div></div>
+    <div className="guide-tabs" role="group" aria-label="説明のステップ">{steps.map((step,i) => <button key={step.stepNo} aria-pressed={index===i} className={index===i?'selected':''} onClick={() => setIndex(i)}>{step.stepNo}. {step.title}</button>)}</div>
+    <div className="guide-text" aria-live="polite"><strong>{current.title}</strong><p>{current.text}</p></div>
+    <div className="guide-navigation"><button disabled={index===0} onClick={() => setIndex(i => i-1)}>前へ</button><span>{index+1} / {steps.length}</span><button disabled={index===steps.length-1} onClick={() => setIndex(i => i+1)}>次へ</button></div>
+    <details><summary>始める前の確認</summary><p className="sub">マシンの調整方法は機種ごとに違います。器具の使用表示を優先し、設定に迷ったらスタッフへ確認してください。筋肉の疲労感と関節の痛みを区別し、痛みが出た動作は中止します。</p><a href="https://www.mayoclinic.org/healthy-lifestyle/fitness/in-depth/weight-training/art-20045842" target="_blank" rel="noreferrer">フォームと安全の参考：Mayo Clinic</a></details>
+  </section>;
+}

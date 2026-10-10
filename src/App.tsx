@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { initializeApp } from './db/seed';
-import DebugSeed from './pages/DebugSeed';
-import Calibration from './pages/Calibration';
 import Workout from './pages/Workout';
-import Nutrition from './pages/Nutrition';
-import BodyTracking from './pages/BodyTracking';
 import { HeaderLevelBadge } from './components/HeaderLevelBadge';
+
+const Calibration = lazy(() => import('./pages/Calibration'));
+const Nutrition = lazy(() => import('./pages/Nutrition'));
+const BodyTracking = lazy(() => import('./pages/BodyTracking'));
+const DebugSeed = import.meta.env.DEV ? lazy(() => import('./pages/DebugSeed')) : null;
 
 type Tab = 'workout' | 'nutrition' | 'body' | 'calibration' | 'debug';
 
@@ -17,7 +18,7 @@ export default function App() {
   useEffect(() => {
     initializeApp()
       .then(() => setReady(true))
-      .catch((e) => setError(String(e)));
+      .catch(() => setError('端末の保存領域を開けませんでした。ページを再読込してください。記録を保持するため、ブラウザーのデータは削除しないでください。'));
   }, []);
 
   if (error) return <div className="page"><h1>初期化エラー</h1><pre>{error}</pre></div>;
@@ -30,15 +31,17 @@ export default function App() {
         <HeaderLevelBadge />
       </div>
 
-      {tab === 'workout' && <Workout />}
+      <Suspense fallback={<div className="page"><p role="status">画面を準備しています…</p></div>}>
+      {tab === 'workout' && <Workout onCalibration={() => setTab('calibration')} />}
       {tab === 'nutrition' && <Nutrition />}
       {tab === 'body' && <BodyTracking />}
       {tab === 'calibration' && <Calibration />}
-      {tab === 'debug' && <DebugSeed />}
+      {tab === 'debug' && DebugSeed && <DebugSeed />}
+      </Suspense>
 
       <nav className="tabbar">
         <button className={tab === 'workout' ? 'on' : ''} onClick={() => setTab('workout')}>
-          本番記録
+          今日のメニュー
         </button>
         <button className={tab === 'nutrition' ? 'on' : ''} onClick={() => setTab('nutrition')}>
           栄養
@@ -49,9 +52,9 @@ export default function App() {
         <button className={tab === 'calibration' ? 'on' : ''} onClick={() => setTab('calibration')}>
           Week 0
         </button>
-        <button className={tab === 'debug' ? 'on' : ''} onClick={() => setTab('debug')}>
-          Debug
-        </button>
+        {import.meta.env.DEV && <button className={tab === 'debug' ? 'on' : ''} onClick={() => setTab('debug')}>
+          開発確認
+        </button>}
       </nav>
     </div>
   );

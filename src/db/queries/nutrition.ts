@@ -1,9 +1,10 @@
 import { db } from '../db';
 import type { NutritionLog } from '../types';
+import { todayInJapan } from '../../engine/dates';
 
 /** 今日の日付文字列 (YYYY-MM-DD) を取得 */
 export function getTodayDateString(): string {
-  return new Date().toISOString().slice(0, 10);
+  return todayInJapan();
 }
 
 /** 読み取り専用：今日の栄養ログを取得する（useLiveQuery用） */

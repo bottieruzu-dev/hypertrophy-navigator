@@ -1,188 +1,152 @@
 import { db } from '../db';
 import { supabase } from '../../lib/supabase';
 import type { ExerciseBaseline, SessionRecord, SetRecord } from '../types';
+import { validBaseline } from '../../engine/planner';
+import { todayInJapan } from '../../engine/dates';
+import { CALIBRATION_PLAN } from './calibration';
 
-// ==========================================
-// 1. ベースライン（キャリブレーション記録）
-// ==========================================
+let lastRecordId = 0;
+export function newRecordId(): number {
+  lastRecordId = Math.max(lastRecordId + 1, Date.now() * 1000 + crypto.getRandomValues(new Uint16Array(1))[0] % 1000);
+  return lastRecordId;
+}
 
-/** Supabase から全ベースラインを取得（ローカル IndexedDB へも自動キャッシュ） */
+export async function markPending(kind: 'baseline' | 'session', id: number): Promise<void> {
+  await db.settings.put({ key: `sync:${kind}:${id}`, value: newRecordId() });
+}
+
+/** Explicit cloud refresh; never let older cloud data overwrite newer local Week0. */
 export async function fetchBaselines(): Promise<ExerciseBaseline[]> {
-  try {
-    const { data, error } = await supabase
-      .from('baselines')
-      .select('*');
-
-    if (error || !data) {
-      console.warn('Supabase ベースライン取得スキップ/エラー:', error);
-      return await db.baselines.toArray();
+  if (!supabase) throw new Error('クラウド未設定です。この端末のWeek0はそのまま使えます。');
+  const { data, error } = await supabase.from('baselines').select('exercise_id,weight_kg,reps,rir,est1rm,calibrated_at');
+  if (error || !data) throw new Error('クラウドから読み込めませんでした。端末内の記録は保持しています。');
+  await db.transaction('rw', [db.baselines, db.exercises, db.settings], async () => {
+    for (const row of data) {
+      const b: ExerciseBaseline = {
+        exerciseId: Number(row.exercise_id), weightKg: Number(row.weight_kg), reps: Number(row.reps), rir: Number(row.rir),
+        est1rm: Number(row.est1rm), calibratedAt: typeof row.calibrated_at === 'number' ? row.calibrated_at : Date.parse(row.calibrated_at),
+      };
+      const ex = await db.exercises.get(b.exerciseId);
+      const existing = await db.baselines.get(b.exerciseId);
+      if (ex && validBaseline(b, ex) && !(await db.settings.get(`sync:baseline:${b.exerciseId}`)) && (!existing || b.calibratedAt > existing.calibratedAt)) await db.baselines.put(b);
     }
-
-    const list: ExerciseBaseline[] = data.map((row) => ({
-      exerciseId: Number(row.exercise_id),
-      weightKg: Number(row.weight_kg),
-      reps: Number(row.reps),
-      rir: Number(row.rir),
-      est1rm: Number(row.est1rm),
-      calibratedAt: typeof row.calibrated_at === 'number'
-        ? row.calibrated_at
-        : new Date(row.calibrated_at).getTime() || Date.now(),
-    }));
-
-    if (list.length > 0) {
-      await db.baselines.bulkPut(list);
-    }
-
-    return list;
-  } catch (e) {
-    console.error('ベースライン取得エラー:', e);
-    return await db.baselines.toArray();
-  }
+  });
+  return db.baselines.toArray();
 }
 
-/** ベースラインを 1 件保存・更新（IndexedDB & Supabase 二重自動保存） */
+async function syncBaselineOnce(id: number): Promise<boolean> {
+  if (!supabase) return false;
+  const pending = await db.settings.get(`sync:baseline:${id}`);
+  const b = await db.baselines.get(id);
+  if (!b) return false;
+  try {
+    const { error } = await supabase.from('baselines').upsert({ exercise_id: b.exerciseId, weight_kg: b.weightKg, reps: b.reps, rir: b.rir, est1rm: b.est1rm, calibrated_at: new Date(b.calibratedAt).toISOString() }, { onConflict: 'exercise_id' });
+    if (error) return false;
+    await db.transaction('rw', db.settings, async () => {
+      if ((await db.settings.get(`sync:baseline:${id}`))?.value === pending?.value) await db.settings.delete(`sync:baseline:${id}`);
+    });
+    return true;
+  } catch { return false; }
+}
+
 export async function saveBaseline(baseline: ExerciseBaseline): Promise<boolean> {
-  // 1. ローカル IndexedDB 保存
-  await db.baselines.put(baseline);
-
-  // 2. Supabase への同期
-  try {
-    const payload = {
-      exercise_id: baseline.exerciseId,
-      weight_kg: baseline.weightKg,
-      reps: baseline.reps,
-      rir: baseline.rir,
-      est1rm: baseline.est1rm,
-      calibrated_at: new Date(baseline.calibratedAt || Date.now()).toISOString(),
-    };
-
-    const { error } = await supabase
-      .from('baselines')
-      .upsert(payload, { onConflict: 'exercise_id' });
-
-    if (error) {
-      console.error('Supabase ベースライン保存エラー:', error);
-      return false;
+  const exercise = await db.exercises.get(baseline.exerciseId);
+  if (!exercise || !validBaseline(baseline, exercise)) throw new Error('重量・回数・RIRを確認してください。');
+  await db.transaction('rw', [db.baselines, db.exercises, db.settings], async () => {
+    await db.baselines.put(baseline);
+    await markPending('baseline', baseline.exerciseId);
+    const ids = [...new Set(Object.values(CALIBRATION_PLAN).flat())];
+    const stored = await db.baselines.bulkGet(ids);
+    const exercises = await db.exercises.bulkGet(ids);
+    const complete = stored.every((b, index) => exercises[index] && validBaseline(b, exercises[index]!));
+    await db.settings.put({ key: 'calibrationDone', value: complete });
+    if (complete && !(await db.settings.get('programStartDate'))?.value) {
+      await db.settings.put({ key: 'programStartDate', value: todayInJapan() });
+      await db.settings.put({ key: 'currentMesocycleWeek', value: 1 });
     }
-    return true;
-  } catch (err) {
-    console.error('Supabase 接続エラー:', err);
-    return false;
-  }
+  });
+  // Saving locally is complete before networking starts; the UI observes the pending marker.
+  void syncBaseline(baseline.exerciseId);
+  return true;
 }
 
-// ==========================================
-// 2. ワークアウト（セッション & セット記録）
-// ==========================================
-
-/** ワークアウト（セッションと全セット）を自動保存 */
-export async function saveWorkoutSession(
-  session: SessionRecord,
-  sets: SetRecord[]
-): Promise<boolean> {
-  // 1. ローカル IndexedDB 保存
-  let savedSessionId = session.id;
-  if (!savedSessionId) {
-    savedSessionId = await db.sessions.add(session);
-  } else {
-    await db.sessions.put({ ...session, id: savedSessionId });
-  }
-
-  const updatedSets = sets.map((s) => ({ ...s, sessionId: savedSessionId! }));
-  for (const setItem of updatedSets) {
-    if (setItem.id) {
-      await db.sets.put(setItem);
-    } else {
-      const newSetId = await db.sets.add(setItem);
-      setItem.id = Number(newSetId);
-    }
-  }
-
-  // 2. Supabase へ自動同期
+async function syncSessionOnce(id: number): Promise<boolean> {
+  if (!supabase) return false;
+  const pending = await db.settings.get(`sync:session:${id}`);
+  const s = await db.sessions.get(id);
+  if (!s) return false;
+  const plan = await db.plans.get(id);
   try {
-    const sessionPayload = {
-      id: savedSessionId,
-      date: session.date,
-      started_at: session.startedAt,
-      finished_at: session.finishedAt ?? null,
-      split_type: session.splitType,
-      prs_score: session.prsScore ?? null,
-      sleep_hours: session.sleepHours ?? null,
-      mesocycle_week: session.mesocycleWeek,
-      is_deload: session.isDeload,
-      est_minutes: session.estMinutes ?? null,
-      note: session.note ?? null,
-    };
-
-    const { error: sessionError } = await supabase
-      .from('sessions')
-      .upsert(sessionPayload, { onConflict: 'id' });
-
-    if (sessionError) {
-      console.error('Supabase セッション保存エラー:', sessionError);
+    const { error: sessionError } = await supabase.from('sessions').upsert({
+      id: s.id, date: s.date, started_at: s.startedAt, finished_at: s.finishedAt ?? null, split_type: s.splitType,
+      prs_score: s.prsScore, sleep_hours: s.sleepHours, mesocycle_week: s.mesocycleWeek, is_deload: s.isDeload,
+      est_minutes: s.estMinutes ?? null, note: plan ? JSON.stringify({ version: 2, plan }) : s.note ?? null,
+    }, { onConflict: 'id' });
+    if (sessionError) return false;
+    const sets = await db.sets.where('sessionId').equals(id).toArray();
+    if (sets.length) {
+      const { error } = await supabase.from('sets').upsert(sets.map(r => ({
+        id: r.id, session_id: id, exercise_id: r.exerciseId, date: r.date, set_order: r.setOrder,
+        target_weight: r.targetWeight, actual_weight: r.actualWeight, target_reps: r.targetReps, actual_reps: r.actualReps,
+        target_rir: r.targetRir, actual_rir: r.actualRir, volume_load: r.volumeLoad, est1rm: r.est1rm, is_warmup: r.isWarmup, mode: r.mode,
+      })), { onConflict: 'id' });
+      if (error) return false;
     }
-
-    if (updatedSets.length > 0) {
-      const setsPayload = updatedSets.map((s) => ({
-        id: s.id,
-        session_id: s.sessionId,
-        exercise_id: s.exerciseId,
-        date: s.date,
-        set_order: s.setOrder,
-        target_weight: s.targetWeight,
-        actual_weight: s.actualWeight,
-        target_reps: s.targetReps,
-        actual_reps: s.actualReps,
-        target_rir: s.targetRir,
-        actual_rir: s.actualRir,
-        volume_load: s.volumeLoad,
-        est1rm: s.est1rm,
-        is_warmup: s.isWarmup,
-        mode: s.mode,
-      }));
-
-      const { error: setsError } = await supabase
-        .from('sets')
-        .upsert(setsPayload, { onConflict: 'id' });
-
-      if (setsError) {
-        console.error('Supabase セット保存エラー:', setsError);
-      }
-    }
+    await db.transaction('rw', db.settings, async () => {
+      if ((await db.settings.get(`sync:session:${id}`))?.value === pending?.value) await db.settings.delete(`sync:session:${id}`);
+    });
     return true;
-  } catch (err) {
-    console.error('Supabase 自動同期例外エラー:', err);
-    return false;
-  }
+  } catch { return false; }
 }
 
-/** 最近のセッション履歴を取得 */
+// Serialize per entity so an older request cannot overwrite a newer cloud snapshot.
+const entitySync = new Map<string, Promise<boolean>>();
+function drainSync(key: string, send: () => Promise<boolean>): Promise<boolean> {
+  const existing = entitySync.get(key);
+  if (existing) return existing;
+  const task = (async () => {
+    for (let attempt = 0; attempt < 5; attempt++) {
+      if (!(await send())) return false;
+      if (!(await db.settings.get(key))) return true;
+    }
+    return false;
+  })().catch(() => false).finally(() => entitySync.delete(key));
+  entitySync.set(key, task);
+  return task;
+}
+export function syncBaseline(id: number): Promise<boolean> { return drainSync(`sync:baseline:${id}`, () => syncBaselineOnce(id)); }
+export function syncSession(id: number): Promise<boolean> { return drainSync(`sync:session:${id}`, () => syncSessionOnce(id)); }
+
+/** Atomic local write, retained even if the cloud is unavailable. */
+export async function saveWorkoutSession(session: SessionRecord, sets: SetRecord[]): Promise<boolean> {
+  const id = session.id ?? newRecordId();
+  await db.transaction('rw', [db.sessions, db.sets, db.settings], async () => {
+    await db.sessions.put({ ...session, id });
+    for (const set of sets) await db.sets.put({ ...set, id: set.id ?? newRecordId(), sessionId: id });
+    await markPending('session', id);
+  });
+  void syncSession(id);
+  return true;
+}
+
+let retryInFlight: Promise<boolean> | undefined;
+export function retryPendingSync(): Promise<boolean> {
+  if (retryInFlight) return retryInFlight;
+  retryInFlight = (async () => {
+    if (!supabase) return false;
+    const pending = await db.settings.where('key').startsWith('sync:').toArray();
+    let ok = true;
+    for (const item of pending) {
+      const [, kind, id] = item.key.split(':');
+      if (kind === 'baseline') ok = await syncBaseline(Number(id)) && ok;
+      if (kind === 'session') ok = await syncSession(Number(id)) && ok;
+    }
+    return ok;
+  })().finally(() => { retryInFlight = undefined; });
+  return retryInFlight;
+}
+
 export async function fetchRecentSessions(limit = 20): Promise<SessionRecord[]> {
-  try {
-    const { data, error } = await supabase
-      .from('sessions')
-      .select('*')
-      .order('date', { ascending: false })
-      .limit(limit);
-
-    if (error || !data) {
-      return await db.sessions.orderBy('date').reverse().limit(limit).toArray();
-    }
-
-    return data.map((row) => ({
-      id: row.id,
-      date: row.date,
-      startedAt: row.started_at,
-      finishedAt: row.finished_at,
-      splitType: row.split_type,
-      prsScore: row.prs_score,
-      sleepHours: row.sleep_hours,
-      mesocycleWeek: row.mesocycle_week,
-      isDeload: row.is_deload,
-      estMinutes: row.est_minutes,
-      note: row.note,
-    }));
-  } catch {
-    return await db.sessions.orderBy('date').reverse().limit(limit).toArray();
-  }
+  // Local sets and plans are authoritative for recommendations; no partial cloud restore.
+  return db.sessions.orderBy('date').reverse().limit(limit).toArray();
 }

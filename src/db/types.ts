@@ -153,3 +153,37 @@ export interface Setting {
   key: string;
   value: unknown;
 }
+
+export interface WorkoutContext {
+  minutes: number;
+  readiness: 'normal' | 'tired';
+  soreMuscles: MuscleCode[];
+  pain: boolean;
+  split?: SplitType;
+}
+
+export interface PlannedExercise {
+  exerciseId: number;
+  targetWeight: number;
+  targetReps: number;
+  targetRir: number;
+  sets: number;
+  restSec: number;
+  reason: string;
+  source: 'baseline' | 'history';
+}
+
+export interface DailyPlan {
+  sessionId: number;
+  date: string;
+  createdAt: number;
+  split: SplitType;
+  context: WorkoutContext;
+  exercises: PlannedExercise[];
+  skippedExerciseIds: number[];
+  estimatedMinutes: number;
+  reason: string;
+  warnings: string[];
+  status: 'active' | 'completed' | 'stopped';
+  restEndsAt?: number;
+}

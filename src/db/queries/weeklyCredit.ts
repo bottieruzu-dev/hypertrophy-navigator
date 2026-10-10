@@ -1,5 +1,6 @@
 import { db } from '../db';
 import type { MuscleCode } from '../types';
+import { shiftDate, todayInJapan } from '../../engine/dates';
 
 export interface CreditSummary {
   towardMin: Record<string, number>;
@@ -10,13 +11,11 @@ export async function getRollingWeeklyCredit(
   baseDate: Date = new Date()
 ): Promise<CreditSummary> {
   const end = toISODate(baseDate);
-  const startDate = new Date(baseDate);
-  startDate.setDate(startDate.getDate() - 6);
-  const start = toISODate(startDate);
+  const start = shiftDate(end, -6);
 
   const sets = await db.sets
     .where('date').between(start, end, true, true)
-    .filter((s) => s.isWarmup === 0)
+    .filter((s) => s.isWarmup === 0 && s.mode !== 'calibration')
     .toArray();
 
   if (sets.length === 0) return { towardMin: {}, towardMax: {} };
@@ -49,7 +48,7 @@ export async function getRollingWeeklyCredit(
 }
 
 function toISODate(d: Date): string {
-  return d.toISOString().slice(0, 10);
+  return todayInJapan(d);
 }
 
 function round1(n: number): number {

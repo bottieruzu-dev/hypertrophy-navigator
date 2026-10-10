@@ -4,6 +4,7 @@ import { EXERCISES } from './exercises';
 import { MUSCLE_CREDITS } from './muscleCredits';
 import { FOODS } from './foods';
 import type { MuscleCode } from '../types';
+import { reconcileCalibrationState } from '../queries/calibration';
 
 export const SEED_VERSION = '1.0.2';
 export const WEEKLY_SET_BUDGET_MAX = 94;
@@ -119,15 +120,19 @@ export async function seedDatabase(force = false): Promise<ValidationResult> {
       await db.muscleCredits.bulkAdd(MUSCLE_CREDITS);
       await db.foods.bulkPut(FOODS);
 
-      const existing = await db.settings.get('calibrationDone');
-      await db.settings.bulkPut([
-        { key: 'seedVersion', value: SEED_VERSION },
-        { key: 'seededAt', value: Date.now() },
-        { key: 'calibrationDone', value: existing?.value ?? false },
+      const defaults = [
+        { key: 'calibrationDone', value: false },
         { key: 'programStartDate', value: null },
         { key: 'currentMesocycleWeek', value: 0 },
         { key: 'nextSplitType', value: 'upper_A' },
         { key: 'lastExportAt', value: null },
+      ];
+      for (const setting of defaults) {
+        if (!(await db.settings.get(setting.key))) await db.settings.put(setting);
+      }
+      await db.settings.bulkPut([
+        { key: 'seedVersion', value: SEED_VERSION },
+        { key: 'seededAt', value: Date.now() },
       ]);
     }
   );
@@ -141,14 +146,13 @@ export async function seedDatabase(force = false): Promise<ValidationResult> {
 
 export async function initializeApp(): Promise<ValidationResult> {
   if (navigator.storage?.persist) {
-    const persisted = await navigator.storage.persisted();
-    if (!persisted) {
-      const granted = await navigator.storage.persist();
-      console.info(`[storage] persistent: ${granted ? 'granted' : 'denied'}`);
-    }
+    // Persistence is a browser optimization, not a prerequisite for opening the app.
+    try { if (!(await navigator.storage.persisted())) await navigator.storage.persist(); } catch { /* Continue with normal IndexedDB. */ }
   }
   await db.open();
-  return seedDatabase();
+  const report = await seedDatabase();
+  await reconcileCalibrationState();
+  return report;
 }
 
 export async function nukeDatabase(): Promise<void> {

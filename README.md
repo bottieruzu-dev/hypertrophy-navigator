@@ -1,32 +1,52 @@
-# React + TypeScript + Vite
+# Hypertrophy Navigator
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Week0の測定値と筋トレ履歴から、その日のジムメニューを作るReactアプリです。端末内のIndexedDBを主な保存先として、クラウド未設定・通信失敗時も記録を続けます。
 
-Currently, two official plugins are available:
+## 更新内容と使い方
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+[日別メニューへの更新・利用手順・検証範囲](docs/training-upgrade.md)を参照してください。
 
-## React Compiler
+- Week0の既存測定を維持し、未測定の種目だけ省略。
+- 時間、疲労、筋肉痛、直近の刺激、週間負荷から日別メニューを生成。
+- セット保存、入力修正、休憩、途中再開、代替種目、完了履歴、JSONバックアップ。
+- 人体画像と筋肉の位置表示、37種目の4段階フォームガイド。
+- 本番ビルドでは初回読込後に画面をオフラインキャッシュ。
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+同じ端末・ブラウザー・URLで利用すると既存のWeek0を引き継ぎます。データ消去や別URLへの移動の前には筋トレバックアップを保存してください。
 
-## Expanding the Oxlint configuration
+## 開発と検証
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+既にインストール済みの依存関係を使用します。Node 24.18で検証しています。
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```sh
+npm run dev
+npm test
+npm run lint
+npm run build
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+実データやクラウド設定を読み込まないローカル検証:
+
+```sh
+node node_modules/typescript/bin/tsc -b
+node node_modules/typescript/bin/tsc -p tsconfig.tests.json
+node scripts/test.mjs
+node scripts/build-safe.mjs
+node tests/offline.test.mjs
+```
+
+`build:safe`も同じ検証ビルドを型チェック付きで実行します。秘密ファイルを読まず、クラウド接続を空にした検証専用出力です。公開には通常の`build`を使い、設定はユーザー自身が管理してください。クラウドの設定値をログやGitに含めないでください。
+
+隔離したブラウザーテスト:
+
+```sh
+npm run test:browser
+```
+
+`http://127.0.0.1:5178/tests/ui.html`を開きます。テスト専用DBとダミーデータを使い、テスト開始時にテスト専用DBのみ作り直します。通常のアプリDBは開きません。このテストは今回の作業環境にブラウザーがないため未実行です。
+
+## 保存とクラウド
+
+既存DB名を保持し、version 2で`plans`を追加しています。クラウドの設定が有効な場合は端末保存後に送信し、失敗した更新は送信待ちとして保持します。Week0のクラウド読込は明示操作です。筋トレ履歴の別端末への復元はJSONバックアップを使います。
+
+バックアップ対象はWeek0・セッション・セット・日別メニューです。体組成と栄養は含みません。実クラウド接続、RLS、スキーマ互換性、実端末の画面操作、公開先の更新は今回未検証・未実施です。

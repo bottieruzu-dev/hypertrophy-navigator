@@ -1,9 +1,10 @@
 import { db } from '../db';
 import type { BodyMetric } from '../types';
+import { shiftDate, todayInJapan } from '../../engine/dates';
 
 /** 今日の日付文字列 (YYYY-MM-DD) を取得 */
 export function getTodayDateString(): string {
-  return new Date().toISOString().slice(0, 10);
+  return todayInJapan();
 }
 
 /** 今日の体組成データ（未入力なら null 埋めオブジェクト）を取得 */
@@ -34,9 +35,7 @@ export async function getTodayBodyMetric(): Promise<BodyMetric> {
 
 /** 直近7日間の体重平均（MA7）を計算する */
 export async function calculateWeightMa7(targetDate: string): Promise<number | null> {
-  const startDate = new Date(targetDate);
-  startDate.setDate(startDate.getDate() - 6);
-  const startStr = startDate.toISOString().slice(0, 10);
+  const startStr = shiftDate(targetDate, -6);
 
   const records = await db.bodyMetrics
     .where('date')
