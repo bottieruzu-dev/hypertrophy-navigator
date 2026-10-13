@@ -1,79 +1,24 @@
 import { db } from '../db';
-import { supabase } from '../../lib/supabase';
+import { requireCloudOwner } from './cloudAccess';
+import { markPending, retryPendingSync } from './workout';
 import type {
-  ExerciseBaseline,
-  SessionRecord,
-  SetRecord,
   BodyMetric,
   NutritionLog,
 } from '../types';
 
 export async function migrateLocalDataToSupabase(): Promise<{ success: boolean; message: string }> {
   try {
-    if (!supabase) return { success: false, message: 'クラウド未設定です。端末の記録は保持しています。' };
-    // 1. ベースラインデータの移行
-    const baselines: ExerciseBaseline[] = await db.baselines.toArray();
-    if (baselines.length > 0) {
-      const payload = baselines.map((b: ExerciseBaseline) => ({
-        exercise_id: b.exerciseId,
-        weight_kg: b.weightKg,
-        reps: b.reps,
-        rir: b.rir,
-        est1rm: b.est1rm,
-        calibrated_at: b.calibratedAt,
-      }));
-      const { error } = await supabase.from('baselines').upsert(payload, { onConflict: 'exercise_id' });
-      if (error) throw error;
-    }
-
-    // 2. セッション記録の移行
-    const sessions: SessionRecord[] = await db.sessions.toArray();
-    if (sessions.length > 0) {
-      const payload = sessions.map((s: SessionRecord) => ({
-        id: s.id,
-        date: s.date,
-        started_at: s.startedAt,
-        finished_at: s.finishedAt,
-        split_type: s.splitType,
-        prs_score: s.prsScore,
-        sleep_hours: s.sleepHours,
-        mesocycle_week: s.mesocycleWeek,
-        is_deload: s.isDeload,
-        est_minutes: s.estMinutes,
-        note: s.note,
-      }));
-      const { error } = await supabase.from('sessions').upsert(payload, { onConflict: 'id' });
-      if (error) throw error;
-    }
-
-    // 3. セット記録の移行
-    const sets: SetRecord[] = await db.sets.toArray();
-    if (sets.length > 0) {
-      const payload = sets.map((s: SetRecord) => ({
-        id: s.id,
-        session_id: s.sessionId,
-        exercise_id: s.exerciseId,
-        date: s.date,
-        set_order: s.setOrder,
-        target_weight: s.targetWeight,
-        actual_weight: s.actualWeight,
-        target_reps: s.targetReps,
-        actual_reps: s.actualReps,
-        target_rir: s.targetRir,
-        actual_rir: s.actualRir,
-        volume_load: s.volumeLoad,
-        est1rm: s.est1rm,
-        is_warmup: s.isWarmup,
-        mode: s.mode,
-      }));
-      const { error } = await supabase.from('sets').upsert(payload, { onConflict: 'id' });
-      if (error) throw error;
-    }
-
+    const { client, userId } = await requireCloudOwner();
+    await db.transaction('rw', [db.settings, db.baselines, db.sessions], async () => {
+      for (const b of await db.baselines.toArray()) await markPending('baseline', b.exerciseId);
+      for (const s of await db.sessions.toArray()) if (s.id) await markPending('session', s.id);
+    });
+    if (!await retryPendingSync()) throw new Error('Training upload failed');
     // 4. 体組成記録の移行
     const bodyMetrics: BodyMetric[] = await db.bodyMetrics.toArray();
     if (bodyMetrics.length > 0) {
       const payload = bodyMetrics.map((b: BodyMetric) => ({
+        user_id: userId,
         date: b.date,
         weight_kg: b.weightKg,
         body_fat_pct: b.bodyFatPct,
@@ -91,7 +36,7 @@ export async function migrateLocalDataToSupabase(): Promise<{ success: boolean; 
         prs_score: b.prsScore,
         is_interpolated: b.isInterpolated,
       }));
-      const { error } = await supabase.from('body_metrics').upsert(payload, { onConflict: 'date' });
+      const { error } = await client.from('body_metrics').upsert(payload, { onConflict: 'date' });
       if (error) throw error;
     }
 
@@ -99,6 +44,7 @@ export async function migrateLocalDataToSupabase(): Promise<{ success: boolean; 
     const nutritionLogs: NutritionLog[] = await db.nutritionLogs.toArray();
     if (nutritionLogs.length > 0) {
       const payload = nutritionLogs.map((n: NutritionLog) => ({
+        user_id: userId,
         date: n.date,
         estimated_tdee: n.estimatedTdee,
         target_kcal: n.targetKcal,
@@ -110,11 +56,11 @@ export async function migrateLocalDataToSupabase(): Promise<{ success: boolean; 
         is_diet_break: n.isDietBreak,
         protein_checked_g: n.proteinCheckedG,
       }));
-      const { error } = await supabase.from('nutrition_logs').upsert(payload, { onConflict: 'date' });
+      const { error } = await client.from('nutrition_logs').upsert(payload, { onConflict: 'date' });
       if (error) throw error;
     }
 
-    return { success: true, message: 'ローカルデータをSupabaseへ無事移行しました！' };
+    return { success: true, message: '筋トレ・体組成・旧栄養ログを送信しました。新しい食事記録と栄養プロフィールは端末内保存です。' };
   } catch {
     return { success: false, message: 'クラウドへの送信に失敗しました。端末の記録は保持しています。' };
   }

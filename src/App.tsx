@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 import { initializeApp } from './db/seed';
 import Workout from './pages/Workout';
 import { HeaderLevelBadge } from './components/HeaderLevelBadge';
+import { CloudAccount } from './components/CloudAccount';
 
 const Calibration = lazy(() => import('./pages/Calibration'));
 const Nutrition = lazy(() => import('./pages/Nutrition'));
@@ -30,6 +31,7 @@ export default function App() {
       <div className="app-header-bar">
         <HeaderLevelBadge />
       </div>
+      <CloudAccount />
 
       <Suspense fallback={<div className="page"><p role="status">画面を準備しています…</p></div>}>
       {tab === 'workout' && <Workout onCalibration={() => setTab('calibration')} />}

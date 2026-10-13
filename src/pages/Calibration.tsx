@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { validBaseline } from '../engine/planner';
 import { formatWeight } from '../engine/units';
 import { supabase } from '../lib/supabase';
+import { CLOUD_SYNC_PAUSED_FOR_SECURITY, CLOUD_UNAVAILABLE_MESSAGE } from '../lib/cloudPolicy';
 import { BENCH_START } from '../engine/trainingReferences';
 
 export default function Calibration() {
@@ -48,6 +49,7 @@ export default function Calibration() {
   return (
     <div className="page">
       <h1>Week0 · 基準の記録</h1>
+      {CLOUD_SYNC_PAUSED_FOR_SECURITY && <p className="notice">{CLOUD_UNAVAILABLE_MESSAGE}</p>}
       <p className="sub">保存済みの記録は今日のメニューに引き継ぎます。全種目のやり直しは不要です。変更したい種目だけ開いてください。</p>
       {supabase && <button className="btn" disabled={loadingCloud} onClick={async () => { setLoadingCloud(true); try { await fetchBaselines(); setCloudMessage('新しいクラウド記録を取り込みました。端末の新しい記録は保持しています。'); } catch (error) { setCloudMessage(error instanceof Error ? error.message : '読み込めませんでした。'); } finally { setLoadingCloud(false); } }}>{loadingCloud ? '読込中…' : 'クラウドのWeek0を読み込む'}</button>}
       {cloudMessage && <p role="status" className="notice">{cloudMessage}</p>}

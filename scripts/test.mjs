@@ -2,8 +2,11 @@ import { rolldown } from 'rolldown';
 import { spawnSync } from 'node:child_process';
 import { mkdir } from 'node:fs/promises';
 await mkdir('node_modules/.tmp',{recursive:true});
-const bundle=await rolldown({input:'tests/planner.test.ts',platform:'node',external:['node:test','node:assert/strict']});
-await bundle.write({file:'node_modules/.tmp/planner.test.mjs',format:'esm'});
-await bundle.close();
-const result=spawnSync(process.execPath,['node_modules/.tmp/planner.test.mjs'],{stdio:'inherit'});
-process.exitCode=result.status??1;
+for (const name of ['planner','nutrition','cloudPolicy']) {
+  const bundle=await rolldown({input:`tests/${name}.test.ts`,platform:'node',external:['node:test','node:assert/strict']});
+  const file=`node_modules/.tmp/${name}.test.mjs`;
+  await bundle.write({file,format:'esm'});
+  await bundle.close();
+  const result=spawnSync(process.execPath,[file],{stdio:'inherit'});
+  if(result.status!==0) { process.exitCode=result.status??1; break; }
+}

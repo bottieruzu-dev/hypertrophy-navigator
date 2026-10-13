@@ -1,9 +1,11 @@
 import { db } from '../db';
 import { supabase } from '../../lib/supabase';
+import { CLOUD_SYNC_PAUSED_FOR_SECURITY, CLOUD_UNAVAILABLE_MESSAGE } from '../../lib/cloudPolicy';
 import type { ExerciseBaseline, SessionRecord, SetRecord } from '../types';
 import { validBaseline } from '../../engine/planner';
 import { todayInJapan } from '../../engine/dates';
 import { CALIBRATION_PLAN } from './calibration';
+import { requireCloudOwner } from './cloudAccess';
 
 let lastRecordId = 0;
 export function newRecordId(): number {
@@ -17,14 +19,15 @@ export async function markPending(kind: 'baseline' | 'session', id: number): Pro
 
 /** Explicit cloud refresh; never let older cloud data overwrite newer local Week0. */
 export async function fetchBaselines(): Promise<ExerciseBaseline[]> {
-  if (!supabase) throw new Error('クラウド未設定です。この端末のWeek0はそのまま使えます。');
-  const { data, error } = await supabase.from('baselines').select('exercise_id,weight_kg,reps,rir,est1rm,calibrated_at');
+  if (!supabase) throw new Error(CLOUD_SYNC_PAUSED_FOR_SECURITY ? CLOUD_UNAVAILABLE_MESSAGE : 'クラウド未設定です。この端末のWeek0はそのまま使えます。');
+  const { client, userId } = await requireCloudOwner();
+  const { data, error } = await client.from('baselines').select('exercise_id,weight_kg,reps,rir,est1rm,calibrated_at').eq('user_id', userId);
   if (error || !data) throw new Error('クラウドから読み込めませんでした。端末内の記録は保持しています。');
   await db.transaction('rw', [db.baselines, db.exercises, db.settings], async () => {
     for (const row of data) {
       const b: ExerciseBaseline = {
         exerciseId: Number(row.exercise_id), weightKg: Number(row.weight_kg), reps: Number(row.reps), rir: Number(row.rir),
-        est1rm: Number(row.est1rm), calibratedAt: typeof row.calibrated_at === 'number' ? row.calibrated_at : Date.parse(row.calibrated_at),
+        est1rm: Number(row.est1rm), calibratedAt: Number(row.calibrated_at),
       };
       const ex = await db.exercises.get(b.exerciseId);
       const existing = await db.baselines.get(b.exerciseId);
@@ -40,7 +43,8 @@ async function syncBaselineOnce(id: number): Promise<boolean> {
   const b = await db.baselines.get(id);
   if (!b) return false;
   try {
-    const { error } = await supabase.from('baselines').upsert({ exercise_id: b.exerciseId, weight_kg: b.weightKg, reps: b.reps, rir: b.rir, est1rm: b.est1rm, calibrated_at: new Date(b.calibratedAt).toISOString() }, { onConflict: 'exercise_id' });
+    const { client, userId } = await requireCloudOwner();
+    const { error } = await client.from('baselines').upsert({ user_id: userId, exercise_id: b.exerciseId, weight_kg: b.weightKg, reps: b.reps, rir: b.rir, est1rm: b.est1rm, calibrated_at: b.calibratedAt }, { onConflict: 'exercise_id' });
     if (error) return false;
     await db.transaction('rw', db.settings, async () => {
       if ((await db.settings.get(`sync:baseline:${id}`))?.value === pending?.value) await db.settings.delete(`sync:baseline:${id}`);
@@ -77,7 +81,9 @@ async function syncSessionOnce(id: number): Promise<boolean> {
   if (!s) return false;
   const plan = await db.plans.get(id);
   try {
-    const { error: sessionError } = await supabase.from('sessions').upsert({
+    const { client, userId } = await requireCloudOwner();
+    const { error: sessionError } = await client.from('sessions').upsert({
+      user_id: userId,
       id: s.id, date: s.date, started_at: s.startedAt, finished_at: s.finishedAt ?? null, split_type: s.splitType,
       prs_score: s.prsScore, sleep_hours: s.sleepHours, mesocycle_week: s.mesocycleWeek, is_deload: s.isDeload,
       est_minutes: s.estMinutes ?? null, note: plan ? JSON.stringify({ version: 2, plan }) : s.note ?? null,
@@ -85,7 +91,8 @@ async function syncSessionOnce(id: number): Promise<boolean> {
     if (sessionError) return false;
     const sets = await db.sets.where('sessionId').equals(id).toArray();
     if (sets.length) {
-      const { error } = await supabase.from('sets').upsert(sets.map(r => ({
+      const { error } = await client.from('sets').upsert(sets.map(r => ({
+        user_id: userId,
         id: r.id, session_id: id, exercise_id: r.exerciseId, date: r.date, set_order: r.setOrder,
         target_weight: r.targetWeight, actual_weight: r.actualWeight, target_reps: r.targetReps, actual_reps: r.actualReps,
         target_rir: r.targetRir, actual_rir: r.actualRir, volume_load: r.volumeLoad, est1rm: r.est1rm, is_warmup: r.isWarmup, mode: r.mode,

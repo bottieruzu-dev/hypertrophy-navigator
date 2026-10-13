@@ -631,3 +631,42 @@ details .sub { line-height: 1.7; margin: 12px 0; }
 .logged-set { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--border, #33433d); padding: 8px 0; }
 .logged-set p { margin: 0; }
 .logged-set button { flex-shrink: 0; min-height: 44px; padding: 8px 16px; }
+.nutrition-page label { display: grid; gap: 7px; color: var(--sub); font-size: 14px; }
+.nutrition-page input:not([type="checkbox"]), .nutrition-page select, .nutrition-page textarea { box-sizing: border-box; width: 100%; min-height: 46px; border-radius: 10px; border: 1px solid var(--line, #34493f); background: var(--bg); color: var(--fg); padding: 10px 12px; font: inherit; }
+.nutrition-page textarea { line-height: 1.6; resize: vertical; }
+.nutrition-page .check-line { display: flex; align-items: center; margin: 14px 0; }
+.nutrition-form { display: grid; gap: 16px; margin-top: 16px; }
+.nutrition-fields { display: grid; grid-template-columns: repeat(auto-fit,minmax(140px,1fr)); gap: 14px; margin: 16px 0; }
+.nutrition-macros { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin: 22px 0; }
+.nutrition-macros > div { border-radius: 12px; padding: 16px; background: rgba(119,169,130,.09); }
+.nutrition-macros span { display: block; color: var(--sub); font-size: 12px; }
+.nutrition-macros strong { display: block; font-size: clamp(20px,3vw,30px); margin-top: 8px; }
+.nutrition-macros small { font-size: 13px; font-weight: 400; margin-left: 5px; }
+.ingredient-select { display: flex; justify-content: space-between; gap: 12px; width: 100%; min-height: 50px; padding: 12px 14px; margin-top: 4px; border-radius: 10px; text-align: left; color: var(--fg); background: var(--bg); border: 1px solid var(--line, #34493f); }
+.ingredient-picker { padding: 16px; border: 1px solid var(--line, #34493f); border-radius: 12px; margin-top: 12px; }
+.ingredient-options { display: grid; gap: 8px; max-height: 320px; overflow: auto; margin: 12px 0; }
+.ingredient-options button { padding: 12px; text-align: left; min-height: 48px; border-radius: 8px; }
+.ingredient-options small, .nutrition-input-list small { display: block; color: var(--sub); margin-top: 5px; overflow-wrap: anywhere; }
+.nutrition-input-list { list-style: none; padding: 0; margin: 20px 0; }
+.nutrition-input-list li { display: grid; grid-template-columns: minmax(100px,1fr) 100px 70px auto; gap: 12px; align-items: center; padding: 16px 0; border-top: 1px solid var(--line, #34493f); }
+.nutrition-preview-item, .nutrition-record { padding: 16px 0; border-top: 1px solid var(--line, #34493f); overflow-wrap: anywhere; }
+.nutrition-page pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; }
+.nutrient-scroll { width: 100%; overflow-x: auto; margin: 16px 0; }
+.nutrient-table { border-collapse: collapse; width: 100%; min-width: 600px; font-size: 14px; }
+.nutrient-table th, .nutrient-table td { padding: 13px 12px; border-bottom: 1px solid var(--line, #34493f); text-align: left; vertical-align: top; }
+.nutrient-table small { display: block; color: var(--sub); margin-top: 4px; font-weight: 400; }
+.nutrition-page details { margin-top: 14px; }
+.nutrition-page summary { padding: 8px 0; cursor: pointer; min-height: 32px; }
+.nutrition-record.voided { background: rgba(255,255,255,.02); }
+.nutrition-record.voided > strong, .nutrition-record.voided > p { opacity: .6; }
+@media (max-width: 600px) { .nutrition-macros { grid-template-columns: repeat(2,1fr); } .nutrition-input-list li { grid-template-columns: 1fr 75px 65px; } .nutrition-input-list li > div { grid-column: 1 / -1; } .nutrition-page .workout-heading { align-items: stretch; } }
+.nutrition-values { display: grid; gap: 8px; margin: 16px 0; }
+.nutrition-values > div { display: flex; justify-content: space-between; gap: 16px; padding-bottom: 6px; border-bottom: 1px solid var(--line, #34493f); }
+.nutrition-values dd { margin: 0; flex-shrink: 0; }
+.cloud-account { max-width: 552px; margin: 12px auto; padding: 16px; }
+.cloud-account summary { cursor: pointer; min-height: 32px; }
+.cloud-account form { display: grid; gap: 12px; margin: 16px 0; }
+.cloud-account form label { display: grid; gap: 6px; }
+.cloud-account input:not([type="checkbox"]) { width: 100%; box-sizing: border-box; min-height: 44px; background: var(--bg); color: var(--fg); border: 1px solid var(--line, #34493f); border-radius: 8px; padding: 10px; }
+.cloud-account .two-actions { flex-wrap: wrap; margin-top: 16px; }
+@media (max-width: 600px) { .cloud-account { margin: 12px; } }

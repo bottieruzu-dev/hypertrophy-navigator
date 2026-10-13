@@ -10,6 +10,7 @@ import { effectiveIncrement, formatWeight } from '../engine/units';
 import { correctLoggedSet, finishWorkout, logPlannedSet, replaceExercise, skipExercise, startWorkout } from '../db/queries/dailyPlan';
 import { fetchBaselines, retryPendingSync } from '../db/queries/workout';
 import { supabase } from '../lib/supabase';
+import { CLOUD_SYNC_PAUSED_FOR_SECURITY } from '../lib/cloudPolicy';
 import { CALIBRATION_PLAN } from '../db/queries/calibration';
 import { BackupControls } from '../components/BackupControls';
 import { startingReference } from '../engine/trainingReferences';
@@ -53,7 +54,7 @@ export default function Workout({ onCalibration }: { onCalibration: () => void }
   if (!data || !draft) return <div className="page"><p role="status">記録からメニューを準備しています…</p></div>;
   return <main className="page workout-page">
     <header className="workout-heading"><div><p className="eyebrow">YOUR TRAINING DAY</p><h1>今日のトレーニング</h1><p className="sub">{date.replaceAll('-', '/')} · Week0を引き継ぐパーソナルメニュー</p></div><span className="status-pill">{calibrated}/{baselineIds.length} 測定済み</span></header>
-    <div className="save-status"><span>{supabase ? data.pending ? `端末保存済み · クラウド送信待ち ${data.pending}件` : '端末保存済み · 送信待ちなし' : 'この端末に保存 · クラウド未設定'}</span>{supabase && <button disabled={busy} onClick={() => action(async () => { if (!(await retryPendingSync())) throw new Error('同期できませんでした。端末の記録は保持しています。'); }, 'クラウドへの同期を確認しました。')}>再送</button>}</div>
+    <div className="save-status"><span>{supabase ? data.pending ? `端末保存済み · クラウド送信待ち ${data.pending}件` : '端末保存済み · 送信待ちなし' : CLOUD_SYNC_PAUSED_FOR_SECURITY ? 'この端末に保存 · 安全対策のためクラウド同期停止中' : 'この端末に保存 · クラウド未設定'}</span>{supabase && <button disabled={busy} onClick={() => action(async () => { if (!(await retryPendingSync())) throw new Error('同期できませんでした。端末の記録は保持しています。'); }, 'クラウドへの同期を確認しました。')}>再送</button>}</div>
     {message && <p className="notice" role="status">{message}</p>}
     {!active && <>
       {todayFinished && <section className="card completion-card"><p className="eyebrow">SAVED</p><h2>{todayFinished.status === 'completed' ? '今日のメニューは完了しました' : '途中終了の記録を保存しました'}</h2><p>{SPLIT_LABELS[todayFinished.split]} · {data.sets.filter(s => s.sessionId === todayFinished.sessionId && !s.isWarmup).length}セット</p><p className="sub">同じ日の追加トレーニングは、直近の刺激を考慮して提案します。</p></section>}
