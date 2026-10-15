@@ -1,4 +1,5 @@
 import type { NutritionLog } from '../db/types';
+import { validateWorkJob, type NutritionWorkJob } from './nutritionWork';
 import { MEALS, NUTRIENTS, parseNutritionResponse, validateRequest, validDate, validProfile, type Ingredient, type MealRecord, type MealRequest, type NutritionProfile, type NutritionDraft } from './nutrition';
 export interface NutritionBackupData {
     app: 'HypertrophyNutrition';
@@ -9,6 +10,7 @@ export interface NutritionBackupData {
     records: MealRecord[];
     legacy: NutritionLog[];
     drafts?: NutritionDraft[];
+    workJobs?: NutritionWorkJob[];
 }
 export const canonical = (value: unknown): string => Array.isArray(value) ? `[${value.map(canonical).join(',')}]` : value && typeof value === 'object' ? `{${Object.entries(value).filter(([, v]) => v !== undefined).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `${JSON.stringify(k)}:${canonical(v)}`).join(',')}}` : JSON.stringify(value);
 export function parseNutritionBackup(text: string): NutritionBackupData {
@@ -39,6 +41,14 @@ export function parseNutritionBackup(text: string): NutritionBackupData {
             validateRequest({ id: 'validation', date: '2026-01-01', meal: 'lunch', createdAt: 1, items: [{ ...food, quantity: 1, unit: 'g' }] });
         for (const r of b.requests)
             validateRequest(r);
+        if (b.workJobs !== undefined) {
+            if (!Array.isArray(b.workJobs) || b.workJobs.length > 10000 || new Set(b.workJobs.map(j=>j.id)).size !== b.workJobs.length) throw new Error();
+            for (const job of b.workJobs) {
+                validateWorkJob(job);
+                if (!b.requests.some(r=>canonical(r)===canonical(job.request))) throw new Error();
+                if (job.record && !b.records.some(r=>canonical(r)===canonical(job.record))) throw new Error();
+            }
+        }
         for (const record of b.records) {
             validateRequest(record.request);
             if (record.id !== record.request.id || !b.requests.some(r => canonical(r) === canonical(record.request)) || !Number.isInteger(record.revision) || record.revision < 1 || typeof record.voided !== 'boolean' || !Number.isFinite(record.savedAt) || record.savedAt <= 0)

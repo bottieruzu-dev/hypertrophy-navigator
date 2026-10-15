@@ -69,6 +69,6 @@ export function CloudAccount() {
       </div>
     </>}
     <p role="status">{busy ? '処理中…' : message}</p>
-    <p className="sub">新しい食事記録・栄養プロフィールは端末内保存です。栄養ページからバックアップできます。クラウドの筋トレ履歴の一括読込は未対応です。</p>
+    <p className="sub">栄養ページでWorkへ送信した食事はクラウドにも保存します。手動の栄養記録・食材一覧・プロフィール設定は端末内保存です。栄養ページからバックアップできます。</p>
   </details>;
 }

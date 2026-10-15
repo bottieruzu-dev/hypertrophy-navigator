@@ -2,7 +2,7 @@ import { rolldown } from 'rolldown';
 import { spawnSync } from 'node:child_process';
 import { mkdir } from 'node:fs/promises';
 await mkdir('node_modules/.tmp',{recursive:true});
-for (const name of ['planner','nutrition','cloudPolicy']) {
+for (const name of ['planner','nutrition','cloudPolicy','nutritionWork']) {
   const bundle=await rolldown({input:`tests/${name}.test.ts`,platform:'node',external:['node:test','node:assert/strict']});
   const file=`node_modules/.tmp/${name}.test.mjs`;
   await bundle.write({file,format:'esm'});

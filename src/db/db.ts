@@ -1,5 +1,6 @@
 import Dexie, { type Table } from 'dexie';
 import type { Ingredient, MealRequest, MealRecord } from '../engine/nutrition';
+import type { NutritionWorkJob } from '../engine/nutritionWork';
 import type {
   Muscle, Exercise, MuscleCredit, SessionRecord, SetRecord,
   BodyMetric, NutritionLog, CardioLog, EventLog,
@@ -23,6 +24,7 @@ export class HypertrophyDB extends Dexie {
   ingredients!: Table<Ingredient, string>;
   mealRequests!: Table<MealRequest, string>;
   meals!: Table<MealRecord, string>;
+  nutritionWorkJobs!: Table<NutritionWorkJob, string>;
 
   constructor() {
     super(import.meta.env.MODE === 'test' ? 'HypertrophyNavigatorTestDB' : 'HypertrophyNavigatorDB');
@@ -44,6 +46,7 @@ export class HypertrophyDB extends Dexie {
     // Additive migration: Week0 and existing logs are left intact.
     this.version(2).stores({ plans: 'sessionId, date, status' });
     this.version(3).stores({ ingredients: 'id, name', mealRequests: 'id, date', meals: 'id, request.date' });
+    this.version(4).stores({ nutritionWorkJobs: 'id, request.date, status' });
   }
 }
 

@@ -13,6 +13,9 @@
     "test": "node scripts/test.mjs",
     "build:safe": "tsc -b && node scripts/build-safe.mjs",
     "test:offline": "node tests/offline.test.mjs",
+    "test:nutrition-mcp": "node tests/nutrition-mcp.test.mjs",
+    "nutrition:mcp-demo": "node tools/nutrition-mcp-demo/server.mjs",
+    "build:nutrition-work": "node scripts/build-nutrition-work.mjs",
     "test:browser": "vite --configLoader native --mode test --port 5178"
   },
   "dependencies": {

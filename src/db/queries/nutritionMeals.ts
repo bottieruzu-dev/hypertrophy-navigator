@@ -22,6 +22,7 @@ export async function saveMealRequest(request: MealRequest): Promise<void> {
     });
 }
 export async function saveNutritionMeal(requestId: string, text: string, targets: TargetSnapshot, expectedRevision?: number): Promise<void> {
+    if (await db.nutritionWorkJobs.get(requestId)) throw new Error('Workの依頼は確認待ちの結果から確定してください。');
     await db.transaction('rw', [db.mealRequests, db.meals], async () => {
         const request = await db.mealRequests.get(requestId);
         if (!request || request.date !== targets.date || !validProfile(targets.profile))
@@ -41,6 +42,7 @@ export async function saveNutritionMeal(requestId: string, text: string, targets
     });
 }
 export async function setMealVoided(id: string, voided: boolean): Promise<void> {
+    if (await db.nutritionWorkJobs.get(id)) throw new Error('クラウド連携の記録はオンラインで取消・復元してください。');
     await db.transaction('rw', db.meals, async () => {
         const existing = await db.meals.get(id);
         if (!existing)

@@ -118,6 +118,14 @@ async function run() {
   const conflicting={...nutritionBackup,ingredients:[{id:'rollback-food',name:'Dummy rollback',product:'',state:'生',note:''}],records:nutritionBackup.records.map(r=>r.id===request.id?{...r,revision:99}:r)};
   await rejected(()=>restoreNutritionBackup(JSON.stringify(conflicting)),'nutrition backup conflicts abort the entire restore');
   check(!(await db.ingredients.get('rollback-food')),'nutrition restore rolls back earlier ingredient writes');
+  check(await db.nutritionWorkJobs.count()===0,'v4 adds the Work queue without moving or deleting old meals');
+  const workRequest={...request,id:'work-outbox-dummy'};
+  await db.mealRequests.add(workRequest);
+  await db.nutritionWorkJobs.add({id:workRequest.id,request:workRequest,targets,status:'pending',response:null,responseRevision:0,version:0,record:null,cloudSaved:false});
+  const workBackup=await exportNutritionBackup();
+  check(workBackup.workJobs?.length===1,'nutrition backup includes unsent Work requests');
+  await restoreNutritionBackup(JSON.stringify(workBackup));
+  check(await db.nutritionWorkJobs.count()===1,'Work backup restore is idempotent');
   await db.close();await db.open();
   check(aggregateNutrition(await db.meals.toArray()).protein_g.known===25,'nutrition records survive database reopen');
   // Leave the app with intact dummy Week0 and no test sessions; the next UI flow starts fresh.

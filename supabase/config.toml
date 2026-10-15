@@ -1,0 +1,4 @@
+# The handler validates OAuth issuer/audience/expiry/scope/signature and caller RLS.
+# Legacy gateway JWT verification cannot perform OAuth discovery/challenges.
+[functions.nutrition-work-mcp]
+verify_jwt = false

@@ -1,10 +1,10 @@
 import { db } from '../db';
 import type { NutritionProfile, NutritionDraft } from '../../engine/nutrition';
 import { canonical, parseNutritionBackup, type NutritionBackupData } from '../../engine/nutritionBackup';
-export async function exportNutritionBackup(): Promise<NutritionBackupData> { return db.transaction('r', [db.settings, db.ingredients, db.mealRequests, db.meals, db.nutritionLogs], async () => ({ app: 'HypertrophyNutrition', version: 1, profile: (await db.settings.get('nutritionProfile'))?.value as NutritionProfile ?? null, ingredients: await db.ingredients.toArray(), requests: await db.mealRequests.toArray(), records: await db.meals.toArray(), legacy: await db.nutritionLogs.toArray(), drafts: (await db.settings.where('key').startsWith('nutritionDraft:').toArray()).map(s => s.value as NutritionDraft) })); }
+export async function exportNutritionBackup(): Promise<NutritionBackupData> { return db.transaction('r', [db.settings, db.ingredients, db.mealRequests, db.meals, db.nutritionLogs, db.nutritionWorkJobs], async () => ({ app: 'HypertrophyNutrition', version: 1, profile: (await db.settings.get('nutritionProfile'))?.value as NutritionProfile ?? null, ingredients: await db.ingredients.toArray(), requests: await db.mealRequests.toArray(), records: await db.meals.toArray(), legacy: await db.nutritionLogs.toArray(), workJobs: await db.nutritionWorkJobs.toArray(), drafts: (await db.settings.where('key').startsWith('nutritionDraft:').toArray()).map(s => s.value as NutritionDraft) })); }
 export async function restoreNutritionBackup(text: string): Promise<void> {
     const b = parseNutritionBackup(text);
-    await db.transaction('rw', [db.settings, db.ingredients, db.mealRequests, db.meals, db.nutritionLogs], async () => {
+    await db.transaction('rw', [db.settings, db.ingredients, db.mealRequests, db.meals, db.nutritionLogs, db.nutritionWorkJobs], async () => {
         for (const food of b.ingredients) {
             const old = await db.ingredients.get(food.id);
             if (old && canonical(old) !== canonical(food))
@@ -32,6 +32,11 @@ export async function restoreNutritionBackup(text: string): Promise<void> {
                 throw new Error('旧栄養記録が競合しています。復元を中止しました。');
             if (!old)
                 await db.nutritionLogs.add(row);
+        }
+        for (const job of b.workJobs ?? []) {
+            const old = await db.nutritionWorkJobs.get(job.id);
+            if (old && canonical(old) !== canonical(job)) throw new Error('Workの依頼が競合しています。復元を中止しました。');
+            if (!old) await db.nutritionWorkJobs.add(job);
         }
         if (b.profile && !(await db.settings.get('nutritionProfile')))
             await db.settings.put({ key: 'nutritionProfile', value: b.profile });

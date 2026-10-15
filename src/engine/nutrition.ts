@@ -1,5 +1,5 @@
 import type { BodyMetric } from '../db/types';
-import { shiftDate } from './dates';
+import { shiftDate } from './dates.ts';
 export const MEALS = { breakfast: '朝食', lunch: '昼食', dinner: '夕食', snack: '間食' } as const;
 export type MealKind = keyof typeof MEALS;
 export interface NutritionProfile {

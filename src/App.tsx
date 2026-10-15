@@ -6,6 +6,7 @@ import { CloudAccount } from './components/CloudAccount';
 
 const Calibration = lazy(() => import('./pages/Calibration'));
 const Nutrition = lazy(() => import('./pages/Nutrition'));
+const NutritionOAuthConsent = lazy(() => import('./components/NutritionOAuthConsent').then(m=>({default:m.NutritionOAuthConsent})));
 const BodyTracking = lazy(() => import('./pages/BodyTracking'));
 const DebugSeed = import.meta.env.DEV ? lazy(() => import('./pages/DebugSeed')) : null;
 
@@ -24,6 +25,8 @@ export default function App() {
 
   if (error) return <div className="page"><h1>初期化エラー</h1><pre>{error}</pre></div>;
   if (!ready) return <div className="page"><p>初期化中…</p></div>;
+  const authorizationId = new URLSearchParams(window.location.search).get('authorization_id');
+  if (authorizationId) return <><CloudAccount/><Suspense fallback={<p>接続内容を準備しています…</p>}><NutritionOAuthConsent authorizationId={authorizationId}/></Suspense></>;
 
   return (
     <div className="app">
