@@ -2,3 +2,7 @@
 # Legacy gateway JWT verification cannot perform OAuth discovery/challenges.
 [functions.nutrition-work-mcp]
 verify_jwt = false
+
+# Dedicated read-only credential checked by the export RPC; no service-role key.
+[functions.workout-obsidian-export]
+verify_jwt = false

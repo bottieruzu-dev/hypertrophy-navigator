@@ -16,6 +16,8 @@
     "test:nutrition-mcp": "node tests/nutrition-mcp.test.mjs",
     "nutrition:mcp-demo": "node tools/nutrition-mcp-demo/server.mjs",
     "build:nutrition-work": "node scripts/build-nutrition-work.mjs",
+    "build:obsidian": "node scripts/build-obsidian.mjs",
+    "test:obsidian": "node scripts/build-obsidian.mjs && node tests/obsidian-files.test.mjs",
     "test:browser": "vite --configLoader native --mode test --port 5178"
   },
   "dependencies": {

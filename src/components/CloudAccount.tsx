@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { bindLocalRecords, requireCloudOwner } from '../db/queries/cloudAccess';
 import { migrateLocalDataToSupabase } from '../db/queries/supabaseMigration';
 import { fetchBaselines } from '../db/queries/workout';
+import { ObsidianArchive } from './ObsidianArchive';
 
 export function CloudAccount() {
   const [email, setEmail] = useState('');
@@ -69,6 +70,7 @@ export function CloudAccount() {
       </div>
     </>}
     <p role="status">{busy ? '処理中…' : message}</p>
+    <ObsidianArchive key={connected ? 'connected' : 'disconnected'} connected={connected} />
     <p className="sub">栄養ページでWorkへ送信した食事はクラウドにも保存します。手動の栄養記録・食材一覧・プロフィール設定は端末内保存です。栄養ページからバックアップできます。</p>
   </details>;
 }
