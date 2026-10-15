@@ -26,6 +26,7 @@ export async function migrateLocalDataToSupabase(): Promise<{ success: boolean; 
         weight_ma7: b.weightMa7,
         ffm_ma30: b.ffmMa30,
         waist_cm: b.waistCm,
+        navel_cm: b.navelCm ?? null,
         shoulder_cm: b.shoulderCm,
         chest_cm: b.chestCm,
         arm_cm: b.armCm,
@@ -60,7 +61,7 @@ export async function migrateLocalDataToSupabase(): Promise<{ success: boolean; 
       if (error) throw error;
     }
 
-    return { success: true, message: '筋トレ・体組成・旧栄養ログを送信しました。新しい食事記録と栄養プロフィールは端末内保存です。' };
+    return { success: true, message: '筋トレ・体組成・旧栄養ログを送信しました。手動の食事記録・食材辞書・栄養プロフィールは、この操作の送信対象外です。Workの食事連携は栄養ページから利用できます。' };
   } catch {
     return { success: false, message: 'クラウドへの送信に失敗しました。端末の記録は保持しています。' };
   }

@@ -1,5 +1,6 @@
 import { db } from '../db';
 import type { BodyMetric } from '../types';
+import { deriveBodyMetric, type BodyInput } from '../../engine/bodyMeasurements';
 import { shiftDate, todayInJapan } from '../../engine/dates';
 
 /** 今日の日付文字列 (YYYY-MM-DD) を取得 */
@@ -21,6 +22,7 @@ export async function getTodayBodyMetric(): Promise<BodyMetric> {
     weightMa7: null,
     ffmMa30: null,
     waistCm: null,
+    navelCm: null,
     shoulderCm: null,
     chestCm: null,
     armCm: null,
@@ -50,44 +52,10 @@ export async function calculateWeightMa7(targetDate: string): Promise<number | n
 }
 
 /** 体組成データを保存・更新する */
-export async function saveBodyMetric(input: {
-  weightKg?: number | null;
-  bodyFatPct?: number | null;
-  waistCm?: number | null;
-  shoulderCm?: number | null;
-}): Promise<void> {
-  const date = getTodayDateString();
-  const current = await getTodayBodyMetric();
-
-  const weightKg = input.weightKg !== undefined ? input.weightKg : current.weightKg;
-  const bodyFatPct = input.bodyFatPct !== undefined ? input.bodyFatPct : current.bodyFatPct;
-  const waistCm = input.waistCm !== undefined ? input.waistCm : current.waistCm;
-  const shoulderCm = input.shoulderCm !== undefined ? input.shoulderCm : current.shoulderCm;
-
-  // FFM（除脂肪体重）の計算（体脂肪率がある場合）
-  let ffmKg: number | null = null;
-  if (weightKg !== null && bodyFatPct !== null) {
-    ffmKg = Number((weightKg * (1 - bodyFatPct / 100)).toFixed(2));
-  }
-
-  // V-Taper比率（肩囲 ÷ ウエスト周り）の計算
-  let vTaperRatio: number | null = null;
-  if (shoulderCm !== null && waistCm !== null && waistCm > 0) {
-    vTaperRatio = Number((shoulderCm / waistCm).toFixed(3));
-  }
-
-  await db.bodyMetrics.put({
-    ...current,
-    date,
-    weightKg,
-    bodyFatPct,
-    ffmKg,
-    waistCm,
-    shoulderCm,
-    vTaperRatio,
+export async function saveBodyMetric(input: BodyInput): Promise<void> {
+  await db.transaction('rw', db.bodyMetrics, async () => {
+    const current = await getTodayBodyMetric();
+    const history = await db.bodyMetrics.where('date').between(shiftDate(current.date,-29),current.date,true,true).toArray();
+    await db.bodyMetrics.put(deriveBodyMetric(current,input,history));
   });
-
-  // 7日移動平均を計算して再更新
-  const weightMa7 = await calculateWeightMa7(date);
-  await db.bodyMetrics.update(date, { weightMa7 });
 }

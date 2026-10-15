@@ -1,151 +1,35 @@
-import { fireNeonConfetti } from '../engine/achievements';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/db';
 import { getTodayBodyMetric, saveBodyMetric } from '../db/queries/bodyMetrics';
-
+import { todayInJapan } from '../engine/dates';
+import { BODY_FIELDS, type BodyInput, type BodyInputKey } from '../engine/bodyMeasurements';
+import type { BodyMetric } from '../db/types';
+import { BodyTrendChart } from '../components/BodyTrendChart';
 export default function BodyTracking() {
-  const todayData = useLiveQuery(() => getTodayBodyMetric(), []);
-  const historyList = useLiveQuery(() => db.bodyMetrics.orderBy('date').reverse().limit(14).toArray(), []);
-
-  const [weight, setWeight] = useState<string>('');
-  const [fat, setFat] = useState<string>('');
-  const [waist, setWaist] = useState<string>('');
-  const [shoulder, setShoulder] = useState<string>('');
-  const [savedMessage, setSavedMessage] = useState<boolean>(false);
-
-  useEffect(() => {
-    if (todayData) {
-      setWeight(todayData.weightKg !== null ? String(todayData.weightKg) : '');
-      setFat(todayData.bodyFatPct !== null ? String(todayData.bodyFatPct) : '');
-      setWaist(todayData.waistCm !== null ? String(todayData.waistCm) : '');
-      setShoulder(todayData.shoulderCm !== null ? String(todayData.shoulderCm) : '');
-    }
-  }, [todayData]);
-
-  const handleSave = async () => {
-    await saveBodyMetric({
-      weightKg: weight !== '' ? Number(weight) : null,
-      bodyFatPct: fat !== '' ? Number(fat) : null,
-      waistCm: waist !== '' ? Number(waist) : null,
-      shoulderCm: shoulder !== '' ? Number(shoulder) : null,
-    });
-    fireNeonConfetti(); // 🌟 EXP加算＆スパーク演出
-    setSavedMessage(true);
-    setTimeout(() => setSavedMessage(false), 3000);
-  };
-
-  return (
-    <div className="page">
-      <header className="hdr">
-        <h1>体組成・トレンド記録</h1>
-        <p className="sub">毎朝のコンディションを入力してください</p>
-      </header>
-
-      {savedMessage && (
-        <div className="hint converged" style={{ textAlign: 'center' }}>
-          ✓ 本日のコンディションを保存しました！
-        </div>
-      )}
-
-      <section className="card">
-        <h2>本日 ({todayData?.date}) の入力</h2>
-
-        <div className="field">
-          <label>体重 (kg)</label>
-          <input
-            type="number"
-            step="0.1"
-            className="btn"
-            style={{ textAlign: 'left', paddingLeft: '16px', background: 'var(--bg)' }}
-            placeholder="例: 71.2"
-            value={weight}
-            onChange={(e) => setWeight(e.target.value)}
-          />
-        </div>
-
-        <div className="field">
-          <label>体脂肪率 (%)</label>
-          <input
-            type="number"
-            step="0.1"
-            className="btn"
-            style={{ textAlign: 'left', paddingLeft: '16px', background: 'var(--bg)' }}
-            placeholder="例: 18.4"
-            value={fat}
-            onChange={(e) => setFat(e.target.value)}
-          />
-        </div>
-
-        <div className="field">
-          <label>ウエストサイズ (cm)</label>
-          <input
-            type="number"
-            step="0.5"
-            className="btn"
-            style={{ textAlign: 'left', paddingLeft: '16px', background: 'var(--bg)' }}
-            placeholder="例: 80.0"
-            value={waist}
-            onChange={(e) => setWaist(e.target.value)}
-          />
-        </div>
-
-        <div className="field">
-          <label>肩囲 (cm)</label>
-          <input
-            type="number"
-            step="0.5"
-            className="btn"
-            style={{ textAlign: 'left', paddingLeft: '16px', background: 'var(--bg)' }}
-            placeholder="例: 115.0"
-            value={shoulder}
-            onChange={(e) => setShoulder(e.target.value)}
-          />
-        </div>
-
-        <button className="btn primary big" onClick={handleSave}>
-          記録を保存
-        </button>
-      </section>
-
-      <section className="card">
-        <h2>分析トレンド指標</h2>
-        <table className="kv">
-          <tbody>
-            <tr>
-              <th>体重 7日移動平均 (MA7)</th>
-              <td className="mono good">
-                {todayData?.weightMa7 ? `${todayData.weightMa7} kg` : '7日間のデータ蓄積中'}
-              </td>
-            </tr>
-            <tr>
-              <th>除脂肪体重 (FFM)</th>
-              <td className="mono">
-                {todayData?.ffmKg ? `${todayData.ffmKg} kg` : '未計算'}
-              </td>
-            </tr>
-            <tr>
-              <th>V-Taper比率 (肩囲 ÷ ウエスト)</th>
-              <td className="mono good">
-                {todayData?.vTaperRatio ? `${todayData.vTaperRatio}` : '未計算'}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
-
-      <section className="card">
-        <h2>直近14日間の履歴</h2>
-        <div className="list">
-          {historyList?.map((h) => (
-            <div key={h.date} className="row" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
-              <span className="mono">{h.date.slice(5)}</span>
-              <span className="mono">{h.weightKg ? `${h.weightKg}kg` : '-'}</span>
-              <span className="mono sub">{h.vTaperRatio ? `V:${h.vTaperRatio}` : '-'}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-    </div>
-  );
+  const [today,setToday]=useState(todayInJapan);
+  useEffect(()=>{const timer=setInterval(()=>setToday(todayInJapan()),30000);return()=>clearInterval(timer);},[]);
+  const data=useLiveQuery(async()=>({current:await getTodayBodyMetric(),history:await db.bodyMetrics.orderBy('date').toArray()}),[today]);
+  if(!data)return <main className="page"><p role="status">体組成を読み込んでいます…</p></main>;
+  return <main className="page body-page"><header className="hdr"><p className="eyebrow">BODY MEASUREMENTS</p><h1>体組成とサイズの推移</h1><p className="sub">測った項目だけ記録。体重も周囲のサイズも、日々の変化を確認できます。</p></header>
+    <BodyTrendChart records={data.history} today={today}/>
+    <BodyMeasurementForm key={today} current={data.current}/>
+    <section className="card"><h2>計算したトレンド指標</h2><dl className="body-derived">{[
+      ['体重の7日平均',data.current.weightMa7,'kg'],['除脂肪体重',data.current.ffmKg,'kg'],['除脂肪体重の30日平均',data.current.ffmMa30,'kg'],['肩周り ÷ ウエスト',data.current.vTaperRatio,'倍'],['肩／ウエスト比の7日平均',data.current.vTaperMa7,'倍'],
+    ].map(([label,value,unit])=><div key={label}><dt>{label}</dt><dd>{value==null?'未計算':`${value} ${unit}`}</dd></div>)}</dl><p className="sub">平均は期間内の入力済み・実測の記録から計算します。未入力の日は0にしません。除脂肪体重は体重と体脂肪率からの計算値です。</p></section>
+    <p className="sub">体組成はこの端末に保存されます。クラウドへは上部のクラウド設定から「端末の履歴を送信」を使います。</p>
+  </main>;
+}
+function BodyMeasurementForm({current}:{current:BodyMetric}) {
+  const [values,setValues]=useState(()=>Object.fromEntries(BODY_FIELDS.map(f=>[f.key,current[f.key]==null?'':String(current[f.key])])) as Record<BodyInputKey,string>);
+  const [busy,setBusy]=useState(false),[message,setMessage]=useState('');const lock=useRef(false);
+  async function save(){if(lock.current)return;lock.current=true;setBusy(true);setMessage('');try{
+    if(current.date!==todayInJapan())throw new Error('日付が変わりました。ページを再読み込みしてから記録してください。');
+    const input=Object.fromEntries(BODY_FIELDS.map(f=>[f.key,values[f.key].trim()===''?null:Number(values[f.key])])) as BodyInput;
+    await saveBodyMetric(input);setMessage('本日の記録を端末に保存しました。グラフにも反映しています。');
+  }catch(e){setMessage(e instanceof Error?e.message:'保存できませんでした。入力内容を保持しています。');}finally{lock.current=false;setBusy(false);}}
+  return <section className="card"><h2>{current.date} の測定</h2><p className="sub">すべて任意です。ウエストはくびれの位置、おへそ周りはおへその高さで分けて記録。腕と脚は毎回同じ側・同じ位置で測ってください。過去のウエスト値は移動・変換しません。</p>
+    <form onSubmit={e=>{e.preventDefault();void save();}}><div className="body-input-grid">{BODY_FIELDS.map(f=><label key={f.key}>{f.label}<span className="body-unit-input"><input type="number" inputMode="decimal" step="any" min={f.min} max={f.max} value={values[f.key]} disabled={busy} placeholder="未入力" onChange={e=>setValues(prev=>({...prev,[f.key]:e.target.value}))}/><span>{f.unit}</span></span></label>)}</div><p className="sub">回復度は0〜10の自己評価です。0は回復していない、10は十分に回復している状態として、毎回同じ基準で入力してください。</p><button className="btn primary big" disabled={busy} type="submit">{busy?'保存中…':'本日の測定を保存'}</button></form>
+    {message&&<p className="notice" role="status">{message}</p>}
+  </section>;
 }

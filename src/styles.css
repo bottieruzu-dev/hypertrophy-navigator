@@ -663,6 +663,75 @@ details .sub { line-height: 1.7; margin: 12px 0; }
 .nutrition-values { display: grid; gap: 8px; margin: 16px 0; }
 .nutrition-values > div { display: flex; justify-content: space-between; gap: 16px; padding-bottom: 6px; border-bottom: 1px solid var(--line, #34493f); }
 .nutrition-values dd { margin: 0; flex-shrink: 0; }
+
+/* Daily nutrition: common 100% reference, no horizontal scroll on mobile. */
+.nutrition-dashboard { --balance-green: #83dab0; --balance-blue: #82bfff; --balance-yellow: #f2ca79; --balance-red: #ff909b; padding: 22px 18px; }
+.balance-heading { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+.balance-heading h2 { margin-bottom:0; font-size:21px; }
+.balance-heading .eyebrow { margin-top:0; }
+.balance-date { padding:6px 10px; border:1px solid var(--line); border-radius:10px; color:var(--sub); font-size:13px; white-space:nowrap; }
+.energy-summary { padding:22px 0 18px; border-bottom:1px solid var(--line); }
+.energy-summary > span, .energy-summary > small { color:var(--sub); font-size:13px; }
+.energy-summary strong { font-size:clamp(30px,8vw,46px); letter-spacing:-1px; font-variant-numeric:tabular-nums; }
+.energy-summary > div { margin:5px 0; }
+.energy-summary p { margin:2px 0 8px; color:var(--sub); font-size:14px; }
+.energy-summary b { color:var(--fg); }
+.balance-macros { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; padding:18px 0; }
+.balance-macros > div { min-width:0; display:flex; flex-direction:column; align-items:flex-start; gap:6px; }
+.balance-macros .macro-initial { color:var(--balance-green); font-weight:800; font-size:13px; }
+.balance-macros > div > span:not(.macro-initial), .balance-macros small { color:var(--sub); font-size:11px; }
+.balance-macros strong { font-size:clamp(15px,4.4vw,23px); overflow-wrap:anywhere; font-variant-numeric:tabular-nums; }
+.balance-record-count { color:var(--sub); font-size:12px; line-height:1.6; margin:0 0 18px; }
+.balance-tabs { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:3px; background:var(--bg); padding:4px; border-radius:12px; }
+.balance-tabs button, .balance-view button { border:0; border-radius:9px; background:transparent; color:var(--sub); font:inherit; cursor:pointer; min-height:42px; font-size:12px; padding:5px 3px; }
+.balance-tabs button[aria-pressed="true"], .balance-view button[aria-pressed="true"] { background:#243a36; color:#b2efd0; font-weight:700; }
+.balance-tabs button:focus-visible, .balance-view button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.balance-chart-tools { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:12px 0; }
+.balance-chart-tools > span { color:var(--sub); font-size:11px; }
+.balance-view { display:flex; flex-shrink:0; gap:3px; }
+.balance-view button { padding:5px 10px; min-height:36px; }
+.nutrient-gauge { --gauge-color:var(--sub); padding:14px 0; border-bottom:1px solid var(--line); }
+.nutrient-gauge.tone-low { --gauge-color:var(--balance-blue); }
+.nutrient-gauge.tone-met { --gauge-color:var(--balance-green); }
+.nutrient-gauge.tone-above { --gauge-color:var(--balance-yellow); }
+.nutrient-gauge.tone-high { --gauge-color:var(--balance-red); }
+.gauge-row-heading, .gauge-values, .gauge-note { display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
+.gauge-row-heading strong { font-size:14px; line-height:1.6; }
+.gauge-status { color:var(--gauge-color); background:color-mix(in srgb,var(--gauge-color) 12%,transparent); border:1px solid color-mix(in srgb,var(--gauge-color) 30%,transparent); padding:3px 7px; border-radius:6px; font-size:11px; white-space:nowrap; }
+.gauge-values { margin:7px 0 9px; font-size:15px; font-weight:650; font-variant-numeric:tabular-nums; }
+.gauge-values small, .gauge-values > span:last-child { font-size:11px; color:var(--sub); font-weight:400; text-align:right; }
+.gauge-track { position:relative; height:12px; border-radius:4px; background:#252e40; }
+.gauge-track.has-unknown { background:repeating-linear-gradient(135deg,#252e40 0px,#252e40 5px,#3d4658 5px,#3d4658 7px); }
+.gauge-fill { display:block; height:100%; border-radius:4px; background:var(--gauge-color); }
+.gauge-target { position:absolute; top:-4px; bottom:-4px; left:66.666667%; width:2px; background:#eef2fa; border-radius:1px; }
+.gauge-note { color:var(--sub); margin-top:9px; font-size:11px; line-height:1.6; }
+.gauge-note > span:last-child { white-space:nowrap; font-variant-numeric:tabular-nums; }
+.balance-footnote { margin:15px 0 0; color:var(--sub); font-size:11px; line-height:1.8; }
+.body-page label { display:grid; gap:8px; color:var(--sub); font-size:13px; }
+.body-page select, .body-page input { min-width:0; width:100%; min-height:46px; padding:10px; border:1px solid var(--line); background:var(--bg); color:var(--fg); border-radius:10px; font:inherit; }
+.body-chart-controls { display:grid; grid-template-columns:minmax(0,2fr) minmax(0,1fr); gap:12px; margin:18px 0; }
+.body-chart-summary { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:20px 0 8px; }
+.body-chart-summary > div { display:grid; gap:8px; align-content:start; }
+.body-chart-summary span, .body-chart-summary small { color:var(--sub); font-size:11px; }
+.body-chart-summary strong { font-size:24px; font-variant-numeric:tabular-nums; }
+.body-line-chart { display:block; width:100%; height:auto; overflow:visible; margin-top:20px; }
+.body-line-chart text { fill:var(--sub); font-size:11px; font-variant-numeric:tabular-nums; }
+.chart-grid { stroke:var(--line); stroke-dasharray:3 4; }
+.chart-line { fill:none; stroke:#83dab0; stroke-width:2.5; stroke-linejoin:round; }
+.chart-point { fill:#83dab0; stroke:var(--card); stroke-width:1.5; }
+.chart-point.estimated { fill:var(--card); stroke:#83dab0; }
+.body-chart-empty { padding:28px 10px; color:var(--sub); line-height:1.8; text-align:center; border:1px dashed var(--line); border-radius:12px; }
+.body-history-values { max-height:320px; overflow-y:auto; }
+.body-history-values > div, .body-derived > div { display:flex; justify-content:space-between; gap:14px; padding:12px 0; border-bottom:1px solid var(--line); font-size:13px; }
+.body-derived dt { color:var(--sub); }
+.body-derived dd { margin:0; white-space:nowrap; }
+.body-input-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px 12px; margin:22px 0; }
+.body-unit-input { display:flex; align-items:center; border:1px solid var(--line); border-radius:10px; background:var(--bg); }
+.body-unit-input input { border:0; background:transparent; }
+.body-unit-input > span { padding:0 10px 0 0; white-space:nowrap; font-size:12px; }
+.body-page .sub { line-height:1.8; }
+.body-page summary { cursor:pointer; padding:14px 0; font-size:13px; }
+@media(max-width:360px) { .body-chart-controls { grid-template-columns:1fr; } .body-input-grid { gap:14px 8px; } .gauge-values { gap:5px; font-size:14px; } }
 .cloud-account { max-width: 552px; margin: 12px auto; padding: 16px; }
 .cloud-account summary { cursor: pointer; min-height: 32px; }
 .cloud-account form { display: grid; gap: 12px; margin: 16px 0; }

@@ -81,6 +81,7 @@ export interface BodyMetric {
   weightMa7: number | null;
   ffmMa30: number | null;
   waistCm: number | null;
+  navelCm?: number | null;
   shoulderCm: number | null;
   chestCm: number | null;
   armCm: number | null;
