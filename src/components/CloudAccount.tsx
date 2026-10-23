@@ -4,6 +4,7 @@ import { bindLocalRecords, requireCloudOwner } from '../db/queries/cloudAccess';
 import { migrateLocalDataToSupabase } from '../db/queries/supabaseMigration';
 import { fetchBaselines } from '../db/queries/workout';
 import { ObsidianArchive } from './ObsidianArchive';
+import { publishDinnerSnapshot, watchDinnerSnapshot } from '../db/queries/dinner';
 
 export function CloudAccount() {
   const [email, setEmail] = useState('');
@@ -12,6 +13,10 @@ export function CloudAccount() {
   const [busy, setBusy] = useState(false);
   const [connected, setConnected] = useState(false);
   const [message, setMessage] = useState('ログイン・所有者登録後に同期できます。');
+  const [dinnerStatus, setDinnerStatus] = useState('');
+  useEffect(() => {
+    if (connected) return watchDinnerSnapshot(setDinnerStatus);
+  }, [connected]);
   useEffect(() => {
     let live = true;
     let generation = 0;
@@ -71,6 +76,9 @@ export function CloudAccount() {
     </>}
     <p role="status">{busy ? '処理中…' : message}</p>
     <ObsidianArchive key={connected ? 'connected' : 'disconnected'} connected={connected} />
-    <p className="sub">栄養ページでWorkへ送信した食事はクラウドにも保存します。手動の栄養記録・食材一覧・プロフィール設定は端末内保存です。栄養ページからバックアップできます。</p>
+    {connected && <div><p className="sub">22時の夕食提案のため、プロフィール・確定済み食事・直近30日の体組成と筋トレを専用領域へ自動同期します。</p><p role="status">{dinnerStatus}</p>
+      <button className="btn" disabled={busy} onClick={() => void run(async () => { await publishDinnerSnapshot(true); setDinnerStatus('この端末を献立情報の送信元にしました。'); })}>この端末を送信元にする</button>
+      <p className="sub">別端末との競合時だけ、最新の記録がある端末で操作してください。</p></div>}
+    <p className="sub">Workの食事はクラウドにも保存します。手動記録・プロフィールは端末が主保存先で、夕食提案用のコピーを同期します。別端末への完全復元には栄養ページのバックアップを使ってください。</p>
   </details>;
 }
