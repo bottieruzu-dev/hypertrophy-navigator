@@ -739,3 +739,12 @@ details .sub { line-height: 1.7; margin: 12px 0; }
 .cloud-account input:not([type="checkbox"]) { width: 100%; box-sizing: border-box; min-height: 44px; background: var(--bg); color: var(--fg); border: 1px solid var(--line, #34493f); border-radius: 8px; padding: 10px; }
 .cloud-account .two-actions { flex-wrap: wrap; margin-top: 16px; }
 @media (max-width: 600px) { .cloud-account { margin: 12px; } }
+.dinner-section { border-top: 4px solid #73946a; }
+.dinner-summary { font-size: 1.05rem; line-height: 1.8; }
+.dinner-assumptions { padding: 1rem 1rem 1rem 2rem; color: #f3dbb4; background: #302919; border-radius: 12px; font-size: .9rem; line-height: 1.7; }
+.dinner-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 16px; margin: 18px 0; }
+.dinner-option { padding: 18px; color: var(--fg); border: 1px solid var(--line); border-radius: 16px; background: var(--card); overflow-wrap: anywhere; }
+.dinner-option h3 { margin: 8px 0 14px; color: var(--fg); font-size: 17px; letter-spacing: 0; text-transform: none; }
+.dinner-option li { margin-bottom: 8px; line-height: 1.65; }
+.dinner-option ul, .dinner-option ol { padding-left: 1.3rem; }
+.dinner-macros { color: #9be0bc; font-weight: 650; line-height: 1.7; }

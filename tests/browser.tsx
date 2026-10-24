@@ -19,6 +19,7 @@ import '../src/styles.css';
 import { saveMealRequest, saveNutritionMeal, saveNutritionProfile, setMealVoided } from '../src/db/queries/nutritionMeals';
 import { exportNutritionBackup, restoreNutritionBackup } from '../src/db/queries/nutritionBackup';
 import { NUTRIENTS, aggregateNutrition, nutritionTargets, type MealRequest, type NutritionProfile } from '../src/engine/nutrition';
+import { readDinnerSnapshot } from '../src/db/queries/dinner';
 
 const report=document.getElementById('test-report')!;
 const checks:string[]=[];
@@ -128,6 +129,11 @@ async function run() {
   check(await db.nutritionWorkJobs.count()===1,'Work backup restore is idempotent');
   await db.close();await db.open();
   check(aggregateNutrition(await db.meals.toArray()).protein_g.known===25,'nutrition records survive database reopen');
+  await db.settings.put({key:'nutritionProfile',value:{...nutritionProfile,unrelatedSecret:'must-not-leave-device'}});
+  const dinner=await readDinnerSnapshot();
+  check(dinner.date===todayInJapan() && !!dinner.profile,'dinner snapshot reads the selected profile and Japan day');
+  check(!JSON.stringify(dinner).includes('must-not-leave-device'),'dinner snapshot whitelists profile fields and strips meal profile copies');
+  check(dinner.workIds.includes(workRequest.id),'dinner snapshot identifies Work meals for server-authoritative deduplication');
   // Leave the app with intact dummy Week0 and no test sessions; the next UI flow starts fresh.
   await db.plans.clear();
   await db.sets.where('sessionId').equals(plan.sessionId).delete();
